@@ -1,0 +1,272 @@
+{
+  "text": " Welcome to today's podcast episode. I'm excited to share some incredible insights and stories with you. This conversation is going to be absolutely fascinating. So let's dive right in and explore these amazing topics together.",
+  "segments": [
+    {
+      "text": "Welcome to today's podcast episode. I'm excited to share some incredible insights and stories with you.",
+      "start": 0.0,
+      "end": 5.8,
+      "words": [
+        {
+          "word": "Welcome",
+          "start": 0.0,
+          "end": 0.3625,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "to",
+          "start": 0.3625,
+          "end": 0.725,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "today's",
+          "start": 0.725,
+          "end": 1.0875,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "podcast",
+          "start": 1.0875,
+          "end": 1.45,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "episode.",
+          "start": 1.45,
+          "end": 1.8125,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "I'm",
+          "start": 1.8125,
+          "end": 2.175,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "excited",
+          "start": 2.175,
+          "end": 2.5375,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "to",
+          "start": 2.5375,
+          "end": 2.9,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "share",
+          "start": 2.9,
+          "end": 3.2624999999999997,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "some",
+          "start": 3.2624999999999997,
+          "end": 3.625,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "incredible",
+          "start": 3.625,
+          "end": 3.9875,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "insights",
+          "start": 3.9875,
+          "end": 4.35,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "and",
+          "start": 4.35,
+          "end": 4.7124999999999995,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "stories",
+          "start": 4.7124999999999995,
+          "end": 5.075,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "with",
+          "start": 5.075,
+          "end": 5.4375,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "you.",
+          "start": 5.4375,
+          "end": 5.8,
+          "confidence": 0.8,
+          "estimated": true
+        }
+      ]
+    },
+    {
+      "text": "This conversation is going to be absolutely fascinating.",
+      "start": 5.8,
+      "end": 8.8,
+      "words": [
+        {
+          "word": "This",
+          "start": 5.8,
+          "end": 6.175,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "conversation",
+          "start": 6.175,
+          "end": 6.55,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "is",
+          "start": 6.55,
+          "end": 6.925000000000001,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "going",
+          "start": 6.925000000000001,
+          "end": 7.300000000000001,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "to",
+          "start": 7.300000000000001,
+          "end": 7.675000000000001,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "be",
+          "start": 7.675000000000001,
+          "end": 8.05,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "absolutely",
+          "start": 8.05,
+          "end": 8.425,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "fascinating.",
+          "start": 8.425,
+          "end": 8.8,
+          "confidence": 0.8,
+          "estimated": true
+        }
+      ]
+    },
+    {
+      "text": "So let's dive right in and explore these amazing topics together.",
+      "start": 8.8,
+      "end": 29.6,
+      "words": [
+        {
+          "word": "So",
+          "start": 8.8,
+          "end": 10.690909090909091,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "let's",
+          "start": 10.690909090909091,
+          "end": 12.581818181818182,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "dive",
+          "start": 12.581818181818182,
+          "end": 14.472727272727273,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "right",
+          "start": 14.472727272727273,
+          "end": 16.363636363636363,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "in",
+          "start": 16.363636363636363,
+          "end": 18.254545454545458,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "and",
+          "start": 18.254545454545458,
+          "end": 20.145454545454548,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "explore",
+          "start": 20.145454545454548,
+          "end": 22.03636363636364,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "these",
+          "start": 22.03636363636364,
+          "end": 23.92727272727273,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "amazing",
+          "start": 23.92727272727273,
+          "end": 25.81818181818182,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "topics",
+          "start": 25.81818181818182,
+          "end": 27.70909090909091,
+          "confidence": 0.8,
+          "estimated": true
+        },
+        {
+          "word": "together.",
+          "start": 27.70909090909091,
+          "end": 29.6,
+          "confidence": 0.8,
+          "estimated": true
+        }
+      ]
+    }
+  ],
+  "language": "en"
+}

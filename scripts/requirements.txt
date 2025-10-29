@@ -1,0 +1,18 @@
+# Audio processing dependencies
+# Note: ffmpeg must be installed separately on the system
+
+# Core dependencies
+pathlib2>=2.3.7; python_version < "3.4"
+numpy>=1.21.0
+scipy>=1.7.0
+soundfile>=0.12.1
+librosa>=0.10.0
+
+# Speaker embedding and diarization dependencies
+torch>=2.0.0
+torchaudio>=2.0.0
+pyannote.audio>=3.1.0
+pyannote.core>=5.0.0
+
+# Additional audio processing capabilities
+pydub>=0.25.1

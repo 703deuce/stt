@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Webhook Test</title>
+</head>
+<body>
+    <h1>Webhook System Test</h1>
+    
+    <button onclick="testWebhook()">Test Webhook</button>
+    <button onclick="testSSE()">Test SSE Connection</button>
+    
+    <div id="output"></div>
+    
+    <script>
+        function log(message) {
+            const output = document.getElementById('output');
+            output.innerHTML += '<p>' + new Date().toLocaleTimeString() + ': ' + message + '</p>';
+        }
+        
+        async function testWebhook() {
+            try {
+                log('🧪 Sending test webhook...');
+                const response = await fetch('/api/test-webhook', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: 'test-user-123',
+                        jobId: 'test-job-456',
+                        status: 'completed'
+                    })
+                });
+                
+                const result = await response.json();
+                log('✅ Test webhook result: ' + JSON.stringify(result));
+            } catch (error) {
+                log('❌ Test webhook error: ' + error.message);
+            }
+        }
+        
+        function testSSE() {
+            log('📡 Testing SSE connection...');
+            const eventSource = new EventSource('/api/events/job-status?userId=test-user-123');
+            
+            eventSource.onopen = () => {
+                log('✅ SSE connected');
+            };
+            
+            eventSource.onmessage = (event) => {
+                log('📥 SSE message: ' + event.data);
+            };
+            
+            eventSource.onerror = (error) => {
+                log('❌ SSE error: ' + error);
+            };
+            
+            // Close after 10 seconds
+            setTimeout(() => {
+                eventSource.close();
+                log('🔌 SSE connection closed');
+            }, 10000);
+        }
+    </script>
+</body>
+</html>

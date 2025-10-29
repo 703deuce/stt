@@ -1,0 +1,11 @@
+# Files to ignore when deploying to Vercel
+test*.js
+test*.json
+test*.txt
+test*.py
+*.wav
+*.mp3
+*.ogg
+scripts/test*.py
+src/scripts/test*.js
+
