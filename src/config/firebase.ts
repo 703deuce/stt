@@ -26,15 +26,9 @@ const requiredFirebaseFields = [
   'NEXT_PUBLIC_FIREBASE_APP_ID'
 ];
 
-// Validate Firebase environment variables
+// Validate Firebase environment variables on client-side before initialization
 // Only validate on client-side to avoid server-side issues
-// NEXT_PUBLIC_ variables are embedded at build time for client bundle
-const validateFirebaseConfig = () => {
-  // Only validate on client-side
-  if (typeof window === 'undefined') {
-    return; // Skip validation on server
-  }
-
+if (typeof window !== 'undefined') {
   const missingFields = requiredFirebaseFields.filter(field => {
     const value = process.env[field];
     return !value || (typeof value === 'string' && value.trim() === '');
@@ -46,24 +40,20 @@ const validateFirebaseConfig = () => {
     console.error('🔍 Make sure they are enabled for PRODUCTION and trigger a new deployment');
     throw new Error(`Missing required Firebase environment variables: ${missingFields.join(', ')}`);
   }
-};
-
-// Run validation on client-side only
-if (typeof window !== 'undefined') {
-  validateFirebaseConfig();
 }
 
-// Initialize Firebase
-// Only initialize on client-side; server imports will handle this gracefully
-const app = typeof window !== 'undefined' ? initializeApp(firebaseConfig) : null as any;
+// Initialize Firebase (works on both server and client)
+// Server-side: API routes need Firebase, and env vars are available there
+// Client-side: NEXT_PUBLIC_ vars are embedded at build time
+const app = initializeApp(firebaseConfig);
 
 // Initialize Firebase Storage
-export const storage = typeof window !== 'undefined' && app ? getStorage(app) : null as any;
+export const storage = getStorage(app);
 
 // Initialize Firebase Auth
-export const auth = typeof window !== 'undefined' && app ? getAuth(app) : null as any;
+export const auth = getAuth(app);
 
 // Initialize Firestore
-export const db = typeof window !== 'undefined' && app ? getFirestore(app, 'ttss') : null as any;
+export const db = getFirestore(app, 'ttss'); // Use the correct database name 'ttss'
 
 export default app;
