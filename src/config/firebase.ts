@@ -27,49 +27,43 @@ const requiredFirebaseFields = [
 ];
 
 // Validate Firebase environment variables
-// Next.js/Turbopack embeds NEXT_PUBLIC_ variables at build time
-// In development, they're loaded from .env.local when the server starts
-const missingFields = requiredFirebaseFields.filter(field => {
-  const value = process.env[field];
-  // Check if value exists and is not just whitespace
-  return !value || value.trim() === '';
-});
+// Only validate on client-side to avoid server-side issues
+// NEXT_PUBLIC_ variables are embedded at build time for client bundle
+const validateFirebaseConfig = () => {
+  // Only validate on client-side
+  if (typeof window === 'undefined') {
+    return; // Skip validation on server
+  }
 
-if (missingFields.length > 0) {
-  const errorMessage = `
-Missing required Firebase environment variables: ${missingFields.join(', ')}
+  const missingFields = requiredFirebaseFields.filter(field => {
+    const value = process.env[field];
+    return !value || (typeof value === 'string' && value.trim() === '');
+  });
 
-TROUBLESHOOTING:
-1. Make sure .env.local exists in transcription-app/ (same level as package.json)
-2. Stop the dev server (Ctrl+C)  
-3. Clear cache: Remove-Item -Recurse -Force .next
-4. Restart: npm run dev
+  if (missingFields.length > 0) {
+    console.error('🔴 Missing Firebase environment variables:', missingFields.join(', '));
+    console.error('🔍 Verify variables are set in Vercel Dashboard → Settings → Environment Variables');
+    console.error('🔍 Make sure they are enabled for PRODUCTION and trigger a new deployment');
+    throw new Error(`Missing required Firebase environment variables: ${missingFields.join(', ')}`);
+  }
+};
 
-Variables needed:
-- NEXT_PUBLIC_FIREBASE_API_KEY
-- NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN
-- NEXT_PUBLIC_FIREBASE_PROJECT_ID
-- NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET
-- NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID
-- NEXT_PUBLIC_FIREBASE_APP_ID
-
-Note: If you see this after restarting, check that .env.local has all variables
-and there are no spaces around the = sign.
-`;
-  console.error(errorMessage);
-  throw new Error(`Missing required Firebase environment variables: ${missingFields.join(', ')}`);
+// Run validation on client-side only
+if (typeof window !== 'undefined') {
+  validateFirebaseConfig();
 }
 
 // Initialize Firebase
-const app = initializeApp(firebaseConfig);
+// Only initialize on client-side; server imports will handle this gracefully
+const app = typeof window !== 'undefined' ? initializeApp(firebaseConfig) : null as any;
 
 // Initialize Firebase Storage
-export const storage = getStorage(app);
+export const storage = typeof window !== 'undefined' && app ? getStorage(app) : null as any;
 
 // Initialize Firebase Auth
-export const auth = getAuth(app);
+export const auth = typeof window !== 'undefined' && app ? getAuth(app) : null as any;
 
 // Initialize Firestore
-export const db = getFirestore(app, 'ttss'); // Use the correct database name 'ttss'
+export const db = typeof window !== 'undefined' && app ? getFirestore(app, 'ttss') : null as any;
 
 export default app;
