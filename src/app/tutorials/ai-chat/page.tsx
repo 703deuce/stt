@@ -17,7 +17,8 @@ import {
   Info,
   AlertCircle,
   Zap,
-  Brain
+  Brain,
+  Sparkles
 } from 'lucide-react';
 
 interface TutorialStep {
