@@ -20,8 +20,6 @@
       "schedule": "0 2 * * *"
     }
   ],
-  // Note: Environment variables must be set in Vercel Dashboard
-  // Do NOT hardcode them here - use Vercel's environment variable settings
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
   "installCommand": "npm install"
