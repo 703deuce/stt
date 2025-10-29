@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Layout from '@/components/Layout';
 import TTSGenerator from '@/components/TTSGenerator';
@@ -26,7 +26,7 @@ import {
   RefreshCw
 } from 'lucide-react';
 
-export default function TTSPage() {
+function TTSPageContent() {
   const searchParams = useSearchParams();
   const { user } = useAuth();
   const [selectedVoice, setSelectedVoice] = useState<string>('');
@@ -225,5 +225,26 @@ export default function TTSPage() {
         </div>
       </Layout>
     </ProtectedRoute>
+  );
+}
+
+export default function TTSPage() {
+  return (
+    <Suspense
+      fallback={
+        <ProtectedRoute>
+          <Layout>
+            <div className="p-6 max-w-6xl mx-auto">
+              <div className="text-center py-12">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+                <p className="text-gray-600">Loading...</p>
+              </div>
+            </div>
+          </Layout>
+        </ProtectedRoute>
+      }
+    >
+      <TTSPageContent />
+    </Suspense>
   );
 }
