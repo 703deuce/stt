@@ -461,7 +461,11 @@ INSTRUCTIONS:
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    const payload: any = isClient ? data?.data : data;
+    if (!response.ok || (isClient && data?.ok === false)) {
+      throw new Error(`API request failed with status ${isClient ? data?.status : response.status}`);
+    }
+    const content = payload?.choices?.[0]?.message?.content;
     
     if (!content) {
       throw new Error('No response content received');
@@ -531,7 +535,8 @@ INSTRUCTIONS:
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    const payload: any = isClient ? data?.data : data;
+    const content = payload?.choices?.[0]?.message?.content;
     
     console.log('📥 [DeepSeek] Received response from DeepSeek API:', {
       hasContent: !!content,
@@ -607,7 +612,8 @@ INSTRUCTIONS:
     }
 
     const data = await response.json();
-    const content = data.choices[0]?.message?.content;
+    const payload: any = isClient ? data?.data : data;
+    const content = payload?.choices?.[0]?.message?.content;
     
     // 🔍 DETAILED RESPONSE LOGGING
     console.log('📥 [DeepSeek Content Generation] Response received:');
