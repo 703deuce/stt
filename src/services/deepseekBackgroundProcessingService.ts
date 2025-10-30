@@ -432,6 +432,8 @@ INSTRUCTIONS:
     });
 
     if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.error('[DeepSeek chat] 401/err response:', response.status, errText);
       throw new Error(`API request failed with status ${response.status}`);
     }
 
@@ -495,6 +497,8 @@ INSTRUCTIONS:
     });
 
     if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.error('[DeepSeek summary] 401/err response:', response.status, errText);
       throw new Error(`API request failed with status ${response.status}`);
     }
 
@@ -564,6 +568,8 @@ INSTRUCTIONS:
     });
 
     if (!response.ok) {
+      const errText = await response.text().catch(() => '');
+      console.error('[DeepSeek content] 401/err response:', response.status, errText);
       throw new Error(`API request failed with status ${response.status}`);
     }
 

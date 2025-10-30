@@ -112,7 +112,11 @@ class AISummaryService {
         summary_length: summary.split(' ').length
       };
     } catch (error) {
-      console.error('❌ Error generating AI summary:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Error generating AI summary:', error.response?.status, error.response?.data);
+      } else {
+        console.error('❌ Error generating AI summary:', error);
+      }
       throw new Error(`Failed to generate summary: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

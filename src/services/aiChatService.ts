@@ -135,7 +135,11 @@ class AIChatService {
         usage: response.data.usage
       };
     } catch (error) {
-      console.error('❌ Error sending chat message:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Error sending chat message:', error.response?.status, error.response?.data);
+      } else {
+        console.error('❌ Error sending chat message:', error);
+      }
       throw new Error(`Failed to send message: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
@@ -264,7 +268,11 @@ Format as valid JSON only.`;
         };
       }
     } catch (error) {
-      console.error('❌ Error analyzing transcription:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('❌ Error analyzing transcription:', error.response?.status, error.response?.data);
+      } else {
+        console.error('❌ Error analyzing transcription:', error);
+      }
       return {
         sentiment: 'neutral',
         keyThemes: ['Analysis failed'],
