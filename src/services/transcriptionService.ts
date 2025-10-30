@@ -22,7 +22,7 @@ if (typeof window === 'undefined') {
 const RUNPOD_ENDPOINT_ID = process.env.RUNPOD_ENDPOINT_WITH_STORAGE;
 const RUNPOD_BASE_URL = process.env.RUNPOD_BASE_URL || 'https://api.runpod.ai/v2';
 const RUNPOD_ENDPOINT = RUNPOD_ENDPOINT_ID ? `${RUNPOD_BASE_URL}/${RUNPOD_ENDPOINT_ID}/run` : undefined;
-const API_KEY = process.env.RUNPOD_API_KEY;
+const API_KEY = typeof window === 'undefined' ? process.env.RUNPOD_API_KEY : null;
 const HF_TOKEN = process.env.HUGGINGFACE_TOKEN;
 
 if (!API_KEY) {

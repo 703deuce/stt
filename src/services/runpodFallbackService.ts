@@ -295,13 +295,15 @@ if (typeof window === 'undefined') {
   console.log('RUNPOD_BASE_URL:', process.env.RUNPOD_BASE_URL || 'MISSING');
 }
 
-// Export singleton instance
-export const runpodFallbackService = new RunPodFallbackService(
-    process.env.RUNPOD_API_KEY || (() => { 
-      console.error('❌ [RUNPOD SERVICE BUILD ERROR] RUNPOD_API_KEY is missing!');
-      console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('RUNPOD')).join(', '));
-      throw new Error('RUNPOD_API_KEY environment variable is required'); 
-    })()
-);
+// Export singleton instance - only create on server side
+export const runpodFallbackService = typeof window === 'undefined' 
+  ? new RunPodFallbackService(
+      process.env.RUNPOD_API_KEY || (() => {
+        console.error('❌ [RUNPOD SERVICE BUILD ERROR] RUNPOD_API_KEY is missing!');
+        console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('RUNPOD')).join(', '));
+        throw new Error('RUNPOD_API_KEY environment variable is required');
+      })()
+    )
+  : null;
 
 export default runpodFallbackService;

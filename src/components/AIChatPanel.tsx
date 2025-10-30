@@ -16,7 +16,7 @@ import {
   BarChart3,
   Sparkles
 } from 'lucide-react';
-import { aiChatService, ChatMessage } from '../services/aiChatService';
+import { clientAIChatService, ChatMessage } from '../services/clientAIServices';
 import { aiDataService } from '../services/aiDataService';
 import { databaseService } from '../services/databaseService';
 import { useAuth } from '../context/AuthContext';
@@ -254,7 +254,7 @@ export default function AIChatPanel({ transcriptionText, transcriptionId, classN
     setError(null);
     
     try {
-      const result = await aiChatService.analyzeTranscription(transcriptionText);
+      const result = await clientAIChatService.analyzeTranscription(transcriptionText);
       setAnalysis(result);
       setShowAnalysis(true);
     } catch (err) {
@@ -266,7 +266,7 @@ export default function AIChatPanel({ transcriptionText, transcriptionId, classN
   };
 
   const getSuggestedQuestions = () => {
-    return aiChatService.getSuggestedQuestions(transcriptionText);
+    return clientAIChatService.getSuggestedQuestions(transcriptionText);
   };
 
   const insertSuggestedQuestion = (question: string) => {

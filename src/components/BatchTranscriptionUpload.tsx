@@ -3,7 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { transcriptionService } from '../services/transcriptionService';
+import { clientTranscriptionService } from '../services/clientTranscriptionService';
 import { audioExtractionService } from '../services/audioExtractionService';
 import { firebaseService } from '../services/firebaseService';
 import { databaseService } from '../services/databaseService';
@@ -390,7 +390,7 @@ export default function BatchTranscriptionUpload() {
     ));
 
     // Upload to Firebase first (same as regular transcription)
-    const uploadResult = await transcriptionService.uploadFileToFirebase(audioFile);
+    const uploadResult = await clientTranscriptionService.uploadFileToFirebase(audioFile);
     
     // Update progress
     setFiles(prev => prev.map(f => 
@@ -458,7 +458,7 @@ export default function BatchTranscriptionUpload() {
           : f
       ));
       
-      const uploadResult = await transcriptionService.uploadFileToFirebase(audioFile, (progress) => {
+      const uploadResult = await clientTranscriptionService.uploadFileToFirebase(audioFile, (progress) => {
         setFiles(prev => prev.map(f => 
           f.id === batchFile.id 
             ? { ...f, progress: 10 + (progress * 0.2) } // 10-30% for upload
@@ -576,7 +576,7 @@ export default function BatchTranscriptionUpload() {
       
       // Step 0: Upload full audio file for diarization
       console.log(`📤 Uploading ${originalName} for full-audio diarization...`);
-      const fullAudioUpload = await transcriptionService.uploadFileToFirebase(audioFile);
+      const fullAudioUpload = await clientTranscriptionService.uploadFileToFirebase(audioFile);
       
       // Step 0.5: Run speaker diarization on FULL audio FIRST (if enabled)
       let fullAudioDiarizationSegments: any[] = [];
@@ -655,9 +655,9 @@ export default function BatchTranscriptionUpload() {
         const chunkFile = new File([chunkBlob], `${originalName}_chunk_${i + 1}.wav`, { type: 'audio/wav' });
         
         // Upload chunk to Firebase and transcribe - same pattern as regular transcription
-        const chunkUploadResult = await transcriptionService.uploadFileToFirebase(chunkFile);
+        const chunkUploadResult = await clientTranscriptionService.uploadFileToFirebase(chunkFile);
         
-        const chunkResult = await transcriptionService.transcribeAudio(
+        const chunkResult = await clientTranscriptionService.transcribeAudio(
           {
             audio_url: chunkUploadResult.url,
             audio_format: 'wav',

@@ -17,7 +17,7 @@ import {
   Play,
   Pause
 } from 'lucide-react';
-import { aiSummaryService, SummaryResponse } from '../services/aiSummaryService';
+import { clientAISummaryService, SummaryResponse } from '../services/clientAIServices';
 import { ttsService } from '../services/ttsService';
 import { summaryAudioService, SummaryAudioRecord } from '../services/summaryAudioService';
 import { aiDataService } from '../services/aiDataService';
