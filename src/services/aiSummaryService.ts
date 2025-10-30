@@ -26,7 +26,7 @@ export interface SummaryJobResponse {
 }
 
 class AISummaryService {
-  private readonly API_KEY = typeof window === 'undefined' ? process.env.DEEPSEEK_API_KEY : null;
+  private readonly API_KEY = typeof window === 'undefined' ? (process.env.DEEPSEEK_API_KEY || '').trim() : null;
   private readonly API_ENDPOINT = process.env.DEEPSEEK_API_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions';
 
   constructor() {
@@ -91,7 +91,8 @@ class AISummaryService {
       }, {
         headers: {
           'Authorization': `Bearer ${this.API_KEY}`,
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
         }
       });
 

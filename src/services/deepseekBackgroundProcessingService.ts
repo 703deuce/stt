@@ -41,7 +41,7 @@ class DeepSeekBackgroundProcessingService {
   private maxConcurrentJobs = 50; // Increased for 500+ user capacity
   private activeJobs = 0;
 
-  private API_KEY = process.env.DEEPSEEK_API_KEY;
+  private API_KEY = (process.env.DEEPSEEK_API_KEY || '').trim();
   private API_ENDPOINT = process.env.DEEPSEEK_API_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions';
 
   constructor() {
@@ -399,7 +399,8 @@ class DeepSeekBackgroundProcessingService {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -476,7 +477,8 @@ INSTRUCTIONS:
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
@@ -548,7 +550,8 @@ INSTRUCTIONS:
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${this.API_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Accept': 'application/json'
       },
       body: JSON.stringify({
         model: 'deepseek-chat',
