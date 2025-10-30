@@ -488,7 +488,7 @@ export default function TranscriptionViewPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Full-Width Top Toolbar */}
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
             {/* Main Toolbar */}
@@ -606,7 +606,7 @@ export default function TranscriptionViewPage() {
 
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
               <button
                 onClick={() => router.push('/transcriptions')}
                 className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors text-sm"
@@ -619,7 +619,7 @@ export default function TranscriptionViewPage() {
                 {!isEditing ? (
                   <button
                     onClick={startEditing}
-                    className="inline-flex items-center bg-orange-500 text-white px-6 py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-sm"
+                    className="inline-flex items-center bg-orange-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-sm"
                   >
                     <Edit3 className="w-5 h-5 mr-2" />
                     Edit Document
@@ -628,14 +628,14 @@ export default function TranscriptionViewPage() {
                   <>
                     <button
                       onClick={saveChanges}
-                      className="inline-flex items-center bg-green-500 text-white px-6 py-3 rounded-lg hover:bg-green-600 transition-colors font-medium shadow-sm"
+                    className="inline-flex items-center bg-green-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-green-600 transition-colors font-medium shadow-sm"
                     >
                       <Save className="w-5 h-5 mr-2" />
                       Save Changes
                     </button>
                     <button
                       onClick={cancelEditing}
-                      className="inline-flex items-center bg-gray-500 text-white px-6 py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium shadow-sm"
+                    className="inline-flex items-center bg-gray-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium shadow-sm"
                     >
                       <X className="w-5 h-5 mr-2" />
                       Cancel
@@ -652,18 +652,18 @@ export default function TranscriptionViewPage() {
                   type="text"
                   value={editName}
                   onChange={(e) => setEditName(e.target.value)}
-                  className="w-full text-4xl font-bold text-gray-900 border-b-2 border-orange-500 focus:outline-none focus:border-orange-600 pb-3 bg-transparent"
+                  className="w-full text-2xl sm:text-4xl font-bold text-gray-900 border-b-2 border-orange-500 focus:outline-none focus:border-orange-600 pb-3 bg-transparent"
                   placeholder={transcription.audio_id?.split('/').pop()?.split('?')[0] || "Enter document title..."}
                 />
               ) : (
-                <h1 className="text-4xl font-bold text-gray-900">
+                <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">
                   {transcription.name || transcription.audio_id?.split('/').pop()?.split('?')[0] || 'Untitled Transcription'}
                 </h1>
               )}
             </div>
 
             {/* Metadata */}
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8 p-6 bg-gray-50 rounded-xl border border-gray-200">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8 p-4 sm:p-6 bg-gray-50 rounded-xl border border-gray-200">
               <div className="flex items-center space-x-3">
                 {getStatusIcon(transcription.status)}
                 <div>
@@ -695,12 +695,12 @@ export default function TranscriptionViewPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-3 mb-8">
+            <div className="flex items-center space-x-3 mb-8 flex-wrap gap-3">
               {transcription.transcript && (
                 <>
                   <button
                     onClick={() => copyToClipboard(transcription.transcript)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
                   >
                     <Copy className="w-4 h-4 mr-2" />
                     Copy Transcript
@@ -709,7 +709,7 @@ export default function TranscriptionViewPage() {
                   {/* Share Button */}
                   <button
                     onClick={() => setShowShareModal(true)}
-                    className="inline-flex items-center px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 border border-gray-300 text-gray-700 rounded-lg text-sm font-medium hover:bg-gray-50 transition-colors shadow-sm"
                   >
                     <Share2 className="w-4 h-4 mr-2" />
                     Share
@@ -718,7 +718,7 @@ export default function TranscriptionViewPage() {
                   {/* Download Button */}
                   <button
                     onClick={() => setShowDownloadModal(true)}
-                    className="inline-flex items-center px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-sm"
+                    className="inline-flex items-center px-3 sm:px-4 py-2 bg-purple-600 text-white rounded-lg text-sm font-medium hover:bg-purple-700 transition-colors shadow-sm"
                   >
                     <Download className="w-4 h-4 mr-2" />
                     Download
@@ -774,12 +774,12 @@ export default function TranscriptionViewPage() {
           )}
 
           {/* Transcript Content */}
-          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-4 lg:gap-6">
             {/* Main Content - 3 columns */}
-            <div className="xl:col-span-3">
+            <div className="lg:col-span-3">
               <div className="bg-white rounded-lg border border-gray-200">
                 {/* Document Content Area */}
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
               {/* Complete Transcript Component - Hidden from UI but code preserved for TTS components */}
               {false && (
                 <div>
@@ -952,15 +952,15 @@ export default function TranscriptionViewPage() {
 
               {/* Document Footer */}
               <div className="border-t border-gray-200 bg-gray-50 px-6 py-3">
-              <div className="flex items-center justify-between text-sm text-gray-500">
+              <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500">
                 <div className="flex items-center space-x-4">
-                  <span>Characters: {isEditing ? editTranscript.length : (transcription.transcript?.length || 0)}</span>
-                  <span>Words: {isEditing ? editTranscript.split(/\s+/).filter(Boolean).length : (transcription.transcript?.split(/\s+/).filter(Boolean).length || 0)}</span>
+                  <span className="whitespace-nowrap">Characters: {isEditing ? editTranscript.length : (transcription.transcript?.length || 0)}</span>
+                  <span className="whitespace-nowrap">Words: {isEditing ? editTranscript.split(/\s+/).filter(Boolean).length : (transcription.transcript?.split(/\s+/).filter(Boolean).length || 0)}</span>
                   {transcription.timestamps && (
-                    <span>Timestamps: {transcription.timestamps.length}</span>
+                    <span className="whitespace-nowrap">Timestamps: {transcription.timestamps.length}</span>
                   )}
                   {transcription.diarized_transcript && (
-                    <span>Speaker Segments: {transcription.diarized_transcript.length}</span>
+                    <span className="whitespace-nowrap">Speaker Segments: {transcription.diarized_transcript.length}</span>
                   )}
                   {isEditing && (
                     <span className="text-orange-600 font-medium">• Timing data preserved</span>
@@ -977,7 +977,7 @@ export default function TranscriptionViewPage() {
             </div>
 
             {/* AI Panels Sidebar - 1 column */}
-            <div className="xl:col-span-1 space-y-6">
+            <div className="lg:col-span-1 space-y-6">
               <AISummaryPanel 
                 transcriptionText={transcription.transcript || ''} 
                 transcriptionId={transcriptionId}

@@ -105,13 +105,13 @@ export default function SupportPage() {
     <ProtectedRoute>
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-purple-100">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-6 sm:py-8">
             {/* Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <div className="text-center mb-8 sm:mb-12">
+              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                 💬 Support Center
               </h1>
-              <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+              <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto">
                 We're here to help! Get in touch with our support team and we'll respond as soon as possible.
               </p>
             </div>
@@ -119,14 +119,14 @@ export default function SupportPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
               {/* Contact Form - Main Content */}
               <div className="lg:col-span-2">
-                <div className="bg-white rounded-2xl shadow-xl p-8">
+                <div className="bg-white rounded-2xl shadow-xl p-6 sm:p-8">
                   {!submitted ? (
                     <>
                       <h2 className="text-2xl font-bold text-gray-900 mb-6">Send us a message</h2>
                       
                       <form onSubmit={handleSubmit} className="space-y-6">
                         {/* Name and Email */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
                           <div>
                             <label className="block text-sm font-medium text-gray-700 mb-2">
                               Your Name *

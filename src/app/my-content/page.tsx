@@ -232,20 +232,20 @@ export default function MyContentPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
-              <Sparkles className="w-8 h-8 text-purple-600" />
-              <h1 className="text-3xl font-bold text-gray-900">My Content</h1>
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-2 gap-3 flex-wrap">
+              <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
+              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Content</h1>
             </div>
-            <p className="text-gray-600">
+            <p className="text-sm sm:text-base text-gray-600">
               All your repurposed content in one place
             </p>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             <div className="bg-white rounded-lg border border-gray-200 p-4">
               <div className="flex items-center space-x-3">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -305,7 +305,7 @@ export default function MyContentPage() {
 
           {/* Filters and Search */}
           <div className="bg-white rounded-lg border border-gray-200 shadow-sm mb-6">
-            <div className="p-4">
+            <div className="p-3 sm:p-4">
               <div className="flex flex-col md:flex-row gap-4">
                 {/* Search */}
                 <div className="flex-1 relative">
@@ -339,7 +339,7 @@ export default function MyContentPage() {
 
           {/* Content Grid */}
           {filteredContents.length === 0 ? (
-            <div className="bg-white rounded-lg border border-gray-200 p-12 text-center">
+            <div className="bg-white rounded-lg border border-gray-200 p-8 sm:p-12 text-center">
               <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">
                 {searchQuery || selectedCategory ? 'No content found' : 'No content yet'}
@@ -360,7 +360,7 @@ export default function MyContentPage() {
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
               {filteredContents.map(content => (
                 <div
                   key={content.id}

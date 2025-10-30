@@ -129,20 +129,20 @@ export default function TutorialsPage() {
     <ProtectedRoute>
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-6 sm:py-8">
             {/* Header */}
-            <div className="text-center mb-12">
-              <h1 className="text-4xl font-bold text-gray-900 mb-4">
+            <div className="text-center mb-8 sm:mb-12">
+              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900 mb-3 sm:mb-4">
                 📚 Tutorial Center
               </h1>
-              <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              <p className="text-base sm:text-xl text-gray-600 max-w-3xl mx-auto">
                 Master every feature of our transcription platform with step-by-step tutorials. 
                 From basic transcription to advanced AI-powered content creation.
               </p>
             </div>
 
             {/* Quick Stats */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6 mb-8 sm:mb-12">
               <div className="bg-white rounded-xl p-6 shadow-lg text-center">
                 <div className="text-3xl font-bold text-blue-600 mb-2">5</div>
                 <div className="text-gray-600">Core Features</div>
@@ -158,14 +158,14 @@ export default function TutorialsPage() {
             </div>
 
             {/* Tutorial Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
               {TUTORIALS.map((tutorial) => (
                 <div
                   key={tutorial.id}
                   className="bg-white rounded-2xl shadow-xl hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-2 cursor-pointer group"
                   onClick={() => handleTutorialClick(tutorial.route)}
                 >
-                  <div className="p-8">
+                    <div className="p-6 sm:p-8">
                     {/* Icon and Header */}
                     <div className="flex items-center mb-6">
                       <div className="bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-xl p-3 mr-4 group-hover:scale-110 transition-transform duration-300">

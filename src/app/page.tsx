@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '../context/AuthContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { 
   Mic, 
@@ -30,6 +30,7 @@ import {
 export default function LandingPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   // Redirect logged-in users to dashboard
   useEffect(() => {
@@ -77,15 +78,46 @@ export default function LandingPage() {
               >
                 Log In
               </a>
-            <a 
-              href="/auth" 
-                className="bg-gradient-to-r from-purple-600 to-teal-500 text-white px-6 py-2.5 rounded-xl hover:from-purple-700 hover:to-teal-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
-            >
-              Get Started Free
-            </a>
+              <a 
+                href="/auth" 
+                className="bg-gradient-to-r from-purple-600 to-teal-500 text-white px-6 py-2.5 rounded-xl hover:from-purple-700 hover:to-teal-600 transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 hidden sm:inline-flex"
+              >
+                Get Started Free
+              </a>
+              <button
+                className="md:hidden inline-flex items-center justify-center p-2 rounded-lg text-gray-700 hover:bg-gray-100"
+                aria-label="Toggle menu"
+                onClick={() => setMobileOpen(v => !v)}
+              >
+                <span className="sr-only">Open menu</span>
+                <svg className="h-6 w-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  {mobileOpen ? (
+                    <path d="M18 6L6 18M6 6l12 12" />
+                  ) : (
+                    <>
+                      <line x1="3" y1="12" x2="21" y2="12" />
+                      <line x1="3" y1="6" x2="21" y2="6" />
+                      <line x1="3" y1="18" x2="21" y2="18" />
+                    </>
+                  )}
+                </svg>
+              </button>
             </div>
           </div>
         </div>
+        {mobileOpen && (
+          <div className="md:hidden border-t border-gray-100 bg-white">
+            <div className="px-4 py-3 space-y-2">
+              <a href="#features" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Features</a>
+              <a href="#pricing" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Pricing</a>
+              <a href="#testimonials" onClick={() => setMobileOpen(false)} className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50 font-medium">Reviews</a>
+              <div className="pt-2 flex flex-col space-y-2">
+                <a href="/auth?mode=login" onClick={() => setMobileOpen(false)} className="block w-full text-center px-4 py-2 rounded-lg border border-gray-200 text-gray-800 hover:bg-gray-50 font-semibold">Log In</a>
+                <a href="/auth" onClick={() => setMobileOpen(false)} className="block w-full text-center px-4 py-2 rounded-lg bg-gradient-to-r from-purple-600 to-teal-500 text-white font-semibold">Get Started Free</a>
+              </div>
+            </div>
+          </div>
+        )}
       </nav>
 
       {/* Hero Section */}

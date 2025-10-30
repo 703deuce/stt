@@ -538,18 +538,18 @@ export default function ContentRepurposingPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Header */}
           <div className="mb-8">
-            <div className="flex items-center justify-between mb-2">
+            <div className="flex items-center justify-between mb-2 flex-wrap gap-3">
               <div className="flex items-center space-x-3">
-                <Sparkles className="w-8 h-8 text-purple-600" />
-                <h1 className="text-3xl font-bold text-gray-900">Content Repurposing</h1>
+                <Sparkles className="w-7 h-7 sm:w-8 sm:h-8 text-purple-600" />
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Content Repurposing</h1>
               </div>
               
               {/* Word Limit Display */}
               {wordLimitStatus && (
-                <div className="bg-gradient-to-r from-purple-50 to-teal-50 border border-purple-200 rounded-lg px-4 py-2">
+                <div className="bg-gradient-to-r from-purple-50 to-teal-50 border border-purple-200 rounded-lg px-3 sm:px-4 py-2">
                   <div className="flex items-center space-x-2">
                     <Sparkles className="w-4 h-4 text-purple-600" />
                     <div className="text-sm">
@@ -560,7 +560,7 @@ export default function ContentRepurposingPage() {
                     </div>
                   </div>
                   {wordLimitStatus.boostWords > 0 && (
-                    <div className="text-xs text-gray-500 mt-1">
+                    <div className="text-[11px] sm:text-xs text-gray-500 mt-1">
                       {wordLimitStatus.monthlyLimit > 0 && (
                         <span>Monthly: {(wordLimitStatus.monthlyLimit - wordLimitStatus.wordsUsed).toLocaleString()} • </span>
                       )}
@@ -575,7 +575,7 @@ export default function ContentRepurposingPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             {/* Left Panel - Transcription Selection */}
             <div className="lg:col-span-1">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
@@ -596,7 +596,7 @@ export default function ContentRepurposingPage() {
                 </div>
 
                 {/* Transcription List */}
-                <div className="max-h-[600px] overflow-y-auto">
+                <div className="max-h-[60vh] lg:max-h-[600px] overflow-y-auto">
                   {loadError ? (
                     <div className="p-6 text-center">
                       <AlertCircle className="w-12 h-12 mx-auto mb-3 text-red-400" />
@@ -659,7 +659,7 @@ export default function ContentRepurposingPage() {
             {/* Right Panel - Content Generation */}
             <div className="lg:col-span-2">
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-4 sm:p-6 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 mb-1">Generate Content</h2>
                   <p className="text-sm text-gray-600">
                     {selectedTranscription 
@@ -668,7 +668,7 @@ export default function ContentRepurposingPage() {
                   </p>
                 </div>
 
-                <div className="p-6">
+                <div className="p-4 sm:p-6">
                   {!selectedTranscription ? (
                     // No transcription selected
                     <div className="text-center py-12">
@@ -753,7 +753,7 @@ export default function ContentRepurposingPage() {
                         )}
                       </div>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         {filteredContentTypes.map(contentType => (
                           <button
                             key={contentType.id}

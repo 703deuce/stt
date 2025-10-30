@@ -36,7 +36,7 @@ export default function TranscriptionsPage() {
 
   return (
     <Layout>
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="mb-8">
           <div className="flex items-center space-x-3 mb-4">
@@ -44,8 +44,8 @@ export default function TranscriptionsPage() {
               <Upload className="w-6 h-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Create New Transcription</h1>
-              <p className="text-gray-600">Upload audio or video files for AI-powered transcription</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Create New Transcription</h1>
+              <p className="text-sm sm:text-base text-gray-600">Upload audio or video files for AI-powered transcription</p>
             </div>
           </div>
 
@@ -60,7 +60,7 @@ export default function TranscriptionsPage() {
         {/* Tab Navigation */}
         <div className="mb-6">
           <div className="border-b border-gray-200">
-            <nav className="-mb-px flex space-x-8">
+            <nav className="-mb-px flex space-x-6 overflow-x-auto">
               <button
                 onClick={() => setActiveTab('upload')}
                 className={`py-2 px-1 border-b-2 font-medium text-sm ${
@@ -71,7 +71,7 @@ export default function TranscriptionsPage() {
               >
                 <div className="flex items-center space-x-2">
                   <Upload className="w-4 h-4" />
-                  <span>New Transcription</span>
+                  <span className="whitespace-nowrap">New Transcription</span>
                 </div>
               </button>
               <button
@@ -84,7 +84,7 @@ export default function TranscriptionsPage() {
               >
                 <div className="flex items-center space-x-2">
                   <FileText className="w-4 h-4" />
-                  <span>Recent (5)</span>
+                  <span className="whitespace-nowrap">Recent (5)</span>
                 </div>
               </button>
             </nav>

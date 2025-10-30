@@ -499,9 +499,9 @@ export default function AIChatTutorial() {
     <ProtectedRoute>
       <Layout>
         <div className="min-h-screen bg-gradient-to-br from-green-50 to-blue-100">
-          <div className="container mx-auto px-4 py-8">
+          <div className="container mx-auto px-4 py-6 sm:py-8">
             {/* Header */}
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex items-center justify-between mb-6 sm:mb-8 gap-3 flex-wrap">
               <button
                 onClick={() => router.push('/tutorials')}
                 className="flex items-center text-gray-600 hover:text-gray-900 transition-colors"
@@ -510,7 +510,7 @@ export default function AIChatTutorial() {
                 Back to Tutorials
               </button>
               <div className="text-center">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">
                   💬 AI Chat Functionality
                 </h1>
                 <p className="text-gray-600">Learn how to chat with your transcriptions</p>
@@ -519,7 +519,7 @@ export default function AIChatTutorial() {
             </div>
 
             {/* Progress Bar */}
-            <div className="mb-8">
+            <div className="mb-6 sm:mb-8">
               <div className="flex justify-between text-sm text-gray-600 mb-2">
                 <span>Step {currentStep + 1} of {steps.length}</span>
                 <span>{Math.round(((currentStep + 1) / steps.length) * 100)}% Complete</span>
@@ -532,10 +532,10 @@ export default function AIChatTutorial() {
               </div>
             </div>
 
-            <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 sm:gap-8">
               {/* Sidebar Navigation */}
               <div className="lg:col-span-1">
-                <div className="bg-white rounded-xl shadow-lg p-6 sticky top-8">
+                <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 sticky top-8">
                   <h3 className="font-semibold text-gray-900 mb-4">Tutorial Steps</h3>
                   <nav className="space-y-2">
                     {steps.map((step, index) => (
@@ -567,7 +567,7 @@ export default function AIChatTutorial() {
 
               {/* Main Content */}
               <div className="lg:col-span-3">
-                <div className="bg-white rounded-xl shadow-lg p-8">
+                <div className="bg-white rounded-xl shadow-lg p-6 sm:p-8">
                   <div className="mb-6">
                     <h2 className="text-2xl font-bold text-gray-900 mb-2">
                       {steps[currentStep].title}

@@ -292,13 +292,13 @@ export default function AllTranscriptionsPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between mb-6">
+          <div className="mb-6 sm:mb-8">
+            <div className="flex items-center justify-between mb-4 sm:mb-6 gap-3 flex-wrap">
               <div>
-                <h1 className="text-3xl font-bold text-gray-900">My Transcriptions</h1>
-                <p className="text-gray-600 mt-1">View and manage all your transcriptions</p>
+                <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Transcriptions</h1>
+                <p className="text-sm sm:text-base text-gray-600 mt-1">View and manage all your transcriptions</p>
               </div>
               <div className="flex items-center space-x-3">
                 <button
