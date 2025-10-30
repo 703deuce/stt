@@ -102,6 +102,13 @@ export interface TranscriptionJobResult {
 }
 
 class TranscriptionService {
+  private getRunpodService() {
+    if (!runpodFallbackService) {
+      throw new Error('RunPod service is not initialized on this runtime');
+    }
+    return runpodFallbackService;
+  }
+
   private headers = {
     'Content-Type': 'application/json',
     ...(API_KEY ? { 'Authorization': `Bearer ${API_KEY}` } : {})
@@ -115,7 +122,7 @@ class TranscriptionService {
       console.log('🧪 ===== TESTING API CONNECTION WITH FALLBACK =====');
       
       // Use fallback service to test both endpoints
-      const testResult = await runpodFallbackService.testConnections();
+      const testResult = await this.getRunpodService().testConnections();
       
       console.log('📊 Connection test results:', testResult);
       
@@ -155,7 +162,7 @@ class TranscriptionService {
       };
 
       // Use fallback service for intelligent endpoint selection
-      const result = await runpodFallbackService.transcribeWithFallback(
+      const result = await this.getRunpodService().transcribeWithFallback(
         fallbackRequest,
         `${webhookUrl}/api/webhooks/runpod`
       );
