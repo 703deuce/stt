@@ -45,7 +45,7 @@ class DeepSeekBackgroundProcessingService {
   private API_ENDPOINT = process.env.DEEPSEEK_API_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions';
 
   constructor() {
-    if (!this.API_KEY) {
+    if (typeof window === 'undefined' && !this.API_KEY) {
       throw new Error('DEEPSEEK_API_KEY is required');
     }
   }

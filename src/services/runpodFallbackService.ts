@@ -297,13 +297,19 @@ if (typeof window === 'undefined') {
 
 // Export singleton instance - only create on server side
 export const runpodFallbackService = typeof window === 'undefined' 
-  ? new RunPodFallbackService(
-      process.env.RUNPOD_API_KEY || (() => {
-        console.error('❌ [RUNPOD SERVICE BUILD ERROR] RUNPOD_API_KEY is missing!');
-        console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('RUNPOD')).join(', '));
-        throw new Error('RUNPOD_API_KEY environment variable is required');
-      })()
-    )
+  ? (() => {
+      const key = process.env.RUNPOD_API_KEY;
+      if (!key) {
+        console.warn('⚠️ [RUNPOD SERVICE] RUNPOD_API_KEY missing; service disabled on this runtime');
+        return null;
+      }
+      try {
+        return new RunPodFallbackService(key);
+      } catch (e) {
+        console.error('❌ Failed to initialize RunPodFallbackService:', e);
+        return null;
+      }
+    })()
   : null;
 
 export default runpodFallbackService;

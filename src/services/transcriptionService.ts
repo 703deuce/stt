@@ -25,18 +25,21 @@ const RUNPOD_ENDPOINT = RUNPOD_ENDPOINT_ID ? `${RUNPOD_BASE_URL}/${RUNPOD_ENDPOI
 const API_KEY = typeof window === 'undefined' ? process.env.RUNPOD_API_KEY : null;
 const HF_TOKEN = process.env.HUGGINGFACE_TOKEN;
 
-if (!API_KEY) {
-  console.error('❌ [BUILD ERROR] RUNPOD_API_KEY is missing!');
-  console.error('Available env vars:', Object.keys(process.env).sort().join(', '));
-  throw new Error('RUNPOD_API_KEY is required');
-}
-if (!HF_TOKEN) {
-  console.error('❌ [BUILD ERROR] HUGGINGFACE_TOKEN is missing!');
-  throw new Error('HUGGINGFACE_TOKEN is required');
-}
-if (!RUNPOD_ENDPOINT) {
-  console.error('❌ [BUILD ERROR] RUNPOD_ENDPOINT_WITH_STORAGE is missing!');
-  throw new Error('RUNPOD_ENDPOINT_WITH_STORAGE is required');
+// Only enforce server-side
+if (typeof window === 'undefined') {
+  if (!API_KEY) {
+    console.error('❌ [BUILD ERROR] RUNPOD_API_KEY is missing!');
+    console.error('Available env vars:', Object.keys(process.env).sort().join(', '));
+    throw new Error('RUNPOD_API_KEY is required');
+  }
+  if (!HF_TOKEN) {
+    console.error('❌ [BUILD ERROR] HUGGINGFACE_TOKEN is missing!');
+    throw new Error('HUGGINGFACE_TOKEN is required');
+  }
+  if (!RUNPOD_ENDPOINT) {
+    console.error('❌ [BUILD ERROR] RUNPOD_ENDPOINT_WITH_STORAGE is missing!');
+    throw new Error('RUNPOD_ENDPOINT_WITH_STORAGE is required');
+  }
 }
 
 // Validate API configuration
@@ -101,8 +104,8 @@ export interface TranscriptionJobResult {
 class TranscriptionService {
   private headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${API_KEY}`
-  };
+    ...(API_KEY ? { 'Authorization': `Bearer ${API_KEY}` } : {})
+  } as Record<string, string>;
 
   /**
    * Test API connection using fallback service
