@@ -401,19 +401,19 @@ class DeepSeekBackgroundProcessingService {
       prompt: job.prompt.substring(0, 100) + '...'
     });
 
-    const response = await fetch(this.API_ENDPOINT, {
+    const isClient = typeof window !== 'undefined';
+    const response = await fetch(isClient ? '/api/deepseek/proxy' : this.API_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        ...(isClient ? { 'Content-Type': 'application/json' } : {
+          'Authorization': `Bearer ${this.API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        })
       },
-      body: JSON.stringify({
-        model: 'deepseek-chat',
+      body: JSON.stringify(isClient ? {
         messages: [
-          {
-            role: 'system',
-            content: `You are an AI assistant helping a user understand and analyze their audio transcription. 
+          { role: 'system', content: `You are an AI assistant helping a user understand and analyze their audio transcription. 
 
 TRANSCRIPTION CONTEXT:
 ${job.transcriptionText.substring(0, 2000)}${job.transcriptionText.length > 2000 ? '...' : ''}
@@ -425,12 +425,28 @@ INSTRUCTIONS:
 - Be helpful, accurate, and conversational
 - If asked about something not in the transcription, politely say so
 - Keep responses concise but informative
-- Use the transcription context to provide relevant answers`
-          },
-          {
-            role: 'user',
-            content: job.prompt
-          }
+- Use the transcription context to provide relevant answers` },
+          { role: 'user', content: job.prompt }
+        ],
+        max_tokens: 1500,
+        temperature: 0.7
+      } : {
+        model: 'deepseek-chat',
+        messages: [
+          { role: 'system', content: `You are an AI assistant helping a user understand and analyze their audio transcription. 
+
+TRANSCRIPTION CONTEXT:
+${job.transcriptionText.substring(0, 2000)}${job.transcriptionText.length > 2000 ? '...' : ''}
+
+INSTRUCTIONS:
+- Answer questions about the transcription content, speakers, topics, and insights
+- Help identify key themes, action items, or important points
+- Provide analysis and interpretation of the conversation
+- Be helpful, accurate, and conversational
+- If asked about something not in the transcription, politely say so
+- Keep responses concise but informative
+- Use the transcription context to provide relevant answers` },
+          { role: 'user', content: job.prompt }
         ],
         max_tokens: 1500,
         temperature: 0.7,
@@ -479,24 +495,28 @@ INSTRUCTIONS:
       transcriptionTextInPrompt: prompt.includes(job.transcriptionText)
     });
 
-    const response = await fetch(this.API_ENDPOINT, {
+    const isClient = typeof window !== 'undefined';
+    const response = await fetch(isClient ? '/api/deepseek/proxy' : this.API_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        ...(isClient ? { 'Content-Type': 'application/json' } : {
+          'Authorization': `Bearer ${this.API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        })
       },
-      body: JSON.stringify({
+      body: JSON.stringify(isClient ? {
+        messages: [
+          { role: 'system', content: 'You are a professional transcription summarizer. Return ONLY the summary content without any preamble, commentary, or introductory phrases. Start directly with the summary. Do not say "Of course" or "Here is" or any other preamble.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 1000,
+        temperature: 0.3
+      } : {
         model: 'deepseek-chat',
         messages: [
-          {
-            role: 'system',
-            content: 'You are a professional transcription summarizer. Return ONLY the summary content without any preamble, commentary, or introductory phrases. Start directly with the summary. Do not say "Of course" or "Here is" or any other preamble.'
-          },
-          {
-            role: 'user',
-            content: prompt
-          }
+          { role: 'system', content: 'You are a professional transcription summarizer. Return ONLY the summary content without any preamble, commentary, or introductory phrases. Start directly with the summary. Do not say "Of course" or "Here is" or any other preamble.' },
+          { role: 'user', content: prompt }
         ],
         max_tokens: 1000,
         temperature: 0.3,
@@ -552,24 +572,28 @@ INSTRUCTIONS:
 
     console.log('📝 Final Prompt Being Sent:', finalPrompt);
 
-    const response = await fetch(this.API_ENDPOINT, {
+    const isClient = typeof window !== 'undefined';
+    const response = await fetch(isClient ? '/api/deepseek/proxy' : this.API_ENDPOINT, {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${this.API_KEY}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/json'
+        ...(isClient ? { 'Content-Type': 'application/json' } : {
+          'Authorization': `Bearer ${this.API_KEY}`,
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        })
       },
-      body: JSON.stringify({
+      body: JSON.stringify(isClient ? {
+        messages: [
+          { role: 'system', content: `You are an expert content creator and marketer. Create high-quality, engaging content that is ready to publish. ${job.maxWords ? `STRICT REQUIREMENT: Your response must be MAXIMUM ${job.maxWords} words. Count carefully and stop at exactly ${job.maxWords} words or less.` : ''} IMPORTANT: Return ONLY the final content without any preamble, explanations, or remarks like "Here is..." or "Of course...". Start directly with the content itself.` },
+          { role: 'user', content: `${finalPrompt}\n\nTranscript:\n${job.transcriptionText}\n\nIMPORTANT: Return ONLY the content. Do not include any introductory phrases, explanations, or meta-commentary. Start with the actual content immediately.${job.maxWords ? ` MAXIMUM ${job.maxWords} WORDS.` : ''}` }
+        ],
+        temperature: 0.7,
+        max_tokens: 4000
+      } : {
         model: 'deepseek-chat',
         messages: [
-          {
-            role: 'system',
-            content: `You are an expert content creator and marketer. Create high-quality, engaging content that is ready to publish. ${job.maxWords ? `STRICT REQUIREMENT: Your response must be MAXIMUM ${job.maxWords} words. Count carefully and stop at exactly ${job.maxWords} words or less.` : ''} IMPORTANT: Return ONLY the final content without any preamble, explanations, or remarks like "Here is..." or "Of course...". Start directly with the content itself.`
-          },
-          {
-            role: 'user',
-            content: `${finalPrompt}\n\nTranscript:\n${job.transcriptionText}\n\nIMPORTANT: Return ONLY the content. Do not include any introductory phrases, explanations, or meta-commentary. Start with the actual content immediately.${job.maxWords ? ` MAXIMUM ${job.maxWords} WORDS.` : ''}`
-          }
+          { role: 'system', content: `You are an expert content creator and marketer. Create high-quality, engaging content that is ready to publish. ${job.maxWords ? `STRICT REQUIREMENT: Your response must be MAXIMUM ${job.maxWords} words. Count carefully and stop at exactly ${job.maxWords} words or less.` : ''} IMPORTANT: Return ONLY the final content without any preamble, explanations, or remarks like "Here is..." or "Of course...". Start directly with the content itself.` },
+          { role: 'user', content: `${finalPrompt}\n\nTranscript:\n${job.transcriptionText}\n\nIMPORTANT: Return ONLY the content. Do not include any introductory phrases, explanations, or meta-commentary. Start with the actual content immediately.${job.maxWords ? ` MAXIMUM ${job.maxWords} WORDS.` : ''}` }
         ],
         temperature: 0.7,
         max_tokens: 4000
