@@ -35,9 +35,53 @@ const requiredFirebaseFields = [
   'NEXT_PUBLIC_FIREBASE_APP_ID'
 ];
 
-// Validate Firebase environment variables on client-side before initialization
-// Only validate on client-side to avoid server-side issues
+// Debug: Log all environment variables at runtime to see what's available
 if (typeof window !== 'undefined') {
+  console.log('🔍 [DEBUG] Runtime Environment Variables Check:');
+  console.log('================================================');
+  
+  // Check all Firebase variables
+  const firebaseVars = {
+    'NEXT_PUBLIC_FIREBASE_API_KEY': NEXT_PUBLIC_FIREBASE_API_KEY,
+    'NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN': NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+    'NEXT_PUBLIC_FIREBASE_PROJECT_ID': NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    'NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET': NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+    'NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID': NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+    'NEXT_PUBLIC_FIREBASE_APP_ID': NEXT_PUBLIC_FIREBASE_APP_ID,
+    'NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID': NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+  };
+
+  Object.entries(firebaseVars).forEach(([key, value]) => {
+    const status = value && value.trim() ? '✅' : '❌';
+    const preview = value ? (value.length > 20 ? `${value.substring(0, 20)}...` : value) : 'MISSING';
+    console.log(`${status} ${key}: ${preview}`);
+  });
+
+  // Check other NEXT_PUBLIC_ variables
+  console.log('\n🔍 [DEBUG] Other NEXT_PUBLIC_ Variables:');
+  console.log('================================================');
+  const otherVars = [
+    'NEXT_PUBLIC_APP_URL',
+    'NEXT_PUBLIC_DEEPSEEK_API_KEY',
+    'NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT',
+    'NEXT_PUBLIC_ADMIN_EMAILS',
+  ];
+
+  otherVars.forEach(key => {
+    const value = process.env[key];
+    const status = value ? '✅' : '❌';
+    const preview = value ? (value.length > 20 ? `${value.substring(0, 20)}...` : value) : 'MISSING';
+    console.log(`${status} ${key}: ${preview}`);
+  });
+
+  console.log('\n🔍 [DEBUG] Direct process.env check:');
+  console.log('================================================');
+  console.log('process.env.NEXT_PUBLIC_FIREBASE_API_KEY:', process.env.NEXT_PUBLIC_FIREBASE_API_KEY);
+  console.log('process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN);
+  console.log('process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID);
+  console.log('================================================\n');
+
+  // Validate Firebase environment variables on client-side before initialization
   const envVars = {
     NEXT_PUBLIC_FIREBASE_API_KEY,
     NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
