@@ -3,9 +3,12 @@ import { getStorage } from "firebase/storage";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
-// DEBUG: Log Firebase env vars during build to diagnose Vercel issues
+// DEBUG: Log ALL env vars during build to diagnose Vercel issues
 if (typeof window === 'undefined') {
-  console.log('🔍 [FIREBASE BUILD DEBUG] Checking environment variables:');
+  console.log('🔍 ===== COMPREHENSIVE ENVIRONMENT VARIABLES BUILD DEBUG =====');
+  
+  // Firebase variables
+  console.log('🔥 [FIREBASE] Environment Variables:');
   console.log('NEXT_PUBLIC_FIREBASE_API_KEY:', process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 15)}...` : 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'MISSING');
@@ -13,7 +16,63 @@ if (typeof window === 'undefined') {
   console.log('NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID:', process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID || 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_APP_ID:', process.env.NEXT_PUBLIC_FIREBASE_APP_ID || 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID:', process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || 'MISSING');
-  console.log('All env keys (NEXT_PUBLIC_FIREBASE_*):', Object.keys(process.env).filter(k => k.startsWith('NEXT_PUBLIC_FIREBASE_')));
+  
+  // API Keys
+  console.log('🔑 [API KEYS] Environment Variables:');
+  console.log('RUNPOD_API_KEY:', process.env.RUNPOD_API_KEY ? `${process.env.RUNPOD_API_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('HUGGINGFACE_TOKEN:', process.env.HUGGINGFACE_TOKEN ? `${process.env.HUGGINGFACE_TOKEN.substring(0, 10)}...` : 'MISSING');
+  console.log('DEEPSEEK_API_KEY:', process.env.DEEPSEEK_API_KEY ? `${process.env.DEEPSEEK_API_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('NEXT_PUBLIC_DEEPSEEK_API_KEY:', process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY ? `${process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY.substring(0, 10)}...` : 'MISSING');
+  
+  // RunPod Endpoints
+  console.log('🚀 [RUNPOD] Environment Variables:');
+  console.log('RUNPOD_ENDPOINT_WITH_STORAGE:', process.env.RUNPOD_ENDPOINT_WITH_STORAGE || 'MISSING');
+  console.log('RUNPOD_ENDPOINT_NO_STORAGE:', process.env.RUNPOD_ENDPOINT_NO_STORAGE || 'MISSING');
+  console.log('RUNPOD_TTS_ENDPOINT:', process.env.RUNPOD_TTS_ENDPOINT || 'MISSING');
+  console.log('RUNPOD_VOICE_TRANSFER_ENDPOINT:', process.env.RUNPOD_VOICE_TRANSFER_ENDPOINT || 'MISSING');
+  console.log('RUNPOD_BASE_URL:', process.env.RUNPOD_BASE_URL || 'MISSING');
+  
+  // API Endpoints
+  console.log('🌐 [API ENDPOINTS] Environment Variables:');
+  console.log('DEEPSEEK_API_ENDPOINT:', process.env.DEEPSEEK_API_ENDPOINT || 'MISSING');
+  console.log('NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT:', process.env.NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT || 'MISSING');
+  
+  // App URL
+  console.log('🔗 [APP URL] Environment Variables:');
+  console.log('NEXT_PUBLIC_APP_URL:', process.env.NEXT_PUBLIC_APP_URL || 'MISSING');
+  
+  // Stripe
+  console.log('💳 [STRIPE] Environment Variables:');
+  console.log('STRIPE_SECRET_KEY:', process.env.STRIPE_SECRET_KEY ? `${process.env.STRIPE_SECRET_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY:', process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ? `${process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('STRIPE_WEBHOOK_SECRET:', process.env.STRIPE_WEBHOOK_SECRET ? `${process.env.STRIPE_WEBHOOK_SECRET.substring(0, 10)}...` : 'MISSING');
+  
+  // Stripe Price IDs
+  console.log('💰 [STRIPE PRICES] Environment Variables:');
+  console.log('STRIPE_PRICE_SOLO:', process.env.STRIPE_PRICE_SOLO || 'MISSING');
+  console.log('STRIPE_PRICE_TEAM:', process.env.STRIPE_PRICE_TEAM || 'MISSING');
+  console.log('STRIPE_PRICE_AGENCY:', process.env.STRIPE_PRICE_AGENCY || 'MISSING');
+  console.log('STRIPE_PRICE_TRANSCRIPTION_ONLY:', process.env.STRIPE_PRICE_TRANSCRIPTION_ONLY || 'MISSING');
+  console.log('STRIPE_PRICE_CREATOR:', process.env.STRIPE_PRICE_CREATOR || 'MISSING');
+  console.log('STRIPE_PRICE_PRO:', process.env.STRIPE_PRICE_PRO || 'MISSING');
+  console.log('STRIPE_PRICE_STUDIO:', process.env.STRIPE_PRICE_STUDIO || 'MISSING');
+  console.log('STRIPE_PRICE_BOOST_5K:', process.env.STRIPE_PRICE_BOOST_5K || 'MISSING');
+  console.log('STRIPE_PRICE_BOOST_10K:', process.env.STRIPE_PRICE_BOOST_10K || 'MISSING');
+  console.log('STRIPE_PRICE_BOOST_50K:', process.env.STRIPE_PRICE_BOOST_50K || 'MISSING');
+  console.log('NEXT_PUBLIC_STRIPE_PRICE_SOLO:', process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || 'MISSING');
+  console.log('NEXT_PUBLIC_STRIPE_PRICE_TEAM:', process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM || 'MISSING');
+  console.log('NEXT_PUBLIC_STRIPE_PRICE_AGENCY:', process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY || 'MISSING');
+  
+  // Admin
+  console.log('👑 [ADMIN] Environment Variables:');
+  console.log('ADMIN_EMAILS:', process.env.ADMIN_EMAILS || 'MISSING');
+  console.log('NEXT_PUBLIC_ADMIN_EMAILS:', process.env.NEXT_PUBLIC_ADMIN_EMAILS || 'MISSING');
+  
+  // Environment
+  console.log('🌍 [ENVIRONMENT] Variables:');
+  console.log('NODE_ENV:', process.env.NODE_ENV || 'MISSING');
+  
+  console.log('🔍 ===== END COMPREHENSIVE ENVIRONMENT VARIABLES DEBUG =====');
 }
 
 // Extract env vars to constants to ensure Next.js embeds them in client bundle
