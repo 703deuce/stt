@@ -286,9 +286,32 @@ class RunPodFallbackService {
   }
 }
 
-// Export singleton instance
-export const runpodFallbackService = new RunPodFallbackService(
-    process.env.RUNPOD_API_KEY || (() => { throw new Error('RUNPOD_API_KEY environment variable is required'); })()
-);
+// Lazy singleton instance - only created when first used
+// This prevents build-time errors when env vars aren't available during build
+let runpodFallbackServiceInstance: RunPodFallbackService | null = null;
+
+const getRunpodFallbackService = (): RunPodFallbackService => {
+  if (!runpodFallbackServiceInstance) {
+    const apiKey = process.env.RUNPOD_API_KEY;
+    if (!apiKey) {
+      throw new Error('RUNPOD_API_KEY environment variable is required');
+    }
+    runpodFallbackServiceInstance = new RunPodFallbackService(apiKey);
+  }
+  return runpodFallbackServiceInstance;
+};
+
+// Proxy object that lazily creates the service only when a method is called
+// This prevents module-level execution during build time
+export const runpodFallbackService = new Proxy({} as RunPodFallbackService, {
+  get(target, prop) {
+    const service = getRunpodFallbackService();
+    const value = (service as any)[prop];
+    if (typeof value === 'function') {
+      return value.bind(service);
+    }
+    return value;
+  }
+});
 
 export default runpodFallbackService;
