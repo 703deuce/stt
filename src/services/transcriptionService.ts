@@ -6,15 +6,38 @@ import { jobMappingService } from './jobMappingService';
 import { runpodFallbackService } from './runpodFallbackService';
 
 // API Configuration
+// DEBUG: Log available env vars during build to diagnose Vercel issues
+if (typeof window === 'undefined') {
+  console.log('🔍 [BUILD DEBUG] Environment variables check:');
+  console.log('RUNPOD_API_KEY:', process.env.RUNPOD_API_KEY ? `${process.env.RUNPOD_API_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('HUGGINGFACE_TOKEN:', process.env.HUGGINGFACE_TOKEN ? `${process.env.HUGGINGFACE_TOKEN.substring(0, 10)}...` : 'MISSING');
+  console.log('RUNPOD_ENDPOINT_WITH_STORAGE:', process.env.RUNPOD_ENDPOINT_WITH_STORAGE || 'MISSING');
+  console.log('RUNPOD_ENDPOINT_NO_STORAGE:', process.env.RUNPOD_ENDPOINT_NO_STORAGE || 'MISSING');
+  console.log('RUNPOD_BASE_URL:', process.env.RUNPOD_BASE_URL || 'MISSING');
+  console.log('All env keys (RUNPOD_*):', Object.keys(process.env).filter(k => k.startsWith('RUNPOD_')));
+  console.log('All env keys (DEEPSEEK_*):', Object.keys(process.env).filter(k => k.startsWith('DEEPSEEK_')));
+  console.log('Total env vars:', Object.keys(process.env).length);
+}
+
 const RUNPOD_ENDPOINT_ID = process.env.RUNPOD_ENDPOINT_WITH_STORAGE;
 const RUNPOD_BASE_URL = process.env.RUNPOD_BASE_URL || 'https://api.runpod.ai/v2';
 const RUNPOD_ENDPOINT = RUNPOD_ENDPOINT_ID ? `${RUNPOD_BASE_URL}/${RUNPOD_ENDPOINT_ID}/run` : undefined;
 const API_KEY = process.env.RUNPOD_API_KEY;
 const HF_TOKEN = process.env.HUGGINGFACE_TOKEN;
 
-if (!API_KEY) throw new Error('RUNPOD_API_KEY is required');
-if (!HF_TOKEN) throw new Error('HUGGINGFACE_TOKEN is required');
-if (!RUNPOD_ENDPOINT) throw new Error('RUNPOD_ENDPOINT_WITH_STORAGE is required');
+if (!API_KEY) {
+  console.error('❌ [BUILD ERROR] RUNPOD_API_KEY is missing!');
+  console.error('Available env vars:', Object.keys(process.env).sort().join(', '));
+  throw new Error('RUNPOD_API_KEY is required');
+}
+if (!HF_TOKEN) {
+  console.error('❌ [BUILD ERROR] HUGGINGFACE_TOKEN is missing!');
+  throw new Error('HUGGINGFACE_TOKEN is required');
+}
+if (!RUNPOD_ENDPOINT) {
+  console.error('❌ [BUILD ERROR] RUNPOD_ENDPOINT_WITH_STORAGE is missing!');
+  throw new Error('RUNPOD_ENDPOINT_WITH_STORAGE is required');
+}
 
 // Validate API configuration
 console.log('🔧 ===== TRANSCRIPTION SERVICE CONFIGURATION =====');

@@ -286,32 +286,22 @@ class RunPodFallbackService {
   }
 }
 
-// Lazy singleton instance - only created when first used
-// This prevents build-time errors when env vars aren't available during build
-let runpodFallbackServiceInstance: RunPodFallbackService | null = null;
+// DEBUG: Log env vars during build to diagnose Vercel issues
+if (typeof window === 'undefined') {
+  console.log('🔍 [RUNPOD SERVICE BUILD DEBUG] Checking environment variables:');
+  console.log('RUNPOD_API_KEY:', process.env.RUNPOD_API_KEY ? `${process.env.RUNPOD_API_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('RUNPOD_ENDPOINT_WITH_STORAGE:', process.env.RUNPOD_ENDPOINT_WITH_STORAGE || 'MISSING');
+  console.log('RUNPOD_ENDPOINT_NO_STORAGE:', process.env.RUNPOD_ENDPOINT_NO_STORAGE || 'MISSING');
+  console.log('RUNPOD_BASE_URL:', process.env.RUNPOD_BASE_URL || 'MISSING');
+}
 
-const getRunpodFallbackService = (): RunPodFallbackService => {
-  if (!runpodFallbackServiceInstance) {
-    const apiKey = process.env.RUNPOD_API_KEY;
-    if (!apiKey) {
-      throw new Error('RUNPOD_API_KEY environment variable is required');
-    }
-    runpodFallbackServiceInstance = new RunPodFallbackService(apiKey);
-  }
-  return runpodFallbackServiceInstance;
-};
-
-// Proxy object that lazily creates the service only when a method is called
-// This prevents module-level execution during build time
-export const runpodFallbackService = new Proxy({} as RunPodFallbackService, {
-  get(target, prop) {
-    const service = getRunpodFallbackService();
-    const value = (service as any)[prop];
-    if (typeof value === 'function') {
-      return value.bind(service);
-    }
-    return value;
-  }
-});
+// Export singleton instance
+export const runpodFallbackService = new RunPodFallbackService(
+    process.env.RUNPOD_API_KEY || (() => { 
+      console.error('❌ [RUNPOD SERVICE BUILD ERROR] RUNPOD_API_KEY is missing!');
+      console.error('Available env vars:', Object.keys(process.env).filter(k => k.includes('RUNPOD')).join(', '));
+      throw new Error('RUNPOD_API_KEY environment variable is required'); 
+    })()
+);
 
 export default runpodFallbackService;
