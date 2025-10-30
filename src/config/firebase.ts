@@ -84,6 +84,16 @@ const NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID = process.env.NEXT_PUBLIC_FIREBAS
 const NEXT_PUBLIC_FIREBASE_APP_ID = process.env.NEXT_PUBLIC_FIREBASE_APP_ID || '';
 const NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID = process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID || '';
 
+// Extract other NEXT_PUBLIC_ variables that client components need
+const NEXT_PUBLIC_APP_URL = process.env.NEXT_PUBLIC_APP_URL || '';
+const NEXT_PUBLIC_DEEPSEEK_API_KEY = process.env.NEXT_PUBLIC_DEEPSEEK_API_KEY || '';
+const NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT = process.env.NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT || '';
+const NEXT_PUBLIC_ADMIN_EMAILS = process.env.NEXT_PUBLIC_ADMIN_EMAILS || '';
+const NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY || '';
+const NEXT_PUBLIC_STRIPE_PRICE_SOLO = process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || '';
+const NEXT_PUBLIC_STRIPE_PRICE_TEAM = process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM || '';
+const NEXT_PUBLIC_STRIPE_PRICE_AGENCY = process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY || '';
+
 const firebaseConfig = {
   apiKey: NEXT_PUBLIC_FIREBASE_API_KEY,
   authDomain: NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
@@ -188,5 +198,17 @@ export const auth = getAuth(app);
 
 // Initialize Firestore
 export const db = getFirestore(app, 'ttss'); // Use the correct database name 'ttss'
+
+// Export other NEXT_PUBLIC_ variables for client components
+export {
+  NEXT_PUBLIC_APP_URL,
+  NEXT_PUBLIC_DEEPSEEK_API_KEY,
+  NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT,
+  NEXT_PUBLIC_ADMIN_EMAILS,
+  NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY,
+  NEXT_PUBLIC_STRIPE_PRICE_SOLO,
+  NEXT_PUBLIC_STRIPE_PRICE_TEAM,
+  NEXT_PUBLIC_STRIPE_PRICE_AGENCY
+};
 
 export default app;
