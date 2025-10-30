@@ -142,18 +142,17 @@ if (typeof window !== 'undefined') {
   // Check other NEXT_PUBLIC_ variables
   console.log('\n🔍 [DEBUG] Other NEXT_PUBLIC_ Variables:');
   console.log('================================================');
-  const otherVars = [
-    'NEXT_PUBLIC_APP_URL',
-    'NEXT_PUBLIC_DEEPSEEK_API_KEY',
-    'NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT',
-    'NEXT_PUBLIC_ADMIN_EMAILS',
-  ];
+  const otherClientVars = {
+    'NEXT_PUBLIC_APP_URL': NEXT_PUBLIC_APP_URL,
+    'NEXT_PUBLIC_DEEPSEEK_API_KEY': NEXT_PUBLIC_DEEPSEEK_API_KEY,
+    'NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT': NEXT_PUBLIC_DEEPSEEK_API_ENDPOINT,
+    'NEXT_PUBLIC_ADMIN_EMAILS': NEXT_PUBLIC_ADMIN_EMAILS,
+  } as Record<string, string>;
 
-  otherVars.forEach(key => {
-    const value = process.env[key];
-    const status = value ? '✅' : '❌';
-    const preview = value ? (value.length > 20 ? `${value.substring(0, 20)}...` : value) : 'MISSING';
-    console.log(`${status} ${key}: ${preview}`);
+  Object.entries(otherClientVars).forEach(([key, value]) => {
+    const ok = value && value.trim();
+    const preview = ok ? (value.length > 20 ? `${value.substring(0, 20)}...` : value) : 'MISSING';
+    console.log(`${ok ? '✅' : '❌'} ${key}: ${preview}`);
   });
 
   console.log('\n🔍 [DEBUG] Direct process.env check:');
