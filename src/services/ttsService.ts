@@ -10,10 +10,12 @@ import { auth } from '../config/firebase';
 const RUNPOD_TTS_ENDPOINT_ID = process.env.RUNPOD_TTS_ENDPOINT;
 const RUNPOD_BASE_URL = process.env.RUNPOD_BASE_URL || 'https://api.runpod.ai/v2';
 const HIGGS_ENDPOINT = RUNPOD_TTS_ENDPOINT_ID ? `${RUNPOD_BASE_URL}/${RUNPOD_TTS_ENDPOINT_ID}/run` : undefined;
-const API_KEY = process.env.RUNPOD_API_KEY;
+const API_KEY = typeof window === 'undefined' ? process.env.RUNPOD_API_KEY : undefined;
 
-if (!API_KEY) throw new Error('RUNPOD_API_KEY is required');
-if (!HIGGS_ENDPOINT) throw new Error('RUNPOD_TTS_ENDPOINT is required');
+if (typeof window === 'undefined') {
+  if (!API_KEY) throw new Error('RUNPOD_API_KEY is required');
+  if (!HIGGS_ENDPOINT) throw new Error('RUNPOD_TTS_ENDPOINT is required');
+}
 
 export interface TTSRequest {
   text: string;
@@ -76,8 +78,8 @@ export interface TTSJobResult {
 class TTSService {
   private headers = {
     'Content-Type': 'application/json',
-    'Authorization': `Bearer ${API_KEY}`
-  };
+    ...(API_KEY ? { 'Authorization': `Bearer ${API_KEY}` } : {})
+  } as Record<string,string>;
 
   /**
    * Get all available voices (regular + custom cloned)
