@@ -45,9 +45,9 @@ if (typeof window === 'undefined') {
 // Validate API configuration
 console.log('🔧 ===== TRANSCRIPTION SERVICE CONFIGURATION =====');
 console.log('🔗 RunPod Endpoint:', RUNPOD_ENDPOINT);
-console.log('🔑 API Key (first 10 chars):', API_KEY.substring(0, 10) + '...');
-console.log('🔑 API Key length:', API_KEY.length);
-console.log('🔑 HF Token (first 10 chars):', HF_TOKEN.substring(0, 10) + '...');
+console.log('🔑 API Key (first 10 chars):', API_KEY ? API_KEY.substring(0, 10) + '...' : 'MISSING');
+console.log('🔑 API Key length:', API_KEY ? API_KEY.length : 0);
+console.log('🔑 HF Token (first 10 chars):', HF_TOKEN ? HF_TOKEN.substring(0, 10) + '...' : 'MISSING');
 console.log('🔧 Configuration loaded successfully');
 
 export interface TranscriptionRequest {
