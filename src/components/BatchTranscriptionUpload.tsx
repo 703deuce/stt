@@ -660,14 +660,14 @@ export default function BatchTranscriptionUpload() {
         const chunkResult = await clientTranscriptionService.transcribeAudio(
           {
             audio_url: chunkUploadResult.url,
-            audio_format: 'wav',
-            include_timestamps: true,
-            use_diarization: false  // ✅ No diarization per chunk - handled at full audio level
+            filename: `${originalName}_chunk_${i + 1}`
           },
-          `${originalName}_chunk_${i + 1}`,
-          undefined,
-          (chunkStatus) => {
-            console.log(`${originalName} Chunk ${i + 1}: ${chunkStatus}`);
+          {
+            use_diarization: false,
+            max_speakers: null,
+            include_timestamps: true,
+            speaker_threshold: 0.35,
+            single_speaker_mode: false
           }
         );
         

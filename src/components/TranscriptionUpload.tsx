@@ -223,13 +223,13 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       } else {
         // Regular audio file
         console.log('🎵 Audio file detected, proceeding with validation...');
-        const validation = transcriptionService.validateAudioFile(file);
-        console.log('🔍 Validation result:', validation);
-        if (!validation.valid) {
-          console.log('❌ File validation failed:', validation.error);
-          alert(validation.error);
+        // Simple client-side validation
+        if (!file || file.size === 0) {
+          console.log('❌ File validation failed: Invalid file');
+          alert('Please select a valid file');
           return;
         }
+        console.log('✅ File validation passed');
         console.log('✅ File validation passed, setting file in state...');
         setSelectedFile(file);
         setExtractedAudioFile(null); // No extracted audio for regular files
@@ -275,9 +275,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         }
       } else {
         // Regular audio file
-        const validation = transcriptionService.validateAudioFile(file);
-        if (!validation.valid) {
-          alert(validation.error);
+        if (!file || file.size === 0) {
+          alert('Please select a valid file');
           return;
         }
         setSelectedFile(file);
@@ -740,14 +739,14 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         const chunkResult = await clientTranscriptionService.transcribeAudio(
           {
             audio_url: chunkUploadResult.url,
-            audio_format: 'wav',
-            include_timestamps: true,
-            use_diarization: false  // ✅ No diarization per chunk - handled at full audio level
+            filename: `chunk_${i + 1}`
           },
-          `chunk_${i + 1}`,
-          undefined,
-          (chunkStatus) => {
-            console.log(`Chunk ${i + 1}: ${chunkStatus}`);
+          {
+            use_diarization: false,
+            max_speakers: null,
+            include_timestamps: true,
+            speaker_threshold: 0.35,
+            single_speaker_mode: false
           }
         );
         
@@ -885,8 +884,14 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const testAPIConnection = async () => {
     console.log('🧪 ===== TESTING API CONNECTION =====');
     try {
-      const isConnected = await transcriptionService.testAPIConnection();
-      if (isConnected) {
+      // Simple test by calling the API endpoint
+      const response = await fetch('/api/transcribe-audio', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ test: true })
+      });
+      
+      if (response.ok || response.status === 400) { // 400 is expected for test calls
         alert('✅ API connection test successful!');
       } else {
         alert('❌ API connection test failed. Check console for details.');
