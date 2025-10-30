@@ -5,8 +5,8 @@ import { getFirestore } from "firebase/firestore";
 
 // DEBUG: Log Firebase env vars during build to diagnose Vercel issues
 if (typeof window === 'undefined') {
-  console.log('🔍 [FIREBASE BUILD DEBUG] Checking Firebase environment variables:');
-  console.log('NEXT_PUBLIC_FIREBASE_API_KEY:', process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 10)}...` : 'MISSING');
+  console.log('🔍 [FIREBASE BUILD DEBUG] Checking environment variables:');
+  console.log('NEXT_PUBLIC_FIREBASE_API_KEY:', process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? `${process.env.NEXT_PUBLIC_FIREBASE_API_KEY.substring(0, 15)}...` : 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN:', process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_PROJECT_ID:', process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'MISSING');
   console.log('NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET:', process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET || 'MISSING');
