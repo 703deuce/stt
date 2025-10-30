@@ -32,7 +32,15 @@ export interface ChatJobResponse {
 }
 
 class AIChatService {
-  private readonly API_KEY = typeof window === 'undefined' ? (process.env.DEEPSEEK_API_KEY || '').trim() : null;
+  private readonly API_KEY = typeof window === 'undefined'
+    ? (() => {
+        let key = (process.env.DEEPSEEK_API_KEY || '').trim();
+        if (key.toLowerCase().startsWith('bearer ')) {
+          key = key.slice(7).trim();
+        }
+        return key;
+      })()
+    : null;
   private readonly API_ENDPOINT = process.env.DEEPSEEK_API_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions';
 
   constructor() {

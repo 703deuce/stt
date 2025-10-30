@@ -41,7 +41,13 @@ class DeepSeekBackgroundProcessingService {
   private maxConcurrentJobs = 50; // Increased for 500+ user capacity
   private activeJobs = 0;
 
-  private API_KEY = (process.env.DEEPSEEK_API_KEY || '').trim();
+  private API_KEY = (() => {
+    let key = (process.env.DEEPSEEK_API_KEY || '').trim();
+    if (key.toLowerCase().startsWith('bearer ')) {
+      key = key.slice(7).trim();
+    }
+    return key;
+  })();
   private API_ENDPOINT = process.env.DEEPSEEK_API_ENDPOINT || 'https://api.deepseek.com/v1/chat/completions';
 
   constructor() {
