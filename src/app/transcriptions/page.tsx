@@ -1,44 +1,15 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
 import TranscriptionUpload from '@/components/TranscriptionUpload';
 import RecentTranscriptions from '@/components/RecentTranscriptions';
-import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { Mic, Upload, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
-  
-  // Onboarding for transcription upload page
-  const { OnboardingComponent } = usePageOnboarding({
-    pageId: 'transcriptions-upload',
-    steps: [
-      {
-        id: 'upload-area',
-        targetId: 'transcription-upload-area',
-        title: 'Upload Your Audio/Video',
-        description: 'Drag and drop your audio or video file here, or click to browse. We support MP3, WAV, M4A, MP4, MOV, and more. No file size limits!',
-        position: 'bottom'
-      },
-      {
-        id: 'settings',
-        targetId: 'transcription-settings',
-        title: 'Configure Transcription Settings',
-        description: 'Enable speaker diarization to identify who spoke when, and include timestamps for precise word-level timing. These settings help create professional transcripts.',
-        position: 'top'
-      },
-      {
-        id: 'tabs',
-        targetId: 'transcription-tabs',
-        title: 'Switch Between Upload & Recent',
-        description: 'Use these tabs to switch between creating new transcriptions and viewing your recent ones. Completed transcriptions appear in the Recent tab.',
-        position: 'bottom'
-      }
-    ]
-  });
 
   if (loading) {
     return (
@@ -65,7 +36,6 @@ export default function TranscriptionsPage() {
 
   return (
     <Layout>
-      <OnboardingComponent />
       <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="mb-8">

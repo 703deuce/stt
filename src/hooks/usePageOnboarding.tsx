@@ -59,8 +59,13 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
     }
   }, [pageId, autoStart, steps.length]);
 
-  const handleComplete = () => {
-    if (currentStepIndex === null || currentStepIndex === steps.length - 1) {
+  const handleComplete = (dontShowAgain: boolean = false) => {
+    if (dontShowAgain) {
+      // Dismiss entire onboarding for this page
+      dismissPage(pageId);
+      setIsActive(false);
+      setCurrentStepIndex(null);
+    } else if (currentStepIndex === null || currentStepIndex === steps.length - 1) {
       // Last step or no step
       markPageAsSeen(pageId);
       setIsActive(false);
@@ -71,10 +76,22 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
     }
   };
 
-  const handleDismiss = () => {
-    dismissPage(pageId);
-    setIsActive(false);
-    setCurrentStepIndex(null);
+  const handleDismiss = (dontShowAgain: boolean = false) => {
+    if (dontShowAgain) {
+      // Dismiss entire onboarding for this page
+      dismissPage(pageId);
+      setIsActive(false);
+      setCurrentStepIndex(null);
+    } else {
+      // Just skip current step and move to next
+      if (currentStepIndex !== null && currentStepIndex < steps.length - 1) {
+        setCurrentStepIndex(currentStepIndex + 1);
+      } else {
+        // Last step, just close
+        setIsActive(false);
+        setCurrentStepIndex(null);
+      }
+    }
   };
 
   const startOnboarding = () => {
