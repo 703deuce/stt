@@ -31,10 +31,10 @@ export default function AuthForm() {
     }
   }, []);
 
-  // Redirect authenticated users to home page
+  // Redirect authenticated users to dashboard
   useEffect(() => {
     if (user) {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, router]);
 

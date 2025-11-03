@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
+import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { databaseService, STTRecord } from '@/services/databaseService';
 import { backgroundContentService } from '@/services/backgroundContentService';
 import { contentLimitService } from '@/services/contentLimitService';
@@ -329,6 +330,42 @@ export default function ContentRepurposingPage() {
   const [copied, setCopied] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [showCustomInstructions, setShowCustomInstructions] = useState(false);
+  
+  // Onboarding for content repurposing page
+  const { OnboardingComponent } = usePageOnboarding({
+    pageId: 'content-repurposing',
+    steps: [
+      {
+        id: 'select-transcription',
+        targetId: 'transcription-selector',
+        title: 'Select a Transcription',
+        description: 'Choose a completed transcription from the list on the left. Only transcriptions with completed status are available for content generation.',
+        position: 'right'
+      },
+      {
+        id: 'select-category',
+        targetId: 'content-category-selector',
+        title: 'Choose Content Category',
+        description: 'Select a category (Social Media, Long-Form Written, etc.) to see available content types. Each category offers different formats like blog posts, social media posts, and more.',
+        position: 'bottom'
+      },
+      {
+        id: 'select-type',
+        targetId: 'content-type-selector',
+        title: 'Pick a Content Type',
+        description: 'Choose the specific format you want to create. Each type uses a proven framework (AIDA, BAB, etc.) to structure your content professionally.',
+        position: 'bottom'
+      },
+      {
+        id: 'custom-instructions',
+        targetId: 'custom-instructions-toggle',
+        title: 'Add Custom Instructions (Optional)',
+        description: 'Guide what the content should focus on. For example, "Focus on the marketing strategy" or "Emphasize customer benefits". This helps tailor the generated content to your specific needs.',
+        position: 'top'
+      }
+    ]
+  });
+  
   const [wordLimitStatus, setWordLimitStatus] = useState<{
     totalAvailable: number;
     monthlyLimit: number;
@@ -538,6 +575,7 @@ export default function ContentRepurposingPage() {
   return (
     <ProtectedRoute>
       <Layout>
+        <OnboardingComponent />
         <div className="p-4 sm:p-6">
           {/* Header */}
           <div className="mb-8">
@@ -578,7 +616,7 @@ export default function ContentRepurposingPage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-6">
             {/* Left Panel - Transcription Selection */}
             <div className="lg:col-span-1">
-              <div className="bg-white rounded-lg border border-gray-200 shadow-sm">
+              <div id="transcription-selector" className="bg-white rounded-lg border border-gray-200 shadow-sm">
                 <div className="p-4 border-b border-gray-200">
                   <h2 className="text-lg font-semibold text-gray-900 mb-3">Select Transcription</h2>
                   
@@ -680,7 +718,7 @@ export default function ContentRepurposingPage() {
                     </div>
                   ) : !selectedCategory ? (
                     // Category Selection
-                    <div className="space-y-3">
+                    <div id="content-category-selector" className="space-y-3">
                       <p className="text-sm font-medium text-gray-700 mb-4">Select a content category:</p>
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                         {CATEGORIES.map(category => {
@@ -708,7 +746,7 @@ export default function ContentRepurposingPage() {
                     </div>
                   ) : !selectedContentType || !generatedContent ? (
                     // Content Type Selection
-                    <div className="space-y-4">
+                    <div id="content-type-selector" className="space-y-4">
                       <div className="flex items-center justify-between mb-4">
                         <button
                           onClick={() => setSelectedCategory(null)}
@@ -723,7 +761,7 @@ export default function ContentRepurposingPage() {
                       </p>
 
                       {/* Custom Instructions Toggle */}
-                      <div className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
+                      <div id="custom-instructions-toggle" className="mb-4 p-4 bg-purple-50 border border-purple-200 rounded-lg">
                         <button
                           onClick={() => setShowCustomInstructions(!showCustomInstructions)}
                           className="flex items-center justify-between w-full text-left"
@@ -742,12 +780,12 @@ export default function ContentRepurposingPage() {
                             <textarea
                               value={customInstructions}
                               onChange={(e) => setCustomInstructions(e.target.value)}
-                              placeholder="Example: 'Make this more casual', 'Focus on the startup angle', 'Write in first person', 'Add a motivational tone', etc."
+                              placeholder="Example: 'Focus on the marketing strategy discussed', 'Emphasize the customer success story', 'Highlight the technical implementation details', 'Make it about the product launch', etc."
                               className="w-full px-3 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-sm"
                               rows={3}
                             />
                             <p className="text-xs text-purple-700">
-                              💡 Add your own creative direction to reframe, reinterpret, or adjust the angle while staying grounded in the transcript.
+                              💡 Guide what the content should be about (topic/direction). The content type above sets the format (Facebook post, blog, etc.), while your instructions here guide which aspects or topics from the transcript to emphasize.
                             </p>
                           </div>
                         )}

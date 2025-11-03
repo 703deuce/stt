@@ -4,6 +4,7 @@ import "./globals.css";
 import { AuthProvider } from "../context/AuthContext";
 import { ProgressNotificationProvider } from "../context/ProgressNotificationContext";
 import { SpeakerMappingProvider } from "../context/SpeakerMappingContext";
+import { OnboardingProvider } from "../context/OnboardingContext";
 
 // Temporarily disabled Google Fonts
 // const geistSans = Geist({
@@ -34,7 +35,9 @@ export default function RootLayout({
         <AuthProvider>
           <ProgressNotificationProvider>
             <SpeakerMappingProvider>
-              {children}
+              <OnboardingProvider>
+                {children}
+              </OnboardingProvider>
             </SpeakerMappingProvider>
           </ProgressNotificationProvider>
         </AuthProvider>

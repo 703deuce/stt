@@ -8,7 +8,6 @@ import { trialService } from '@/services/trialService';
 import { useBackgroundProcessing } from '@/hooks/useBackgroundProcessing';
 import TranscriptionResults from './TranscriptionResults';
 import UpgradeModal from './UpgradeModal';
-import RunPodFallbackTest from './RunPodFallbackTest';
 import { useProgressNotification } from '@/context/ProgressNotificationContext';
 import { auth } from '@/config/firebase';
 import { 
@@ -22,7 +21,6 @@ import {
   CheckCircle,
   AlertCircle,
   Clock,
-  TestTube,
   Mic,
   X,
   Volume2,
@@ -819,7 +817,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
     try {
       const formData = new FormData();
       formData.append('inputFile', inputFile);
-      formData.append('useSmartSplitting', useSmartSplitting.toString());
+      formData.append('useSmartSplitting', 'true'); // Always enabled
       
       const response = await fetch('/api/split-transcript-audio', {
         method: 'POST',
@@ -848,7 +846,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         },
         body: JSON.stringify({
           chunks: transcribedChunks,
-          use_voice_embeddings: useVoiceEmbeddings,
+          use_voice_embeddings: true, // Always enabled
           similarity_threshold: 0.75,
           full_audio_diarization_segments: fullAudioDiarizationSegments || [] // ✅ Pass full diarization segments
         })
@@ -881,26 +879,6 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
     }
   };
 
-  const testAPIConnection = async () => {
-    console.log('🧪 ===== TESTING API CONNECTION =====');
-    try {
-      // Simple test by calling the API endpoint
-      const response = await fetch('/api/transcribe-audio', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ test: true })
-      });
-      
-      if (response.ok || response.status === 400) { // 400 is expected for test calls
-        alert('✅ API connection test successful!');
-      } else {
-        alert('❌ API connection test failed. Check console for details.');
-      }
-    } catch (error) {
-      console.error('❌ API connection test error:', error);
-      alert('❌ API connection test error. Check console for details.');
-    }
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -943,14 +921,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   return (
     <div className="space-y-6">
       
-      {/* RunPod Fallback Test Component */}
-      <RunPodFallbackTest />
 
       {/* File Upload Section */}
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <div className="mb-4">
           <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload Audio/Video File</h3>
-          <p className="text-sm text-gray-600">Your file will be automatically uploaded to Firebase Storage for transcription. Parakeet supports both audio and video files.</p>
+          <p className="text-sm text-gray-600">Upload audio or video files for AI-powered transcription.</p>
         </div>
 
         {/* File Upload */}
@@ -1032,23 +1008,10 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           )}
         </div>
         
-        {/* Firebase Info */}
-        <div className="mt-4 p-3 bg-green-50 border border-green-200 rounded-lg">
-          <div className="flex items-start space-x-2">
-            <CheckCircle className="w-4 h-4 text-green-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-green-800">
-              <p className="font-medium">Firebase Storage Integration:</p>
-              <p className="text-xs mt-1">
-                All audio and video files are automatically uploaded to your Firebase Storage before transcription. 
-                This ensures optimal processing and no file size limits.
-              </p>
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Transcription Settings */}
-      <div className="bg-white rounded-lg border border-gray-200 p-6">
+      <div id="transcription-settings" className="bg-white rounded-lg border border-gray-200 p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Transcription Settings</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -1101,68 +1064,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             </div>
           )}
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Audio Format
-            </label>
-            <select
-              value={settings.audio_format}
-              onChange={(e) => setSettings(prev => ({ ...prev, audio_format: e.target.value }))}
-              className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-orange-500"
-            >
-              <option value="wav">WAV</option>
-              <option value="mp3">MP3</option>
-              <option value="flac">FLAC</option>
-              <option value="ogg">OGG</option>
-              <option value="m4a">M4A</option>
-            </select>
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium text-gray-700">Smart Splitting (Long Audio)</label>
-              <p className="text-sm text-gray-500">Split at silence boundaries for audio over 15 minutes</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={useSmartSplitting}
-              onChange={(e) => setUseSmartSplitting(e.target.checked)}
-              className="w-4 h-4 text-purple-500 rounded"
-            />
-          </div>
-
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium text-gray-700">Voice Embeddings (Advanced)</label>
-              <p className="text-sm text-gray-500">Use AI voice recognition for speaker consistency across chunks</p>
-            </div>
-            <input
-              type="checkbox"
-              checked={useVoiceEmbeddings}
-              onChange={(e) => setUseVoiceEmbeddings(e.target.checked)}
-              className="w-4 h-4 text-blue-500 rounded"
-            />
-          </div>
         </div>
 
-        {/* Enhanced Long Transcription Info */}
-        <div className="mt-4 p-3 bg-purple-50 border border-purple-200 rounded-lg">
-          <div className="flex items-start space-x-2">
-            <Clock className="w-4 h-4 text-purple-600 mt-0.5 flex-shrink-0" />
-            <div className="text-sm text-purple-800">
-              <p className="font-medium">Enhanced Long Audio Support:</p>
-              <p className="text-xs mt-1">
-                Files over 15 minutes are automatically chunked into intelligent segments with preserved speaker diarization and timestamps. 
-                Smart splitting avoids cutting words mid-speech for professional quality.
-              </p>
-              {useVoiceEmbeddings && (
-                <p className="text-xs mt-2 font-medium text-blue-800">
-                  🎤 Voice Embeddings: Advanced AI speaker recognition ensures the same speaker gets consistent IDs across all chunks.
-                </p>
-              )}
-            </div>
-          </div>
-        </div>
       </div>
 
       {/* Processing Status */}
@@ -1315,15 +1218,6 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
 
       {/* Action Buttons */}
       <div className="flex justify-center space-x-4">
-        {/* Test API Connection Button */}
-        <button
-          onClick={testAPIConnection}
-          className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 font-medium flex items-center space-x-2"
-        >
-          <TestTube className="w-4 h-4" />
-          <span>Test API Connection</span>
-        </button>
-
         {!isProcessing && !state.isLoading && !state.result && (
           <button
             onClick={() => {

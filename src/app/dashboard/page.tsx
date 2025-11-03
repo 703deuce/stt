@@ -9,14 +9,52 @@ import RecentTranscriptions from '@/components/RecentTranscriptions';
 import RecentContent from '@/components/RecentContent';
 import UserStats from '@/components/UserStats';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
+import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { 
   Upload,
-  ArrowRight
+  ArrowRight,
+  Sparkles,
+  FileText
 } from 'lucide-react';
 
 export default function DashboardPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  
+  // Onboarding for dashboard
+  const { OnboardingComponent } = usePageOnboarding({
+    pageId: 'dashboard',
+    steps: [
+      {
+        id: 'quick-actions',
+        targetId: 'dashboard-quick-actions',
+        title: 'Quick Actions',
+        description: 'Start here to create new transcriptions or process multiple files at once. These are the fastest ways to get started.',
+        position: 'bottom'
+      },
+      {
+        id: 'content-repurposing',
+        targetId: 'dashboard-content-repurposing-link',
+        title: 'Transform Your Transcriptions',
+        description: 'Use Content Repurposing to turn your transcriptions into 30+ content types like blog posts, social media posts, newsletters, and more. Perfect for content creators!',
+        position: 'bottom'
+      },
+      {
+        id: 'stats',
+        targetId: 'dashboard-stats',
+        title: 'Track Your Usage',
+        description: 'Monitor your transcription minutes and content generation word usage here. Keep an eye on your trial status and limits.',
+        position: 'top'
+      },
+      {
+        id: 'recent-transcriptions',
+        targetId: 'dashboard-recent-transcriptions',
+        title: 'Recent Transcriptions',
+        description: 'View your latest completed transcriptions here. Click any transcription to view details, play audio, and use AI features.',
+        position: 'top'
+      }
+    ]
+  });
 
   // Redirect to landing page if not logged in
   useEffect(() => {
@@ -43,6 +81,7 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <Layout>
+        <OnboardingComponent />
         <div className="p-6 max-w-6xl mx-auto">
           {/* Welcome Header */}
           <div className="mb-8">
@@ -56,7 +95,7 @@ export default function DashboardPage() {
           <TrialStatusBanner />
 
           {/* Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8 max-w-3xl mx-auto">
+          <div id="dashboard-quick-actions" className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
             <a 
               href="/transcriptions"
               className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow group relative"
@@ -93,12 +132,33 @@ export default function DashboardPage() {
                 <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
               </div>
             </a>
+
+            <a 
+              href="/content-repurposing"
+              id="dashboard-content-repurposing-link"
+              className="bg-white p-6 rounded-lg border border-gray-200 hover:shadow-md transition-shadow group"
+            >
+              <div className="flex items-center space-x-4">
+                <div className="w-12 h-12 bg-gradient-to-br from-pink-100 to-pink-200 rounded-xl flex items-center justify-center group-hover:from-pink-200 group-hover:to-pink-300 transition-all duration-200">
+                  <Sparkles className="w-6 h-6 text-pink-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">Content Repurposing</h3>
+                  <p className="text-gray-600 text-sm">Transform transcriptions into content</p>
+                </div>
+                <ArrowRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+              </div>
+            </a>
           </div>
           
           {/* Recent Activity */}
           <div className="space-y-6">
-            <UserStats />
-            <RecentTranscriptions />
+            <div id="dashboard-stats">
+              <UserStats />
+            </div>
+            <div id="dashboard-recent-transcriptions">
+              <RecentTranscriptions />
+            </div>
             <RecentContent />
           </div>
         </div>

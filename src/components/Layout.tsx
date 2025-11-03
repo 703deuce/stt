@@ -469,17 +469,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
                             </div>
                           </a>
 
-                          <a
-                            href="/api-keys"
-                            className="flex items-center px-4 py-2.5 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                            onClick={() => setUserMenuOpen(false)}
-                          >
-                            <Key className="w-5 h-5 mr-3 text-gray-400" />
-                            <div className="flex-1">
-                              <div className="font-medium">API Keys</div>
-                              <div className="text-xs text-gray-500">Manage integrations</div>
-                            </div>
-                          </a>
                         </div>
 
                         <div className="border-t border-gray-100 py-2">

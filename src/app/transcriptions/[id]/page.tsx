@@ -6,6 +6,7 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 import { useSpeakerMapping } from '@/context/SpeakerMappingContext';
+import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { databaseService } from '@/services/databaseService';
 import { STTRecord } from '@/services/databaseService';
 import AISummaryPanel from '@/components/AISummaryPanel';
@@ -17,8 +18,6 @@ import ShareModal from '@/components/ShareModal';
 import { 
   ArrowLeft,
   Edit3,
-  Save,
-  X,
   Copy,
   Download,
   Share2,
@@ -43,15 +42,47 @@ export default function TranscriptionViewPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryLoading, setRetryLoading] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
-  const [editName, setEditName] = useState('');
-  const [editTranscript, setEditTranscript] = useState('');
   const [currentAudioTime, setCurrentAudioTime] = useState(0);
   const [highlightedWords, setHighlightedWords] = useState<Set<number>>(new Set());
   const [downloadFormat, setDownloadFormat] = useState<'formatted' | 'plain' | 'speakers_only' | 'speakers_with_timestamps'>('formatted');
   const [showSpeakerMapping, setShowSpeakerMapping] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+
+  // Onboarding for transcription detail page
+  const { OnboardingComponent } = usePageOnboarding({
+    pageId: 'transcription-detail',
+    steps: [
+      {
+        id: 'audio-player',
+        targetId: 'transcription-audio-player',
+        title: 'Play Audio with Word Highlighting',
+        description: 'Click play to hear the audio. Words in the transcript will highlight in real-time as the audio plays, making it easy to follow along.',
+        position: 'top'
+      },
+      {
+        id: 'speaker-segments',
+        targetId: 'speaker-segments-view',
+        title: 'Speaker Segments with Timestamps',
+        description: 'See who said what and when. Click on any segment or word to jump to that point in the audio. Each speaker can be renamed for easier identification.',
+        position: 'top'
+      },
+      {
+        id: 'ai-panels',
+        targetId: 'ai-features-panel',
+        title: 'AI-Powered Features',
+        description: 'Use AI Summary to get quick insights, AI Chat to ask questions about the transcript, and Content Repurposing to transform your transcript into blogs, social posts, and more.',
+        position: 'left'
+      },
+      {
+        id: 'actions',
+        targetId: 'transcription-actions',
+        title: 'Export & Share Options',
+        description: 'Copy, download in multiple formats, or share your transcriptions. Download supports formatted text, plain text, or speaker-only versions.',
+        position: 'bottom'
+      }
+    ]
+  });
 
   // Get unique speakers from diarized transcript
   const uniqueSpeakers = React.useMemo(() => {
@@ -175,8 +206,6 @@ export default function TranscriptionViewPage() {
           await loadSpeakerMappings(transcriptionId);
         }
         
-        setEditName(record.name || record.audio_id || '');
-        setEditTranscript(record.transcript || '');
       } else {
         setError('Transcription not found');
       }
@@ -188,65 +217,6 @@ export default function TranscriptionViewPage() {
     }
   };
 
-  const startEditing = () => {
-    setIsEditing(true);
-    // Initialize edit transcript from speaker segments if available, otherwise use main transcript
-    if (transcription?.diarized_transcript && transcription.diarized_transcript.length > 0) {
-      const segmentTexts = transcription.diarized_transcript.map(segment => segment.text);
-      setEditTranscript(segmentTexts.join('\n'));
-    } else {
-      setEditTranscript(transcription?.transcript || '');
-    }
-  };
-
-  const saveChanges = async () => {
-    if (!transcription) return;
-    
-    try {
-      // If we have speaker segments, update them with the edited text while preserving all timing data
-      let updatedTranscript = editTranscript;
-      let updatedDiarizedTranscript = transcription.diarized_transcript;
-      
-      if (transcription.diarized_transcript && transcription.diarized_transcript.length > 0) {
-        // Split the edited transcript by lines and update each speaker segment
-        const editedLines = editTranscript.split('\n');
-        updatedDiarizedTranscript = transcription.diarized_transcript.map((segment, index) => ({
-          ...segment, // Preserve ALL original data (speaker, start_time, end_time)
-          text: editedLines[index] || segment.text // Only update the text
-        }));
-        
-        // Update the main transcript by joining all speaker segments
-        updatedTranscript = updatedDiarizedTranscript.map(segment => segment.text).join(' ');
-      }
-      
-      await databaseService.updateSTTRecord(transcription.id!, {
-        name: editName.trim(),
-        transcript: updatedTranscript.trim(),
-        diarized_transcript: updatedDiarizedTranscript, // Preserve all timing data
-        timestamps: transcription.timestamps // Preserve all timestamp data
-      });
-      
-      // Update local state
-      setTranscription(prev => prev ? {
-        ...prev,
-        name: editName.trim(),
-        transcript: updatedTranscript.trim(),
-        diarized_transcript: updatedDiarizedTranscript,
-        timestamps: transcription.timestamps
-      } : null);
-      
-      setIsEditing(false);
-    } catch (error) {
-      console.error('Failed to save changes:', error);
-      // You could add error handling here
-    }
-  };
-
-  const cancelEditing = () => {
-    setEditName(transcription?.name || transcription?.audio_id || '');
-    setEditTranscript(transcription?.transcript || '');
-    setIsEditing(false);
-  };
 
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -265,7 +235,51 @@ export default function TranscriptionViewPage() {
     URL.revokeObjectURL(url);
   };
 
+  const combineConsecutiveSpeakers = (diarizedTranscript: any[], timestamps: any[]) => {
+    if (!diarizedTranscript || diarizedTranscript.length === 0 || !timestamps || timestamps.length === 0) return [];
+    
+    const combinedSegments = [];
+    let currentSegment = null;
+    
+    for (const segment of diarizedTranscript) {
+      const segmentWords = timestamps
+        .filter(word => word.start >= segment.start_time && word.end <= segment.end_time)
+        .sort((a, b) => a.start - b.start);
+      
+      if (segmentWords.length === 0) continue;
+      
+      const segmentText = segmentWords.map(word => word.text).join(' ');
+      
+      if (!currentSegment || currentSegment.speaker !== segment.speaker) {
+        if (currentSegment) {
+          combinedSegments.push(currentSegment);
+        }
+        currentSegment = {
+          speaker: segment.speaker,
+          start_time: segmentWords[0].start,
+          end_time: segmentWords[segmentWords.length - 1].end,
+          text: segmentText,
+          words: segmentWords
+        };
+      } else {
+        currentSegment.end_time = segmentWords[segmentWords.length - 1].end;
+        currentSegment.text += ' ' + segmentText;
+        currentSegment.words.push(...segmentWords);
+      }
+    }
+    
+    if (currentSegment) {
+      combinedSegments.push(currentSegment);
+    }
+    
+    return combinedSegments;
+  };
+
   const formatTranscriptForDownload = () => {
+    if (!transcription) {
+      return 'No transcript available';
+    }
+
     // Plain text format
     if (downloadFormat === 'plain') {
       return transcription.transcript || 'No transcript available';
@@ -488,121 +502,8 @@ export default function TranscriptionViewPage() {
   return (
     <ProtectedRoute>
       <Layout>
+        <OnboardingComponent />
         <div className="p-4 sm:p-6">
-          {/* Full-Width Top Toolbar */}
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
-            {/* Main Toolbar */}
-            <div className="border-b border-gray-200 px-6 py-3">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-6">
-                  <h2 className="text-lg font-semibold text-gray-900">Document Editor</h2>
-                  <div className="h-4 w-px bg-gray-300"></div>
-                  <span className="text-sm text-gray-500">
-                    {isEditing ? 'Editing Mode' : 'View Mode'}
-                  </span>
-                  <div className="h-4 w-px bg-gray-300"></div>
-                  <span className="text-sm text-gray-600">
-                    {transcription?.name || transcription?.audio_id?.split('/').pop()?.split('?')[0] || 'Untitled Document'}
-                  </span>
-                </div>
-                
-
-              </div>
-            </div>
-
-            {/* Rich Text Toolbar - Full Width */}
-            {isEditing && (
-              <div className="px-6 py-3 bg-gray-50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-4">
-                    {/* Text Formatting */}
-                    <div className="flex items-center space-x-1">
-                      <span className="text-xs font-medium text-gray-500 mr-2">Format:</span>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Bold">
-                        <strong className="text-sm">B</strong>
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Italic">
-                        <em className="text-sm">I</em>
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Underline">
-                        <u className="text-sm">U</u>
-                      </button>
-                    </div>
-
-                    {/* Text Alignment */}
-                    <div className="flex items-center space-x-1">
-                      <span className="text-xs font-medium text-gray-500 mr-2">Align:</span>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Align Left">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h10a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h6a1 1 0 110 2H4a1 1 0 01-1-1z"/>
-                        </svg>
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Align Center">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h10a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h8a1 1 0 110 2H4a1 1 0 01-1-1z"/>
-                        </svg>
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Align Right">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm2 4a1 1 0 011-1h8a1 1 0 110 2H6a1 1 0 01-1-1zm2 4a1 1 0 011-1h10a1 1 0 110 2H8a1 1 0 01-1-1zm2 4a1 1 0 011-1h6a1 1 0 110 2H10a1 1 0 01-1-1z"/>
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Lists */}
-                    <div className="flex items-center space-x-1">
-                      <span className="text-xs font-medium text-gray-500 mr-2">Lists:</span>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Bullet List">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
-                        </svg>
-                      </button>
-                      <button className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" title="Numbered List">
-                        <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-                          <path d="M3 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1zm0 4a1 1 0 011-1h12a1 1 0 110 2H4a1 1 0 01-1-1z"/>
-                        </svg>
-                      </button>
-                    </div>
-
-                    {/* Font Size */}
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs font-medium text-gray-500">Size:</span>
-                      <select className="text-sm border border-gray-200 rounded px-2 py-1 bg-white">
-                        <option>12</option>
-                        <option>14</option>
-                        <option>16</option>
-                        <option>18</option>
-                        <option>20</option>
-                        <option>24</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {/* Right Side Actions */}
-                  <div className="flex items-center space-x-2">
-                    <button 
-                      onClick={() => copyToClipboard(editTranscript)}
-                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" 
-                      title="Copy All"
-                    >
-                      <Copy className="w-4 h-4" />
-                    </button>
-                    <button 
-                      onClick={() => setShowDownloadModal(true)}
-                      className="p-2 text-gray-600 hover:text-gray-900 hover:bg-white rounded border border-gray-200" 
-                      title="Download"
-                    >
-                      <Download className="w-4 h-4" />
-                    </button>
-                    <div className="h-4 w-px bg-gray-300"></div>
-                    <span className="text-xs text-gray-500">
-                      Characters: {editTranscript.length} | Words: {editTranscript.split(/\s+/).filter(Boolean).length}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
 
           {/* Header */}
           <div className="mb-8">
@@ -615,51 +516,13 @@ export default function TranscriptionViewPage() {
                 Back to Transcriptions
               </button>
               
-              <div className="flex items-center space-x-3">
-                {!isEditing ? (
-                  <button
-                    onClick={startEditing}
-                    className="inline-flex items-center bg-orange-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-orange-600 transition-colors font-medium shadow-sm"
-                  >
-                    <Edit3 className="w-5 h-5 mr-2" />
-                    Edit Document
-                  </button>
-                ) : (
-                  <>
-                    <button
-                      onClick={saveChanges}
-                    className="inline-flex items-center bg-green-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-green-600 transition-colors font-medium shadow-sm"
-                    >
-                      <Save className="w-5 h-5 mr-2" />
-                      Save Changes
-                    </button>
-                    <button
-                      onClick={cancelEditing}
-                    className="inline-flex items-center bg-gray-500 text-white px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg hover:bg-gray-600 transition-colors font-medium shadow-sm"
-                    >
-                      <X className="w-5 h-5 mr-2" />
-                      Cancel
-                    </button>
-                  </>
-                )}
-              </div>
             </div>
 
             {/* Document Title */}
             <div className="mb-6">
-              {isEditing ? (
-                <input
-                  type="text"
-                  value={editName}
-                  onChange={(e) => setEditName(e.target.value)}
-                  className="w-full text-2xl sm:text-4xl font-bold text-gray-900 border-b-2 border-orange-500 focus:outline-none focus:border-orange-600 pb-3 bg-transparent"
-                  placeholder={transcription.audio_id?.split('/').pop()?.split('?')[0] || "Enter document title..."}
-                />
-              ) : (
-                <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">
-                  {transcription.name || transcription.audio_id?.split('/').pop()?.split('?')[0] || 'Untitled Transcription'}
-                </h1>
-              )}
+              <h1 className="text-2xl sm:text-4xl font-bold text-gray-900">
+                {transcription.name || transcription.audio_id?.split('/').pop()?.split('?')[0] || 'Untitled Transcription'}
+              </h1>
             </div>
 
             {/* Metadata */}
@@ -695,7 +558,7 @@ export default function TranscriptionViewPage() {
             </div>
 
             {/* Action Buttons */}
-            <div className="flex items-center space-x-3 mb-8 flex-wrap gap-3">
+            <div id="transcription-actions" className="flex items-center space-x-3 mb-8 flex-wrap gap-3">
               {transcription.transcript && (
                 <>
                   <button
@@ -786,24 +649,12 @@ export default function TranscriptionViewPage() {
                   <h3 className="text-lg font-semibold text-gray-900 mb-4">Complete Transcript</h3>
                   <div className="bg-white rounded-lg border border-gray-200 p-6 max-h-96 overflow-y-auto">
                     <div className="prose prose-lg max-w-none">
-                      <div
-                        contentEditable={isEditing}
-                        suppressContentEditableWarning
-                        className={`text-gray-800 leading-relaxed text-base ${
-                          isEditing 
-                            ? 'outline-none focus:ring-2 focus:ring-orange-500 focus:ring-inset rounded px-3 py-2 min-h-[2rem] bg-white border border-gray-200' 
-                            : ''
-                        }`}
-                        onBlur={isEditing ? (e) => {
-                          setEditTranscript(e.currentTarget.textContent || transcription?.transcript || '');
-                        } : undefined}
-                      >
-                        {isEditing ? (editTranscript || transcription?.transcript || 'No transcript available') : (
-                          // Render words with individual highlighting in Complete Transcript
-                          transcription?.timestamps?.length ? (
+                      <div className="text-gray-800 leading-relaxed text-base">
+                        {/* Render words with individual highlighting in Complete Transcript */}
+                        {transcription?.timestamps?.length ? (
                             <span>
                               {transcription?.timestamps?.map((word, wordIndex) => {
-                                const nextWord = transcription.timestamps[wordIndex + 1];
+                                const nextWord = transcription?.timestamps?.[wordIndex + 1];
                                 const nextStartTime = nextWord ? nextWord.start : word.end;
                                 // Add small buffer to account for audio processing delay
                                 const buffer = 0.1; // 100ms buffer
@@ -826,8 +677,9 @@ export default function TranscriptionViewPage() {
                                 );
                               })}
                             </span>
-                          ) : (transcription?.transcript || 'No transcript available')
-                        )}
+                          ) : (
+                            transcription?.transcript || 'No transcript available'
+                          )}
                       </div>
                     </div>
                   </div>
@@ -836,7 +688,7 @@ export default function TranscriptionViewPage() {
 
               {/* Speaker Segments - Detailed View */}
               {transcription.diarized_transcript && transcription.diarized_transcript.length > 0 && (
-                <div>
+                <div id="speaker-segments-view">
                   <div className="flex items-center justify-between mb-4">
                     <h3 className="text-lg font-semibold text-gray-900">Speaker Segments</h3>
                     <button
@@ -859,8 +711,8 @@ export default function TranscriptionViewPage() {
                             currentAudioTime >= segment.start_time && currentAudioTime <= segment.end_time
                               ? 'bg-yellow-50 border-l-4 border-l-yellow-500 pl-4' 
                               : ''
-                          } ${isEditing ? '' : 'cursor-pointer hover:bg-gray-50'}`}
-                          onClick={isEditing ? undefined : () => handleTimestampClick(segment.start_time)}
+                          } cursor-pointer hover:bg-gray-50`}
+                          onClick={() => handleTimestampClick(segment.start_time)}
                         >
                           {/* Speaker and Time Header */}
                           <div className="flex items-center space-x-3 mb-3">
@@ -875,71 +727,44 @@ export default function TranscriptionViewPage() {
                                 🔴 Playing now
                               </span>
                             )}
-                            {!isEditing && (
-                              <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
-                                Click to jump
-                              </span>
-                            )}
+                            <span className="text-xs text-blue-600 bg-blue-100 px-2 py-1 rounded">
+                              Click to jump
+                            </span>
                           </div>
                           
                           {/* Speaker Text Content with Word-Level Highlighting */}
-                          <div
-                            contentEditable={isEditing}
-                            suppressContentEditableWarning
-                            className={`text-gray-800 leading-relaxed text-base ${
-                              isEditing 
-                                ? 'outline-none focus:ring-2 focus:ring-orange-500 focus:ring-inset rounded px-3 py-2 min-h-[1.5rem] bg-white border border-gray-200' 
-                                : 'pl-4'
-                            }`}
-                            onBlur={isEditing ? (e) => {
-                              const lines = editTranscript.split('\n');
-                              lines[index] = e.currentTarget.textContent || segment.text;
-                              setEditTranscript(lines.join('\n'));
-                            } : undefined}
-                            onKeyDown={isEditing ? (e) => {
-                              if (e.key === 'Enter') {
-                                e.preventDefault();
-                                e.currentTarget.blur();
-                              }
-                            } : undefined}
-                          >
-                            {isEditing ? (editTranscript.split('\n')[index] || segment.text) : (
-                              // Render words with individual highlighting in Speaker Segments
-                              segment.words && segment.words.length > 0 ? (
-                                <span>
-                                  {segment.words.map((word, wordIndex) => {
-                                    // Highlight word with buffer to account for audio processing delay
-                                    const nextWord = segment.words[wordIndex + 1];
-                                    const nextStartTime = nextWord ? nextWord.start : word.end;
-                                    // Add small buffer to account for audio processing delay
-                                    const buffer = 0.1; // 100ms buffer
-                                    const isHighlighted = currentAudioTime >= (word.start - buffer) && currentAudioTime < nextStartTime;
-                                    
-                                    if (word.text === 'the' && isHighlighted) {
-                                      // Word highlighting logic
-                                    }
-                                    
-                                    return (
-                                      <span
-                                        key={wordIndex}
-                                        className={`transition-all duration-200 ${
-                                          isHighlighted
-                                            ? 'bg-yellow-300 text-yellow-900 font-bold px-1 rounded'
-                                            : 'text-gray-800'
-                                        }`}
-                                        onClick={() => handleTimestampClick(word.start)}
-                                        style={{ cursor: 'pointer' }}
-                                        title={`${word.text || word.word} (${word.start.toFixed(2)}s - ${word.end.toFixed(2)}s) - Current: ${currentAudioTime.toFixed(2)}s`}
-                                      >
-                                        {word.text || word.word}
-                                        {wordIndex < segment.words.length - 1 ? ' ' : ''}
-                                      </span>
-                                    );
-                                  })}
-                                </span>
-                              ) : segment.text
-                            )}
-                      </div>
+                          <div className="text-gray-800 leading-relaxed text-base pl-4">
+                            {/* Render words with individual highlighting in Speaker Segments */}
+                            {segment.words && segment.words.length > 0 ? (
+                              <span>
+                                {segment.words.map((word, wordIndex) => {
+                                  // Highlight word with buffer to account for audio processing delay
+                                  const nextWord = segment.words?.[wordIndex + 1];
+                                  const nextStartTime = nextWord ? nextWord.start : word.end;
+                                  // Add small buffer to account for audio processing delay
+                                  const buffer = 0.1; // 100ms buffer
+                                  const isHighlighted = currentAudioTime >= (word.start - buffer) && currentAudioTime < nextStartTime;
+                                  
+                                  return (
+                                    <span
+                                      key={wordIndex}
+                                      className={`transition-all duration-200 ${
+                                        isHighlighted
+                                          ? 'bg-yellow-300 text-yellow-900 font-bold px-1 rounded'
+                                          : 'text-gray-800'
+                                      }`}
+                                      onClick={() => handleTimestampClick(word.start)}
+                                      style={{ cursor: 'pointer' }}
+                                      title={`${word.text} (${word.start.toFixed(2)}s - ${word.end.toFixed(2)}s) - Current: ${currentAudioTime.toFixed(2)}s`}
+                                    >
+                                      {word.text}
+                                      {wordIndex < (segment.words?.length ?? 0) - 1 ? ' ' : ''}
+                                    </span>
+                                  );
+                                })}
+                              </span>
+                            ) : segment.text}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -954,22 +779,13 @@ export default function TranscriptionViewPage() {
               <div className="border-t border-gray-200 bg-gray-50 px-6 py-3">
               <div className="flex items-center justify-between text-xs sm:text-sm text-gray-500">
                 <div className="flex items-center space-x-4">
-                  <span className="whitespace-nowrap">Characters: {isEditing ? editTranscript.length : (transcription.transcript?.length || 0)}</span>
-                  <span className="whitespace-nowrap">Words: {isEditing ? editTranscript.split(/\s+/).filter(Boolean).length : (transcription.transcript?.split(/\s+/).filter(Boolean).length || 0)}</span>
+                  <span className="whitespace-nowrap">Characters: {transcription.transcript?.length || 0}</span>
+                  <span className="whitespace-nowrap">Words: {transcription.transcript?.split(/\s+/).filter(Boolean).length || 0}</span>
                   {transcription.timestamps && (
                     <span className="whitespace-nowrap">Timestamps: {transcription.timestamps.length}</span>
                   )}
                   {transcription.diarized_transcript && (
                     <span className="whitespace-nowrap">Speaker Segments: {transcription.diarized_transcript.length}</span>
-                  )}
-                  {isEditing && (
-                    <span className="text-orange-600 font-medium">• Timing data preserved</span>
-                  )}
-                </div>
-                <div className="flex items-center space-x-2">
-                  <span>Last saved: {new Date().toLocaleTimeString()}</span>
-                  {isEditing && (
-                    <span className="text-orange-600 font-medium">• Editing</span>
                   )}
                 </div>
                 </div>
@@ -977,7 +793,7 @@ export default function TranscriptionViewPage() {
             </div>
 
             {/* AI Panels Sidebar - 1 column */}
-            <div className="lg:col-span-1 space-y-6">
+            <div id="ai-features-panel" className="lg:col-span-1 space-y-6">
               <AISummaryPanel 
                 transcriptionText={transcription.transcript || ''} 
                 transcriptionId={transcriptionId}
@@ -1022,7 +838,7 @@ export default function TranscriptionViewPage() {
                 <div className="flex items-center space-x-4">
                   {/* Audio Player */}
                   <audio
-                    id="transcription-audio"
+                    id="transcription-audio-player"
                     controls
                     className="flex-1"
                     src={transcription.audio_file_url || (transcription.metadata as any)?.original_audio_url}
@@ -1090,8 +906,25 @@ export default function TranscriptionViewPage() {
       <DownloadModal
         isOpen={showDownloadModal}
         onClose={() => setShowDownloadModal(false)}
-        transcription={transcription}
-        getSpeakerDisplayName={getSpeakerDisplayName}
+        transcription={{
+          name: transcription?.name,
+          transcript: transcription?.transcript,
+          diarized_transcript: transcription?.diarized_transcript?.map(segment => ({
+            speaker: segment.speaker,
+            start_time: segment.start_time,
+            end_time: segment.end_time,
+            text: segment.text,
+            words: segment.words?.map(word => ({
+              word: word.text,
+              start: word.start,
+              end: word.end
+            }))
+          })),
+          timestamps: transcription?.timestamps,
+          duration: transcription?.duration,
+          metadata: transcription?.metadata
+        }}
+        getSpeakerDisplayName={(speaker) => getSpeakerDisplayName(transcriptionId, speaker)}
       />
 
       {/* Share Modal */}

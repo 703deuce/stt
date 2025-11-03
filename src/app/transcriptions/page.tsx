@@ -5,11 +5,40 @@ import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
 import TranscriptionUpload from '@/components/TranscriptionUpload';
 import RecentTranscriptions from '@/components/RecentTranscriptions';
+import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { Mic, Upload, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
+  
+  // Onboarding for transcription upload page
+  const { OnboardingComponent } = usePageOnboarding({
+    pageId: 'transcriptions-upload',
+    steps: [
+      {
+        id: 'upload-area',
+        targetId: 'transcription-upload-area',
+        title: 'Upload Your Audio/Video',
+        description: 'Drag and drop your audio or video file here, or click to browse. We support MP3, WAV, M4A, MP4, MOV, and more. No file size limits!',
+        position: 'bottom'
+      },
+      {
+        id: 'settings',
+        targetId: 'transcription-settings',
+        title: 'Configure Transcription Settings',
+        description: 'Enable speaker diarization to identify who spoke when, and include timestamps for precise word-level timing. These settings help create professional transcripts.',
+        position: 'top'
+      },
+      {
+        id: 'tabs',
+        targetId: 'transcription-tabs',
+        title: 'Switch Between Upload & Recent',
+        description: 'Use these tabs to switch between creating new transcriptions and viewing your recent ones. Completed transcriptions appear in the Recent tab.',
+        position: 'bottom'
+      }
+    ]
+  });
 
   if (loading) {
     return (
@@ -36,6 +65,7 @@ export default function TranscriptionsPage() {
 
   return (
     <Layout>
+      <OnboardingComponent />
       <div className="p-4 sm:p-6">
         {/* Header */}
         <div className="mb-8">
@@ -49,16 +79,10 @@ export default function TranscriptionsPage() {
             </div>
           </div>
 
-          {/* Enhanced Badge */}
-          <div className="inline-flex items-center space-x-2 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
-            <div className="w-2 h-2 bg-purple-500 rounded-full animate-pulse"></div>
-            <span className="text-purple-800 text-sm font-medium">ENHANCED</span>
-            <span className="text-purple-600 text-sm">Auto-chunks long audio • Speaker diarization • Any file size</span>
-          </div>
         </div>
 
         {/* Tab Navigation */}
-        <div className="mb-6">
+        <div className="mb-6" id="transcription-tabs">
           <div className="border-b border-gray-200">
             <nav className="-mb-px flex space-x-6 overflow-x-auto">
               <button
@@ -101,7 +125,6 @@ export default function TranscriptionsPage() {
                   <CheckCircle className="w-5 h-5 text-green-600" />
                   <div>
                     <h3 className="font-medium text-green-900">Any File Size</h3>
-                    <p className="text-sm text-green-700">Automatic chunking for long audio</p>
                   </div>
                 </div>
               </div>
@@ -126,7 +149,9 @@ export default function TranscriptionsPage() {
             </div>
 
             {/* Upload Component */}
-            <TranscriptionUpload onTranscriptionComplete={() => setActiveTab('recent')} />
+            <div id="transcription-upload-area">
+              <TranscriptionUpload onTranscriptionComplete={() => setActiveTab('recent')} />
+            </div>
           </div>
         )}
 

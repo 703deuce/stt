@@ -385,8 +385,13 @@ export default function ContentRepurposingPanel({
       
       if (customInstructions.trim()) {
         console.log('🎨 Using custom instructions:', customInstructions);
-        finalPrompt = `${contentType.prompt}\n\nCUSTOM CREATIVE DIRECTION:\n${customInstructions.trim()}\n\nIMPORTANT: You may adjust the tone, angle, or style as instructed, but you must still base ALL content on the transcript. Do not add new topics or information not mentioned in the transcript.`;
+        // Custom instructions should guide what the content is ABOUT (topic/direction)
+        // The regular prompt already tells the TYPE to make (Facebook post, formula, etc.)
+        finalPrompt = `${finalPrompt}\n\nCUSTOM TOPIC DIRECTION:\n${customInstructions.trim()}\n\nCRITICAL: The custom instructions above guide which aspects or topics from the transcript to emphasize. However, ALL information MUST come from the transcript below. Do NOT add any information, facts, or content that is not in the transcript. The custom instructions only guide which parts of the transcript to focus on or highlight - they do not allow adding new information. Use the content type format (defined above) while following the topic/direction to emphasize specific aspects FROM THE TRANSCRIPT ONLY.`;
       }
+      
+      // Always emphasize that transcript is the ONLY source, regardless of custom instructions
+      finalPrompt = `${finalPrompt}\n\nTRANSCRIPT (USE THIS AS YOUR ONLY SOURCE OF INFORMATION):`;
       
       console.log('🎯 [ContentRepurposing] Generating content:', {
         contentType: contentType.name,
@@ -423,7 +428,7 @@ Your response must be MAXIMUM ${actualWordLimit} words. Return ONLY the formatte
           },
           {
             role: 'user',
-            content: `${finalPrompt}\n\nTRANSCRIPT TO TRANSFORM:\n${fullTranscriptionText || transcriptionText}\n\nCRITICAL: Transform ONLY the content above. Do not add new information, topics, or examples. Only change the format/structure. Return ONLY the content. Do not include any introductory phrases, explanations, or meta-commentary. Start with the actual content immediately. MAXIMUM ${actualWordLimit} WORDS.`
+            content: `${finalPrompt}\n${fullTranscriptionText || transcriptionText}\n\nCRITICAL REQUIREMENTS:\n1. ALL content, information, facts, and details MUST come from the transcript above - DO NOT add anything that is not in the transcript.\n2. If custom instructions are provided, they only guide which parts of the transcript to emphasize or focus on - they do NOT allow adding new information.\n3. Return ONLY the final content without any preamble, explanations, or meta-commentary.\n4. Start with the actual content immediately.\n5. MAXIMUM ${actualWordLimit} WORDS.`
           }
         ],
         temperature: 0.7,
@@ -577,12 +582,12 @@ Your response must be MAXIMUM ${actualWordLimit} words. Return ONLY the formatte
                   <textarea
                     value={customInstructions}
                     onChange={(e) => setCustomInstructions(e.target.value)}
-                    placeholder="Example: 'Make this more casual', 'Focus on the technical aspects', 'Write in first person', 'Use a professional tone', etc."
+                    placeholder="Example: 'Focus on the marketing strategy discussed', 'Emphasize the customer success story', 'Highlight technical details', etc."
                     className="w-full px-2 py-2 border border-purple-300 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent text-xs"
                     rows={2}
                   />
                   <p className="text-xs text-purple-700">
-                    💡 Adjust tone, style, or angle - content will still be based on your transcript
+                    💡 Guide what the content should be about (topic/direction). The content type sets the format, while your instructions guide which aspects from the transcript to emphasize.
                   </p>
                 </div>
               )}

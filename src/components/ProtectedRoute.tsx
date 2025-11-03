@@ -13,10 +13,10 @@ export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const { user, loading } = useAuth();
   const router = useRouter();
 
-  // Redirect authenticated users to home page if they're on the auth page
+  // Redirect authenticated users to dashboard if they're on the auth page
   useEffect(() => {
     if (user && window.location.pathname === '/auth') {
-      router.push('/');
+      router.push('/dashboard');
     }
   }, [user, router]);
 

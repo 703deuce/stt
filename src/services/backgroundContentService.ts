@@ -165,8 +165,13 @@ class BackgroundContentService {
       
       if (job.customInstructions && job.customInstructions.trim()) {
         console.log('🎨 Using custom instructions:', job.customInstructions);
-        finalPrompt = `${finalPrompt}\n\nADDITIONAL CREATIVE DIRECTION:\n${job.customInstructions.trim()}\n\nYou may reframe, reinterpret, or adjust the angle/tone as instructed, but still base the content on the transcript.`;
+        // Custom instructions should guide what the content is ABOUT (topic/direction)
+        // The regular prompt already tells the TYPE to make (Facebook post, formula, etc.)
+        finalPrompt = `${finalPrompt}\n\nCUSTOM TOPIC DIRECTION:\n${job.customInstructions.trim()}\n\nCRITICAL: The custom instructions above guide which aspects or topics from the transcript to emphasize. However, ALL information MUST come from the transcript below. Do NOT add any information, facts, or content that is not in the transcript. The custom instructions only guide which parts of the transcript to focus on or highlight - they do not allow adding new information. Use the content type format (defined above) while following the topic/direction to emphasize specific aspects FROM THE TRANSCRIPT ONLY.`;
       }
+      
+      // Always emphasize that transcript is the ONLY source, regardless of custom instructions
+      finalPrompt = `${finalPrompt}\n\nTRANSCRIPT (USE THIS AS YOUR ONLY SOURCE OF INFORMATION):`;
 
       // Generate content using DeepSeek
       const response = await axios.post(this.API_ENDPOINT, {
@@ -178,7 +183,7 @@ class BackgroundContentService {
           },
           {
             role: 'user',
-            content: `${finalPrompt}\n\nTranscript:\n${job.transcriptionText}\n\nIMPORTANT: Return ONLY the content. Do not include any introductory phrases, explanations, or meta-commentary. Start with the actual content immediately.${job.maxWords ? ` MAXIMUM ${job.maxWords} WORDS.` : ''}`
+            content: `${finalPrompt}\n${job.transcriptionText}\n\nCRITICAL REQUIREMENTS:\n1. ALL content, information, facts, and details MUST come from the transcript above - DO NOT add anything that is not in the transcript.\n2. If custom instructions are provided, they only guide which parts of the transcript to emphasize or focus on - they do NOT allow adding new information.\n3. Return ONLY the final content without any preamble, explanations, or meta-commentary.\n4. Start with the actual content immediately.${job.maxWords ? `\n5. MAXIMUM ${job.maxWords} WORDS.` : ''}`
           }
         ],
         temperature: 0.7,
