@@ -37,7 +37,7 @@ export default function CheckoutButton({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ 
           plan,
-          quantity: quantity || (plan === 'team' ? 3 : plan === 'agency' ? 10 : 1),
+          quantity: quantity || 1,
           email: user.email,
           userId: user.uid,
         }),
