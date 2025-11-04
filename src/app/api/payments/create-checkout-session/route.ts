@@ -10,9 +10,8 @@ export async function POST(request: NextRequest) {
 
     // Valid plan types
     const validPlans = [
-      'transcription-only', 'creator', 'pro', 'studio',
-      'boost-5k', 'boost-10k', 'boost-50k',
-      'solo', 'team', 'agency' // Legacy
+      'transcription-only', 'creator',
+      'solo', 'team' // Legacy
     ];
 
     // Validate plan
@@ -30,15 +29,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Determine if this is a one-time boost or subscription
-    const isBoost = plan.startsWith('boost-');
+    // All plans are subscriptions now
+    const isBoost = false;
     
     // Determine quantity based on plan
     let finalQuantity = 1;
     if (plan === 'team') {
-      finalQuantity = Math.max(quantity || 3, 3); // Minimum 3 users
-    } else if (plan === 'agency') {
-      finalQuantity = Math.max(quantity || 10, 10); // Minimum 10 users
+      finalQuantity = Math.max(quantity || 1, 1);
     }
 
     // Get the price ID for the selected plan

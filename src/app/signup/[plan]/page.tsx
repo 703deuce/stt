@@ -12,8 +12,8 @@ import { useAuth } from '@/context/AuthContext';
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
 const PLAN_CONFIG = {
-  solo: {
-    name: 'Solo Unlimited',
+  'transcription-only': {
+    name: 'Transcription Only',
     price: '$17.99',
     interval: 'month',
     features: [
@@ -21,41 +21,57 @@ const PLAN_CONFIG = {
       'Speaker diarization',
       'Word-level timestamps',
       'AI summaries & insights',
-      '50+ languages',
+      '25+ languages',
       'Batch processing',
-      'Priority support'
+      'SRT/VTT subtitle export'
+    ],
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_TRANSCRIPTION_ONLY || process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || 'price_1MywhCKjM2RWgyrvmmJvdIYP'
+  },
+  'creator': {
+    name: 'Creator Plan',
+    price: '$34.99',
+    interval: 'month',
+    features: [
+      'Unlimited transcription',
+      'Unlimited content repurposing',
+      '30+ content types',
+      'Copywriting frameworks',
+      'Custom instructions',
+      'All transcription features',
+      'Speaker diarization & timestamps'
+    ],
+    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_CREATOR || process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM || 'price_1MywdsKjM2RWgyrvmPsAYWr1'
+  },
+  // Legacy plans for backwards compatibility
+  solo: {
+    name: 'Transcription Only',
+    price: '$17.99',
+    interval: 'month',
+    features: [
+      'Unlimited transcription',
+      'Speaker diarization',
+      'Word-level timestamps',
+      'AI summaries & insights',
+      '25+ languages',
+      'Batch processing',
+      'SRT/VTT subtitle export'
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_SOLO || 'price_1MywhCKjM2RWgyrvmmJvdIYP'
   },
   team: {
-    name: 'Team Unlimited',
-    price: '$12.99',
-    interval: 'user/month',
-    minUsers: 3,
+    name: 'Creator Plan',
+    price: '$34.99',
+    interval: 'month',
     features: [
-      'Everything in Solo',
-      'Team collaboration',
-      'Shared workspace',
-      'Advanced analytics',
-      'Admin controls',
-      'API access'
+      'Unlimited transcription',
+      'Unlimited content repurposing',
+      '30+ content types',
+      'Copywriting frameworks',
+      'Custom instructions',
+      'All transcription features',
+      'Speaker diarization & timestamps'
     ],
     priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_TEAM || 'price_1MywdsKjM2RWgyrvmPsAYWr1'
-  },
-  agency: {
-    name: 'Agency Unlimited',
-    price: '$10.99',
-    interval: 'user/month',
-    minUsers: 10,
-    features: [
-      'Everything in Team',
-      'Dedicated account manager',
-      'Custom branding',
-      'SSO integration',
-      '24/7 phone support',
-      'SLA guarantee'
-    ],
-    priceId: process.env.NEXT_PUBLIC_STRIPE_PRICE_AGENCY || 'price_1MywspKjM2RWgyrvgAkbXZKc'
   }
 };
 
@@ -68,7 +84,7 @@ export default function SignupWithPaymentPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [quantity, setQuantity] = useState(3); // Default for team
+  const [quantity, setQuantity] = useState(1);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -93,13 +109,8 @@ export default function SignupWithPaymentPage() {
       setLoading(true);
       setError('');
 
-      // Determine quantity
+      // All plans use quantity 1
       let finalQuantity = 1;
-      if (plan === 'team') {
-        finalQuantity = Math.max(quantity, 3);
-      } else if (plan === 'agency') {
-        finalQuantity = Math.max(quantity, 10);
-      }
 
       // Create Stripe checkout session
       const response = await fetch('/api/payments/create-checkout-session', {
@@ -204,31 +215,8 @@ export default function SignupWithPaymentPage() {
                 <span className="text-4xl font-bold text-orange-600">{planConfig.price}</span>
                 <span className="text-gray-600 ml-2">/{planConfig.interval}</span>
               </div>
-              {planConfig.minUsers && (
-                <p className="text-sm text-gray-500">Minimum {planConfig.minUsers} users</p>
-              )}
             </div>
 
-            {/* Quantity Selector for Team/Agency */}
-            {(plan === 'team' || plan === 'agency') && (
-              <div className="mb-6 p-4 bg-gray-50 rounded-lg">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Number of Users
-                </label>
-                <input
-                  type="number"
-                  min={planConfig.minUsers}
-                  value={quantity}
-                  onChange={(e) => setQuantity(Math.max(parseInt(e.target.value) || planConfig.minUsers!, planConfig.minUsers!))}
-                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent"
-                />
-                <p className="text-sm text-gray-600 mt-2">
-                  Total: <strong className="text-orange-600">
-                    ${(parseFloat(planConfig.price.replace('$', '')) * quantity).toFixed(2)}/month
-                  </strong>
-                </p>
-              </div>
-            )}
 
             <div className="border-t border-gray-200 pt-6">
               <h3 className="font-semibold text-gray-900 mb-4">What's included:</h3>

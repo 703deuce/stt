@@ -842,7 +842,7 @@ export default function LandingPage() {
           </div>
 
           {/* Pricing Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             {/* FREE TRIAL - NEW! */}
             <div className="bg-gradient-to-br from-purple-50 to-teal-50 border-2 border-purple-200 rounded-3xl p-8 relative shadow-xl hover:shadow-2xl transition-all duration-300">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
@@ -969,14 +969,14 @@ export default function LandingPage() {
                 <p className="text-gray-600 mb-6 font-medium">For content creators</p>
                 <div className="mb-6">
                   <div className="monthly-pricing">
-                    <span className="text-5xl font-bold text-gray-900">$24.99</span>
+                    <span className="text-5xl font-bold text-gray-900">$34.99</span>
                     <span className="text-gray-600 text-lg">/month</span>
                   </div>
                   <div className="annual-pricing hidden">
-                    <span className="text-5xl font-bold text-gray-900">$249</span>
+                    <span className="text-5xl font-bold text-gray-900">$349</span>
                     <span className="text-gray-600 text-lg">/year</span>
                     <div className="text-sm text-green-600 font-semibold mt-2">
-                      $20.75/month • Save 17%
+                      $29.08/month • Save 17%
                     </div>
                   </div>
                 </div>
@@ -989,7 +989,7 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium"><strong>20,000 words</strong>/month content</span>
+                  <span className="text-gray-700 font-medium"><strong>Unlimited</strong> content repurposing</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
@@ -1016,220 +1016,8 @@ export default function LandingPage() {
                 Get Started
               </a>
             </div>
-
-            {/* Pro Plan */}
-            <div className="bg-white border-2 border-gray-200 rounded-3xl p-8 relative shadow-lg hover:shadow-2xl transition-all duration-300 hover:-translate-y-2">
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Pro Plan</h3>
-                <p className="text-gray-600 mb-6 font-medium">For power users</p>
-                <div className="mb-6">
-                  <div className="monthly-pricing">
-                    <span className="text-5xl font-bold text-gray-900">$49.99</span>
-                    <span className="text-gray-600 text-lg">/month</span>
-                  </div>
-                  <div className="annual-pricing hidden">
-                    <span className="text-5xl font-bold text-gray-900">$499</span>
-                    <span className="text-gray-600 text-lg">/year</span>
-                    <div className="text-sm text-green-600 font-semibold mt-2">
-                      $41.58/month • Save 17%
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium"><strong>Everything in Creator</strong></span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium"><strong>100,000 words</strong>/month</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Batch transcription</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Extended file storage</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Public sharing links</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Priority support</span>
-                </li>
-              </ul>
-              
-              <a 
-                href="/signup/pro" 
-                className="w-full bg-gradient-to-r from-purple-600 to-purple-700 text-white py-4 px-6 rounded-xl hover:from-purple-700 hover:to-purple-800 transition-all duration-200 font-bold text-center block shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-              >
-                Get Started
-              </a>
-            </div>
-
-            {/* Studio Plan - BEST VALUE */}
-            <div className="bg-gradient-to-br from-teal-50 to-purple-50 border-2 border-teal-500 rounded-3xl p-8 relative shadow-xl hover:shadow-2xl transition-all duration-300">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <div className="bg-gradient-to-r from-teal-600 to-purple-600 text-white px-6 py-2 rounded-full text-sm font-bold shadow-lg">
-                  BEST VALUE
-                </div>
-              </div>
-              
-              <div className="text-center mb-8">
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">Studio Plan</h3>
-                <p className="text-gray-600 mb-6 font-medium">For agencies & teams</p>
-                <div className="mb-6">
-                  <div className="monthly-pricing">
-                    <span className="text-5xl font-bold text-gray-900">$89.99</span>
-                    <span className="text-gray-600 text-lg">/month</span>
-                  </div>
-                  <div className="annual-pricing hidden">
-                    <span className="text-5xl font-bold text-gray-900">$899</span>
-                    <span className="text-gray-600 text-lg">/year</span>
-                    <div className="text-sm text-green-600 font-semibold mt-2">
-                      $74.92/month • Save 17%
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <ul className="space-y-4 mb-8">
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium"><strong>Everything in Pro</strong></span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-teal-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium"><strong>400,000 words</strong>/month</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-teal-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Unlimited file storage</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-teal-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Advanced export options</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-teal-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Dedicated support</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-teal-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Custom branding options</span>
-                </li>
-              </ul>
-              
-              <a 
-                href="/signup/studio" 
-                className="w-full bg-gradient-to-r from-teal-600 to-purple-600 text-white py-4 px-6 rounded-xl hover:from-teal-700 hover:to-purple-700 transition-all duration-200 font-bold text-center block shadow-xl hover:shadow-2xl transform hover:-translate-y-1"
-              >
-                Get Started
-              </a>
-            </div>
           </div>
 
-          {/* Word Boosts Section */}
-          <div className="mt-16 pt-16 border-t border-gray-200">
-            <div className="text-center mb-12">
-              <div className="inline-flex items-center bg-gradient-to-r from-purple-100 to-teal-100 text-purple-800 px-4 py-2 rounded-full text-sm font-semibold mb-6 shadow-sm">
-                <Zap className="w-4 h-4 mr-2" />
-                One-Time Boosts
-              </div>
-              <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">Need Extra Words This Month?</h3>
-              <p className="text-lg text-gray-600 max-w-2xl mx-auto">
-                Add a one-time word boost to any plan. No expiration, use them whenever you need.
-              </p>
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-              {/* Quick Boost */}
-              <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-purple-300 transition-all duration-300 hover:shadow-lg">
-                <div className="text-center mb-6">
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Quick Boost</h4>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">$6.99</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-lg py-2 px-4 mb-2">
-                    <span className="text-2xl font-bold text-purple-600">5,000</span>
-                    <span className="text-gray-600 ml-2">words</span>
-                  </div>
-                  <p className="text-xs text-gray-500">$0.0014 per word</p>
-                </div>
-                <p className="text-sm text-gray-600 text-center mb-6">
-                  Perfect for light creators finishing out the month or testing more content formats
-                </p>
-                <a 
-                  href="/signup/boost-5k" 
-                  className="w-full bg-gray-900 text-white py-3 px-6 rounded-xl hover:bg-gray-800 transition-all duration-200 font-semibold text-center block"
-                >
-                  Buy Quick Boost
-                </a>
-              </div>
-
-              {/* Standard Boost - POPULAR */}
-              <div className="bg-white border-2 border-purple-500 rounded-2xl p-6 relative transform scale-105 shadow-xl hover:shadow-2xl transition-all duration-300">
-                <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                  <div className="bg-gradient-to-r from-purple-600 to-teal-500 text-white px-6 py-2 rounded-full text-xs font-bold shadow-lg">
-                    POPULAR
-                  </div>
-                </div>
-                <div className="text-center mb-6">
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Standard Boost</h4>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-purple-600">$11.99</span>
-                  </div>
-                  <div className="bg-purple-50 rounded-lg py-2 px-4 mb-2">
-                    <span className="text-2xl font-bold text-purple-600">10,000</span>
-                    <span className="text-gray-600 ml-2">words</span>
-                  </div>
-                  <p className="text-xs text-gray-500">$0.0012 per word</p>
-                </div>
-                <p className="text-sm text-gray-600 text-center mb-6">
-                  Ideal for regular creators needing a little extra without upgrading fully
-                </p>
-                <a 
-                  href="/signup/boost-10k" 
-                  className="w-full bg-gradient-to-r from-purple-600 to-teal-500 text-white py-3 px-6 rounded-xl hover:from-purple-700 hover:to-teal-600 transition-all duration-200 font-semibold text-center block shadow-lg"
-                >
-                  Buy Standard Boost
-                </a>
-              </div>
-
-              {/* Pro Boost */}
-              <div className="bg-white border-2 border-gray-200 rounded-2xl p-6 hover:border-purple-300 transition-all duration-300 hover:shadow-lg">
-                <div className="text-center mb-6">
-                  <h4 className="text-xl font-bold text-gray-900 mb-2">Pro Boost</h4>
-                  <div className="mb-4">
-                    <span className="text-4xl font-bold text-gray-900">$29.99</span>
-                  </div>
-                  <div className="bg-gray-100 rounded-lg py-2 px-4 mb-2">
-                    <span className="text-2xl font-bold text-purple-600">50,000</span>
-                    <span className="text-gray-600 ml-2">words</span>
-                  </div>
-                  <p className="text-xs text-gray-500">$0.0010 per word</p>
-                </div>
-                <p className="text-sm text-gray-600 text-center mb-6">
-                  For heavy users running batch repurposing or multiple transcription-to-content projects
-                </p>
-                <a 
-                  href="/signup/boost-50k" 
-                  className="w-full bg-gray-900 text-white py-3 px-6 rounded-xl hover:bg-gray-800 transition-all duration-200 font-semibold text-center block"
-                >
-                  Buy Pro Boost
-                </a>
-              </div>
-            </div>
-            
-            <p className="text-sm text-gray-500 text-center mt-8">
-              💡 <strong>Boosts never expire</strong> — use them whenever you need extra content generation capacity
-            </p>
-          </div>
 
           {/* Key Benefits */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
