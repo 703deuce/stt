@@ -59,15 +59,13 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
     }
   }, [pageId, autoStart, steps.length]);
 
-  const handleComplete = (dontShowAgain: boolean = false) => {
-    if (dontShowAgain) {
-      // Dismiss entire onboarding for this page
-      dismissPage(pageId);
-      setIsActive(false);
-      setCurrentStepIndex(null);
-    } else if (currentStepIndex === null || currentStepIndex === steps.length - 1) {
-      // Last step or no step
-      markPageAsSeen(pageId);
+  const handleComplete = () => {
+    // Automatically mark page as seen after first interaction
+    // This ensures onboarding only shows once per page
+    markPageAsSeen(pageId);
+    
+    if (currentStepIndex === null || currentStepIndex === steps.length - 1) {
+      // Last step or no step - close onboarding
       setIsActive(false);
       setCurrentStepIndex(null);
     } else {
@@ -76,21 +74,18 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
     }
   };
 
-  const handleDismiss = (dontShowAgain: boolean = false) => {
-    if (dontShowAgain) {
-      // Dismiss entire onboarding for this page
-      dismissPage(pageId);
+  const handleDismiss = () => {
+    // Automatically mark page as seen when dismissed
+    // This ensures onboarding only shows once per page
+    markPageAsSeen(pageId);
+    
+    // Just skip current step and move to next
+    if (currentStepIndex !== null && currentStepIndex < steps.length - 1) {
+      setCurrentStepIndex(currentStepIndex + 1);
+    } else {
+      // Last step, just close
       setIsActive(false);
       setCurrentStepIndex(null);
-    } else {
-      // Just skip current step and move to next
-      if (currentStepIndex !== null && currentStepIndex < steps.length - 1) {
-        setCurrentStepIndex(currentStepIndex + 1);
-      } else {
-        // Last step, just close
-        setIsActive(false);
-        setCurrentStepIndex(null);
-      }
     }
   };
 

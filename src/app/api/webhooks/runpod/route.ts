@@ -418,9 +418,9 @@ export async function POST(request: NextRequest) {
                   processing_method: 'webhook_processing_fallback',
                   chunks_processed: output.chunks_processed || 1,
                   runpod_job_id: payload.id,
-                  execution_time: payload.executionTime,
-                  workflow: output.workflow,
-                  model_used: output.model_used
+                  ...(payload.executionTime && { execution_time: payload.executionTime }),
+                  ...(output.workflow && { workflow: output.workflow }),
+                  ...(output.model_used && { model_used: output.model_used })
                 } as any
               }, transformedData, userId);
 

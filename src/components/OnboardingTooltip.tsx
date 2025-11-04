@@ -8,8 +8,8 @@ interface OnboardingTooltipProps {
   title: string;
   description: string;
   position?: 'top' | 'bottom' | 'left' | 'right';
-  onComplete: (dontShowAgain?: boolean) => void;
-  onDismiss: (dontShowAgain?: boolean) => void;
+  onComplete: () => void;
+  onDismiss: () => void;
   step?: number;
   totalSteps?: number;
 }
@@ -33,7 +33,6 @@ export default function OnboardingTooltip({
   });
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
-  const [dontShowAgain, setDontShowAgain] = useState(false);
 
   useEffect(() => {
     const updatePosition = () => {
@@ -207,7 +206,7 @@ export default function OnboardingTooltip({
       {/* Overlay */}
       <div
         className="fixed inset-0 bg-black/50 z-[9999]"
-        onClick={() => onDismiss(dontShowAgain)}
+        onClick={() => onDismiss()}
       />
       
       {/* Highlight target element */}
@@ -237,7 +236,7 @@ export default function OnboardingTooltip({
             <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
           </div>
           <button
-            onClick={() => onDismiss(dontShowAgain)}
+            onClick={() => onDismiss()}
             className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
             aria-label="Dismiss"
           >
@@ -250,31 +249,16 @@ export default function OnboardingTooltip({
           {description}
         </p>
 
-        {/* Do not show again checkbox */}
-        <div className="mb-4">
-          <label className="flex items-center gap-2 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={dontShowAgain}
-              onChange={(e) => setDontShowAgain(e.target.checked)}
-              className="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500 focus:ring-2"
-            />
-            <span className="text-sm text-gray-600">
-              Do not show this again
-            </span>
-          </label>
-        </div>
-
         {/* Actions */}
         <div className="flex items-center justify-between gap-3">
           <button
-            onClick={() => onDismiss(dontShowAgain)}
+            onClick={() => onDismiss()}
             className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
           >
-            {dontShowAgain ? 'Skip onboarding' : 'Skip this step'}
+            Skip this step
           </button>
           <button
-            onClick={() => onComplete(dontShowAgain)}
+            onClick={() => onComplete()}
             className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-medium text-sm shadow-lg"
           >
             {step === totalSteps ? 'Finish' : 'Got it'}

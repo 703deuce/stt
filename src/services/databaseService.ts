@@ -154,6 +154,27 @@ class DatabaseService {
         ? data.transcript.substring(0, 500) + '...' 
         : data.transcript;
       
+      // Helper function to remove undefined values from objects (Firestore doesn't allow undefined)
+      const removeUndefined = (obj: any): any => {
+        if (obj === null || obj === undefined) return obj;
+        if (Array.isArray(obj)) {
+          return obj.map(removeUndefined);
+        }
+        if (typeof obj === 'object') {
+          const cleaned: any = {};
+          for (const [key, value] of Object.entries(obj)) {
+            if (value !== undefined) {
+              cleaned[key] = removeUndefined(value);
+            }
+          }
+          return cleaned;
+        }
+        return obj;
+      };
+
+      // Clean metadata to remove undefined values
+      const cleanedMetadata = data.metadata ? removeUndefined(data.metadata) : undefined;
+
       const sttData: Omit<STTRecord, 'id'> = {
         ...data,
         transcript: shortTranscript, // Store shortened version
@@ -161,17 +182,22 @@ class DatabaseService {
         timestamp: serverTimestamp() as Timestamp,
         type: 'stt',
         // Only include transcription_data_url if it has a value
-        ...(transcriptionDataUrl && { transcription_data_url: transcriptionDataUrl })
+        ...(transcriptionDataUrl && { transcription_data_url: transcriptionDataUrl }),
+        // Only include metadata if it exists and has values
+        ...(cleanedMetadata && Object.keys(cleanedMetadata).length > 0 && { metadata: cleanedMetadata })
       };
+
+      // Clean the entire sttData object to remove any remaining undefined values
+      const cleanedSttData = removeUndefined(sttData);
 
       console.log('💾 Creating STT record in Firestore (metadata only)...');
       console.log('📊 Data size check:', {
-        transcriptLength: sttData.transcript.length,
-        hasTranscriptionDataUrl: !!sttData.transcription_data_url,
-        metadataSize: JSON.stringify(sttData.metadata || {}).length
+        transcriptLength: cleanedSttData.transcript.length,
+        hasTranscriptionDataUrl: !!cleanedSttData.transcription_data_url,
+        metadataSize: JSON.stringify(cleanedSttData.metadata || {}).length
       });
 
-      const docRef = await addDoc(collection(db, 'users', currentUserId, 'stt'), sttData);
+      const docRef = await addDoc(collection(db, 'users', currentUserId, 'stt'), cleanedSttData);
       console.log('✅ STT record created:', docRef.id);
       return docRef.id;
     } catch (error) {
