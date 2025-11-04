@@ -57,35 +57,118 @@ export default function OnboardingTooltip({
 
       let top = 0;
       let left = 0;
+      const gap = 20; // Minimum gap between tooltip and target element
 
+      // Calculate initial position based on preferred position
       switch (position) {
         case 'top':
-          top = targetRect.top - tooltipRect.height - 12;
+          top = targetRect.top - tooltipRect.height - gap;
           left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
           break;
         case 'bottom':
-          top = targetRect.bottom + 12;
+          top = targetRect.bottom + gap;
           left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
           break;
         case 'left':
           top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
-          left = targetRect.left - tooltipRect.width - 12;
+          left = targetRect.left - tooltipRect.width - gap;
           break;
         case 'right':
           top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
-          left = targetRect.right + 12;
+          left = targetRect.right + gap;
           break;
       }
 
-      // Ensure tooltip stays within viewport
-      const padding = 16;
-      if (left < padding) left = padding;
-      if (left + tooltipRect.width > window.innerWidth - padding) {
-        left = window.innerWidth - tooltipRect.width - padding;
+      // Check if tooltip overlaps with target element
+      const tooltipRectCalculated = {
+        top,
+        left,
+        bottom: top + tooltipRect.height,
+        right: left + tooltipRect.width
+      };
+
+      const overlaps = (
+        tooltipRectCalculated.left < targetRect.right &&
+        tooltipRectCalculated.right > targetRect.left &&
+        tooltipRectCalculated.top < targetRect.bottom &&
+        tooltipRectCalculated.bottom > targetRect.top
+      );
+
+      // If overlaps, try alternative positions
+      if (overlaps) {
+        // Try opposite side first
+        if (position === 'bottom') {
+          top = targetRect.top - tooltipRect.height - gap;
+        } else if (position === 'top') {
+          top = targetRect.bottom + gap;
+        } else if (position === 'right') {
+          left = targetRect.left - tooltipRect.width - gap;
+        } else if (position === 'left') {
+          left = targetRect.right + gap;
+        }
+
+        // Recalculate overlap
+        const newOverlap = (
+          left < targetRect.right &&
+          left + tooltipRect.width > targetRect.left &&
+          top < targetRect.bottom &&
+          top + tooltipRect.height > targetRect.top
+        );
+
+        // If still overlaps, position to the side with more space
+        if (newOverlap) {
+          const spaceAbove = targetRect.top;
+          const spaceBelow = window.innerHeight - targetRect.bottom;
+          const spaceLeft = targetRect.left;
+          const spaceRight = window.innerWidth - targetRect.right;
+
+          if (spaceRight > spaceLeft && spaceRight > Math.max(spaceAbove, spaceBelow)) {
+            // Position to the right
+            left = targetRect.right + gap;
+            top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+          } else if (spaceLeft > spaceRight && spaceLeft > Math.max(spaceAbove, spaceBelow)) {
+            // Position to the left
+            left = targetRect.left - tooltipRect.width - gap;
+            top = targetRect.top + (targetRect.height / 2) - (tooltipRect.height / 2);
+          } else if (spaceAbove > spaceBelow) {
+            // Position above
+            top = targetRect.top - tooltipRect.height - gap;
+            left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+          } else {
+            // Position below
+            top = targetRect.bottom + gap;
+            left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
+          }
+        }
       }
-      if (top < padding) top = padding;
+
+      // Ensure tooltip stays within viewport (but never overlaps target)
+      const padding = 16;
+      if (left < padding) {
+        left = Math.max(padding, targetRect.right + gap);
+      }
+      if (left + tooltipRect.width > window.innerWidth - padding) {
+        left = Math.min(window.innerWidth - tooltipRect.width - padding, targetRect.left - tooltipRect.width - gap);
+      }
+      if (top < padding) {
+        top = Math.max(padding, targetRect.bottom + gap);
+      }
       if (top + tooltipRect.height > window.innerHeight - padding) {
-        top = window.innerHeight - tooltipRect.height - padding;
+        top = Math.min(window.innerHeight - tooltipRect.height - padding, targetRect.top - tooltipRect.height - gap);
+      }
+
+      // Final overlap check - if still overlaps, position at a safe distance
+      const finalOverlap = (
+        left < targetRect.right &&
+        left + tooltipRect.width > targetRect.left &&
+        top < targetRect.bottom &&
+        top + tooltipRect.height > targetRect.top
+      );
+
+      if (finalOverlap) {
+        // Last resort: position below with extra gap
+        top = targetRect.bottom + gap + 20;
+        left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
       }
 
       setPositionStyle({
