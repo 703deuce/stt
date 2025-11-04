@@ -29,7 +29,7 @@ export default function OnboardingTooltip({
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    zIndex: 10000
+    zIndex: 10002
   });
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
@@ -92,7 +92,7 @@ export default function OnboardingTooltip({
         position: 'fixed',
         top: `${top}px`,
         left: `${left}px`,
-        zIndex: 10000
+        zIndex: 10002
       });
 
       console.log('✅ [OnboardingTooltip] Tooltip positioned at:', { top, left });
@@ -131,7 +131,7 @@ export default function OnboardingTooltip({
       <style>{`
         #${targetId} {
           position: relative;
-          z-index: 10001 !important;
+          z-index: 10000 !important;
           box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.5) !important;
           border-radius: 8px;
         }
