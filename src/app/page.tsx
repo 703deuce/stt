@@ -1341,13 +1341,13 @@ export default function LandingPage() {
       {/* CTA Section */}
       <section className="bg-gradient-to-br from-purple-50 via-teal-50 to-indigo-50 py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
-          <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
+          <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
             Ready to Scale Your Content Without the Bottleneck?
           </h2>
-          <p className="text-xl text-white/90 mb-4 max-w-2xl mx-auto">
+          <p className="text-xl text-gray-700 mb-4 max-w-2xl mx-auto">
             Join thousands of podcasters, YouTubers, agencies, and course creators who've ditched slow, expensive transcription for a platform that actually keeps up with their ambition.
           </p>
-          <p className="text-2xl font-bold text-white mb-8">
+          <p className="text-2xl font-bold text-gray-900 mb-8">
             🎉 Start your 7-day free trial—90 minutes included, no credit card required
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
@@ -1366,21 +1366,21 @@ export default function LandingPage() {
               Watch Demo
             </a>
           </div>
-          <div className="flex flex-wrap items-center justify-center gap-6 text-white/80 text-sm mt-6">
+          <div className="flex flex-wrap items-center justify-center gap-6 text-gray-700 text-sm mt-6">
             <div className="flex items-center">
-              <CheckCircle className="w-4 h-4 mr-2" />
+              <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
               <span>7-day free trial</span>
             </div>
             <div className="flex items-center">
-              <CheckCircle className="w-4 h-4 mr-2" />
+              <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
               <span>90 minutes included</span>
                 </div>
             <div className="flex items-center">
-              <CheckCircle className="w-4 h-4 mr-2" />
+              <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
               <span>No credit card needed</span>
             </div>
             <div className="flex items-center">
-              <CheckCircle className="w-4 h-4 mr-2" />
+              <CheckCircle className="w-4 h-4 mr-2 text-green-600" />
               <span>Cancel anytime</span>
             </div>
           </div>
