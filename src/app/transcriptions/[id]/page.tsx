@@ -392,7 +392,7 @@ export default function TranscriptionViewPage() {
   };
 
   const handleTimestampClick = (startTime: number) => {
-    const audio = document.getElementById('transcription-audio') as HTMLAudioElement;
+    const audio = document.getElementById('transcription-audio-player') as HTMLAudioElement;
     console.log('🎯 Jump-to clicked:', { startTime, audioFound: !!audio, audioSrc: audio?.src });
     if (audio) {
       audio.currentTime = startTime;
