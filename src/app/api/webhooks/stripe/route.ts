@@ -83,16 +83,13 @@ export async function POST(request: NextRequest) {
         } 
         // Handle subscription plans
         else {
-          // Map plan to word limits
+          // Map plan to word limits (use very large number for unlimited)
           const planWordLimits = {
             'transcription-only': 0,
-            'creator': 20000,
-            'pro': 100000,
-            'studio': 400000,
+            'creator': 999999999, // Unlimited (using large number for Firestore)
             // Legacy plans
             'solo': 0,
-            'team': 20000,
-            'agency': 100000,
+            'team': 999999999, // Unlimited (maps to creator)
           };
 
           const monthlyWordLimit = planWordLimits[plan as keyof typeof planWordLimits] || 0;
