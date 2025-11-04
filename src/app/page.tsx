@@ -265,7 +265,7 @@ export default function LandingPage() {
       </section>
 
       {/* Pain Points Section */}
-      <section className="bg-white py-20">
+      <section className="bg-gradient-to-br from-red-50 via-orange-50 to-pink-50 py-20">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -339,7 +339,7 @@ export default function LandingPage() {
       </section>
 
       {/* Key Benefits Grid */}
-      <section className="bg-white py-20">
+      <section className="bg-gradient-to-br from-blue-50 via-purple-50 to-teal-50 py-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
             <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-2 border-green-200">
@@ -434,7 +434,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="bg-white py-24">
+      <section id="features" className="bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50 py-24">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-20">
             <div className="inline-flex items-center bg-gradient-to-r from-purple-100 to-teal-100 text-purple-800 px-4 py-2 rounded-full text-sm font-semibold mb-6 shadow-sm">
@@ -514,7 +514,7 @@ export default function LandingPage() {
       </section>
 
       {/* Supported Languages Section */}
-      <section className="bg-white py-20">
+      <section className="bg-gradient-to-br from-purple-50 via-pink-50 to-orange-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <div className="inline-flex items-center bg-gradient-to-r from-orange-100 to-purple-100 text-orange-800 px-4 py-2 rounded-full text-sm font-medium mb-4">
@@ -1211,7 +1211,7 @@ export default function LandingPage() {
       </section>
 
       {/* What Makes Us Unbeatable Section */}
-      <section className="bg-white py-20">
+      <section className="bg-gradient-to-br from-green-50 via-emerald-50 to-teal-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
@@ -1260,7 +1260,7 @@ export default function LandingPage() {
       </section>
 
       {/* Testimonials Section */}
-      <section id="testimonials" className="bg-gray-50 py-20">
+      <section id="testimonials" className="bg-gradient-to-br from-violet-50 via-purple-50 to-indigo-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
