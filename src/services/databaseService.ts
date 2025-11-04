@@ -680,8 +680,33 @@ class DatabaseService {
       // Get recent activity (last 10 records from both types)
       const allRecords = [...sttRecords, ...ttsRecords]
         .sort((a, b) => {
-          const aTime = a.timestamp instanceof Timestamp ? a.timestamp.toDate().getTime() : new Date(a.timestamp).getTime();
-          const bTime = b.timestamp instanceof Timestamp ? b.timestamp.toDate().getTime() : new Date(b.timestamp).getTime();
+          // Handle different timestamp formats
+          let aTime: number;
+          if (a.timestamp instanceof Date) {
+            aTime = a.timestamp.getTime();
+          } else if (a.timestamp instanceof Timestamp) {
+            aTime = a.timestamp.toDate().getTime();
+          } else if (typeof a.timestamp === 'string') {
+            aTime = new Date(a.timestamp).getTime();
+          } else if (typeof a.timestamp === 'number') {
+            aTime = a.timestamp;
+          } else {
+            aTime = 0; // Fallback to epoch
+          }
+          
+          let bTime: number;
+          if (b.timestamp instanceof Date) {
+            bTime = b.timestamp.getTime();
+          } else if (b.timestamp instanceof Timestamp) {
+            bTime = b.timestamp.toDate().getTime();
+          } else if (typeof b.timestamp === 'string') {
+            bTime = new Date(b.timestamp).getTime();
+          } else if (typeof b.timestamp === 'number') {
+            bTime = b.timestamp;
+          } else {
+            bTime = 0; // Fallback to epoch
+          }
+          
           return bTime - aTime;
         })
         .slice(0, 10);

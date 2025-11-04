@@ -527,11 +527,10 @@ export default function AllTranscriptionsPage() {
                             {/* Progress Bar for Processing Jobs */}
                             {(transcription as any).isVirtual && ((transcription as any).status === 'uploading' || transcription.status === 'processing') && (
                               <div className="mb-4">
-                                <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
+                                <div className="text-sm text-gray-600 mb-2">
                                   <span>
-                                    {(transcription as any).status === 'uploading' ? 'Uploading to Firebase...' : 'Transcribing audio...'}
+                                    {(transcription as any).status === 'uploading' ? 'File uploading' : 'Transcribing audio...'}
                                   </span>
-                                  <span className="font-medium">{(transcription as any).progress || 0}%</span>
                                 </div>
                                 <div className="w-full bg-gray-200 rounded-full h-2">
                                   <div

@@ -100,6 +100,9 @@ export default function TranscriptionViewPage() {
   const combinedSegments = transcription?.diarized_transcript || [];
 
   useEffect(() => {
+    // Scroll to top when page loads or transcription ID changes
+    window.scrollTo(0, 0);
+    
     if (user && transcriptionId) {
       loadTranscription();
     }
@@ -147,6 +150,9 @@ export default function TranscriptionViewPage() {
     try {
       setLoading(true);
       setError(null);
+      // Scroll to top when starting to load
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      
       const record = await databaseService.getSTTRecordById(transcriptionId, user.uid);
       if (record) {
         console.log('🔍 Loaded transcription record:', {
@@ -187,6 +193,9 @@ export default function TranscriptionViewPage() {
             
             // Load speaker mappings for this transcription
             await loadSpeakerMappings(transcriptionId);
+            
+            // Scroll to top after content loads
+            window.scrollTo({ top: 0, behavior: 'instant' });
           } catch (storageError) {
             console.error('❌ Failed to load full transcription data from Storage:', storageError);
             console.warn('⚠️ Falling back to basic transcription record (no word-level timestamps)');
@@ -197,6 +206,9 @@ export default function TranscriptionViewPage() {
             
             // Load speaker mappings for this transcription
             await loadSpeakerMappings(transcriptionId);
+            
+            // Scroll to top after content loads
+            window.scrollTo({ top: 0, behavior: 'instant' });
           }
         } else {
           console.log('📝 Using basic transcription record (no Storage data)');
@@ -204,6 +216,9 @@ export default function TranscriptionViewPage() {
           
           // Load speaker mappings for this transcription
           await loadSpeakerMappings(transcriptionId);
+          
+          // Scroll to top after content loads
+          window.scrollTo({ top: 0, behavior: 'instant' });
         }
         
       } else {
@@ -214,6 +229,10 @@ export default function TranscriptionViewPage() {
       setError('Failed to load transcription');
     } finally {
       setLoading(false);
+      // Ensure scroll to top after loading completes
+      setTimeout(() => {
+        window.scrollTo({ top: 0, behavior: 'instant' });
+      }, 0);
     }
   };
 

@@ -6,6 +6,7 @@ import { databaseService } from '../services/databaseService';
 import { ttsDatabaseService } from '../services/ttsDatabaseService';
 import { STTRecord } from '../services/databaseService';
 import { TTSRecord } from '../services/ttsDatabaseService';
+import { Timestamp } from 'firebase/firestore';
 import { 
   FileText, 
   Volume2, 
@@ -50,8 +51,33 @@ export default function UserStats() {
       // Get recent activity (last 10 records from both types)
       const allRecords = [...sttRecords, ...ttsRecords]
         .sort((a, b) => {
-          const aTime = a.timestamp instanceof Date ? a.timestamp.getTime() : a.timestamp.toDate().getTime();
-          const bTime = b.timestamp instanceof Date ? b.timestamp.getTime() : b.timestamp.toDate().getTime();
+          // Handle different timestamp formats
+          let aTime: number;
+          if (a.timestamp instanceof Date) {
+            aTime = a.timestamp.getTime();
+          } else if (a.timestamp instanceof Timestamp) {
+            aTime = a.timestamp.toDate().getTime();
+          } else if (typeof a.timestamp === 'string') {
+            aTime = new Date(a.timestamp).getTime();
+          } else if (typeof a.timestamp === 'number') {
+            aTime = a.timestamp;
+          } else {
+            aTime = 0; // Fallback to epoch
+          }
+          
+          let bTime: number;
+          if (b.timestamp instanceof Date) {
+            bTime = b.timestamp.getTime();
+          } else if (b.timestamp instanceof Timestamp) {
+            bTime = b.timestamp.toDate().getTime();
+          } else if (typeof b.timestamp === 'string') {
+            bTime = new Date(b.timestamp).getTime();
+          } else if (typeof b.timestamp === 'number') {
+            bTime = b.timestamp;
+          } else {
+            bTime = 0; // Fallback to epoch
+          }
+          
           return bTime - aTime;
         })
         .slice(0, 10);

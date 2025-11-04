@@ -273,16 +273,16 @@ export default function LandingPage() {
             <p className="text-xl text-gray-600 mb-8">
               Every day, thousands of podcasters, researchers, legal teams, content creators, and agencies waste hours:
             </p>
-          </div>
+              </div>
           <div className="grid md:grid-cols-2 gap-6">
             <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
               <div className="flex items-start">
                 <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-1" />
-                <div>
+              <div>
                   <h3 className="font-bold text-gray-900 mb-2">Waiting 24-72 hours</h3>
                   <p className="text-gray-700 text-sm">for outsourced transcripts that still need heavy editing</p>
-                </div>
               </div>
+            </div>
             </div>
             <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
               <div className="flex items-start">
@@ -1304,9 +1304,9 @@ export default function LandingPage() {
               >
                 Get Started
               </a>
-            </div>
-          </div>
-
+                </div>
+              </div>
+              
 
           {/* Key Benefits */}
           <div className="mt-16 grid grid-cols-1 md:grid-cols-3 gap-8">
@@ -1434,7 +1434,7 @@ export default function LandingPage() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               Trusted by Thousands of Professionals Across Industries
             </h2>
-          </div>
+        </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">

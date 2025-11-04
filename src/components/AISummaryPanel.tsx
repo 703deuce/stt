@@ -135,8 +135,10 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
         if (snapshot.exists()) {
           const data = snapshot.data();
           const updatedAt = data?.updatedAt?.toMillis?.() || 0;
+          const hasSummaries = !!data?.summaries && Object.keys(data.summaries).length > 0;
+          
           console.log('📡 AI summary data changed:', {
-            hasSummaries: !!data?.summaries,
+            hasSummaries,
             summaryTypes: data?.summaries ? Object.keys(data.summaries) : [],
             updatedAt: new Date(updatedAt).toISOString()
           });
@@ -146,6 +148,12 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
           if (updatedAt > lastUpdate) {
             sessionStorage.setItem('lastSummaryUpdate', updatedAt.toString());
             console.log('🔄 Data changed, reloading summaries...');
+            
+            // If summaries exist, stop loading
+            if (hasSummaries) {
+              setLoading(false);
+            }
+            
             loadExistingAIData();
           } else {
             console.log('⏭️ No change detected, skipping reload');
@@ -191,11 +199,15 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       if (aiData && aiData.summaries) {
         console.log('✅ Found existing summaries:', Object.keys(aiData.summaries));
         setSummaries(aiData.summaries);
+        // Stop loading when summaries are found
+        setLoading(false);
       } else {
         console.log('ℹ️ No existing summaries found');
+        // Keep loading if we're waiting for summaries
       }
     } catch (error) {
       console.error('❌ Error loading existing AI data:', error);
+      setLoading(false);
     }
   };
 
@@ -256,12 +268,12 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       const jobResults = await Promise.all(jobPromises);
       console.log('✅ All summary jobs started:', jobResults);
       
-      // Set loading state and show user that jobs are processing
+      // Keep loading state active - Firestore listener will update when summaries are ready
       setError(null);
-      setLoading(false);
+      setLoading(true); // Keep loading until summaries arrive via Firestore listener
       
-      // Note: Results will be updated via WebSocket notifications
-      // The user can check back later or we could implement real-time updates
+      // Results will be updated in real-time via Firestore listener
+      // The listener will automatically detect when summaries are saved and update the UI
       
     } catch (err) {
       console.error('Failed to start summary jobs:', err);

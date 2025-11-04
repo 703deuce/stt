@@ -97,6 +97,9 @@ export default function SharedTranscriptionPage() {
   };
 
   useEffect(() => {
+    // Scroll to top when page loads or transcription ID changes
+    window.scrollTo(0, 0);
+    
     loadSharedTranscription();
   }, [transcriptionId]);
 

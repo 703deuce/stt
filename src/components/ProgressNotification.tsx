@@ -40,7 +40,7 @@ export default function ProgressNotification({
   const getStatusText = () => {
     switch (status) {
       case 'uploading':
-        return 'Uploading to Firebase...';
+        return 'File uploading';
       case 'processing':
         return 'Transcribing audio...';
       case 'completed':
@@ -108,10 +108,6 @@ export default function ProgressNotification({
         {/* Progress Bar */}
         {(status === 'uploading' || status === 'processing') && (
           <div className="mb-3">
-            <div className="flex items-center justify-between text-xs text-gray-600 mb-1">
-              <span>Progress</span>
-              <span className="font-medium">{progress}%</span>
-            </div>
             <div className="w-full bg-gray-200 rounded-full h-2">
               <div
                 className={`h-2 rounded-full transition-all duration-300 ${getProgressColor()}`}

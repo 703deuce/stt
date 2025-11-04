@@ -1104,7 +1104,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               <div className="font-medium text-gray-900">Enhanced Long Audio Processing</div>
               <div className="text-sm text-gray-600">
                 {processingPhase === 'converting' && 'Converting file to MP3...'}
-                {processingPhase === 'uploading' && 'Uploading to Firebase Storage...'}
+                {processingPhase === 'uploading' && 'File uploading'}
                 {processingPhase === 'transcribing' && 'Transcribing with Parakeet API...'}
                 {processingPhase === 'saving' && 'Saving results to database...'}
                 {processingPhase === 'splitting' && 'Intelligently splitting audio into chunks...'}
@@ -1140,9 +1140,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           {/* Upload Progress Bar */}
           {processingPhase === 'uploading' && uploadProgress > 0 && uploadProgress < 100 && (
             <div className="mb-4">
-              <div className="flex items-center justify-between text-sm text-gray-600 mb-2">
-                <span>Uploading to Firebase Storage...</span>
-                <span className="font-medium">{uploadProgress.toFixed(1)}%</span>
+              <div className="text-sm text-gray-600 mb-2">
+                <span>File uploading</span>
               </div>
               <div className="w-full bg-blue-200 rounded-full h-2">
                 <div 
@@ -1162,7 +1161,6 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                   style={{ width: `${chunkProgress}%` }}
                 ></div>
               </div>
-              <div className="text-sm text-purple-600">{chunkProgress.toFixed(1)}% complete</div>
             </div>
           )}
 
