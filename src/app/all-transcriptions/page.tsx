@@ -6,6 +6,7 @@ import { useSpeakerMapping } from '@/context/SpeakerMappingContext';
 import { databaseService } from '@/services/databaseService';
 import { STTRecord } from '@/services/databaseService';
 import { useBackgroundProcessing } from '@/hooks/useBackgroundProcessing';
+import { Timestamp } from 'firebase/firestore';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { 
@@ -150,8 +151,33 @@ export default function AllTranscriptionsPage() {
     filtered.sort((a, b) => {
       switch (sortBy) {
         case 'date':
-          const dateA = a.timestamp instanceof Date ? a.timestamp : (a.timestamp as any).toDate();
-          const dateB = b.timestamp instanceof Date ? b.timestamp : (b.timestamp as any).toDate();
+          // Handle different timestamp formats
+          let dateA: Date;
+          if (a.timestamp instanceof Date) {
+            dateA = a.timestamp;
+          } else if (a.timestamp instanceof Timestamp) {
+            dateA = a.timestamp.toDate();
+          } else if (typeof a.timestamp === 'string') {
+            dateA = new Date(a.timestamp);
+          } else if (typeof a.timestamp === 'number') {
+            dateA = new Date(a.timestamp);
+          } else {
+            dateA = new Date(0); // Fallback to epoch
+          }
+          
+          let dateB: Date;
+          if (b.timestamp instanceof Date) {
+            dateB = b.timestamp;
+          } else if (b.timestamp instanceof Timestamp) {
+            dateB = b.timestamp.toDate();
+          } else if (typeof b.timestamp === 'string') {
+            dateB = new Date(b.timestamp);
+          } else if (typeof b.timestamp === 'number') {
+            dateB = new Date(b.timestamp);
+          } else {
+            dateB = new Date(0); // Fallback to epoch
+          }
+          
           return dateB.getTime() - dateA.getTime(); // Newest first
         case 'name':
           return a.name.localeCompare(b.name);
@@ -192,7 +218,19 @@ export default function AllTranscriptionsPage() {
     if (!timestamp) return 'Unknown';
     
     try {
-      const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+      let date: Date;
+      if (timestamp instanceof Date) {
+        date = timestamp;
+      } else if (timestamp instanceof Timestamp) {
+        date = timestamp.toDate();
+      } else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (typeof timestamp === 'number') {
+        date = new Date(timestamp);
+      } else {
+        return 'Unknown';
+      }
+      
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric',

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useProgressNotification } from '../context/ProgressNotificationContext';
 import { databaseService } from '../services/databaseService';
 import { STTRecord } from '../services/databaseService';
+import { Timestamp } from 'firebase/firestore';
 import { 
   FileText, 
   Clock, 
@@ -139,7 +140,19 @@ export default function RecentTranscriptions() {
     if (!timestamp) return 'Unknown';
     
     try {
-      const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
+      let date: Date;
+      if (timestamp instanceof Date) {
+        date = timestamp;
+      } else if (timestamp instanceof Timestamp) {
+        date = timestamp.toDate();
+      } else if (typeof timestamp === 'string') {
+        date = new Date(timestamp);
+      } else if (typeof timestamp === 'number') {
+        date = new Date(timestamp);
+      } else {
+        return 'Unknown';
+      }
+      
       const now = new Date();
       const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
       
