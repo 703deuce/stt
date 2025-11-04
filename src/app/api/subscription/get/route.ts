@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { auth } from '@/config/firebase';
 import { db } from '@/config/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { stripe } from '@/lib/stripe';

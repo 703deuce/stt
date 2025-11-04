@@ -132,12 +132,12 @@ export default function LandingPage() {
                 #1 AI Transcription Platform
               </div>
               <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
-                Convert Audio to Text with
-                <span className="bg-gradient-to-r from-purple-600 to-teal-500 bg-clip-text text-transparent block"> Superhuman Accuracy</span>
+                Stop Wasting Hours on Transcription.
+                <span className="bg-gradient-to-r from-purple-600 to-teal-500 bg-clip-text text-transparent block"> Start Creating More Content—Effortlessly.</span>
               </h1>
               <p className="text-xl text-gray-600 mb-8 max-w-2xl leading-relaxed">
-                Transform your audio and video files into accurate, searchable text with advanced speaker diarization and word-level timestamps. 
-                <span className="font-semibold text-gray-900">25 languages • 99.8% accuracy • Up to 10 hours per file</span>.
+                You're producing podcasts, videos, client calls, and courses at lightning speed. But every time you need a transcript, the process grinds to a halt. 
+                <span className="font-semibold text-gray-900">What if transcription was instant, unlimited, and actually accurate?</span>
               </p>
               <div className="flex flex-col sm:flex-row gap-4 mb-8">
                 <a 
@@ -264,26 +264,147 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Free Trial Banner */}
-      <section className="bg-gradient-to-r from-purple-600 via-teal-500 to-purple-700 py-12 relative overflow-hidden">
-        <div className="absolute inset-0 bg-black/10"></div>
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative">
-          <div className="flex flex-col md:flex-row items-center justify-between text-white">
-            <div className="flex items-center mb-6 md:mb-0">
-              <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4 mr-6 shadow-xl">
-                <Sparkles className="w-10 h-10 text-white" />
-              </div>
-              <div>
-                <h3 className="text-3xl font-bold mb-2">Try 7 Days Free • No Credit Card Required</h3>
-                <p className="text-white/90 text-lg">Get 90 minutes of transcription + full access to all premium features</p>
+      {/* Pain Points Section */}
+      <section className="bg-white py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              You Didn't Start Creating Content to Become a Full-Time Transcription Editor
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-start">
+                <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Waiting days</h3>
+                  <p className="text-gray-700 text-sm">for outsourced transcripts that come back full of errors</p>
+                </div>
               </div>
             </div>
-            <a 
-              href="/auth" 
-              className="bg-white text-purple-600 px-8 py-4 rounded-xl font-bold hover:bg-gray-100 transition-all duration-200 shadow-2xl whitespace-nowrap text-lg transform hover:-translate-y-1"
-            >
-              Start Free Trial →
-            </a>
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-start">
+                <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Paying $1-3 per minute</h3>
+                  <p className="text-gray-700 text-sm">for "premium" services that still miss speaker names</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-start">
+                <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Hitting artificial caps</h3>
+                  <p className="text-gray-700 text-sm">on file sizes, upload limits, or monthly minutes</p>
+                </div>
+              </div>
+            </div>
+            <div className="bg-red-50 border-2 border-red-200 rounded-xl p-6">
+              <div className="flex items-start">
+                <X className="w-6 h-6 text-red-600 mr-3 flex-shrink-0 mt-1" />
+                <div>
+                  <h3 className="font-bold text-gray-900 mb-2">Manually editing</h3>
+                  <p className="text-gray-700 text-sm">auto-transcripts that butcher technical terms</p>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Solution Section */}
+      <section className="bg-gradient-to-br from-purple-50 via-white to-teal-50 py-20">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              What If Transcription Was Instant, Unlimited, and Actually Accurate?
+            </h2>
+            <p className="text-xl text-gray-600">
+              Imagine uploading a 3-hour podcast, multi-speaker interview, or client webinar—and getting back a <strong>perfect transcript in under 5 minutes</strong>, with every speaker labeled, every word timestamped, and AI-generated summaries ready to share.
+            </p>
+          </div>
+          <div className="bg-white rounded-2xl shadow-xl p-8 border-2 border-purple-200">
+            <p className="text-lg text-gray-700 mb-6 text-center">
+              Now imagine doing that <strong>unlimited times per month</strong>—no caps, no overages, no "contact sales" nonsense—for less than the cost of transcribing a single hour manually.
+            </p>
+            <p className="text-2xl font-bold text-gray-900 text-center">
+              That's Transovo AI.
+            </p>
+            <p className="text-lg text-gray-600 text-center mt-4">
+              Built for creators and agencies who need to move fast, scale smart, and never worry about hitting limits.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Key Benefits Grid */}
+      <section className="bg-white py-20">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-6 border-2 border-green-200">
+              <CheckCircle className="w-8 h-8 text-green-600 mb-4" />
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">99.8% Accuracy</h3>
+              <p className="text-gray-700 text-sm">with advanced speaker diarization (knows who said what, every time)</p>
+            </div>
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-6 border-2 border-purple-200">
+              <CheckCircle className="w-8 h-8 text-purple-600 mb-4" />
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">Unlimited Transcription</h3>
+              <p className="text-gray-700 text-sm">upload 10-hour files, process hundreds per month, no caps</p>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-6 border-2 border-teal-200">
+              <CheckCircle className="w-8 h-8 text-teal-600 mb-4" />
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">AI Content Repurposing</h3>
+              <p className="text-gray-700 text-sm">turn one transcript into blog posts, social captions, email sequences, and more</p>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-6 border-2 border-blue-200">
+              <CheckCircle className="w-8 h-8 text-blue-600 mb-4" />
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">Instant Results</h3>
+              <p className="text-gray-700 text-sm">30x faster than manual transcription, ready in minutes not days</p>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-6 border-2 border-orange-200">
+              <CheckCircle className="w-8 h-8 text-orange-600 mb-4" />
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">One Simple Price</h3>
+              <p className="text-gray-700 text-sm">no per-minute charges, no hidden fees, no surprise invoices</p>
+            </div>
+            <div className="bg-gradient-to-br from-pink-50 to-pink-100 rounded-xl p-6 border-2 border-pink-200">
+              <CheckCircle className="w-8 h-8 text-pink-600 mb-4" />
+              <h3 className="font-bold text-gray-900 mb-2 text-lg">True Unlimited</h3>
+              <p className="text-gray-700 text-sm">not fake "unlimited" with hidden caps</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Use Cases Section */}
+      <section className="bg-gray-50 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              Why Agencies and Power Creators Choose Transovo AI
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <div className="text-3xl mb-4">🎙️</div>
+              <h3 className="font-bold text-gray-900 mb-3 text-lg">For Podcasters</h3>
+              <p className="text-gray-600 text-sm">Upload your episode, get speaker-labeled transcripts with timestamps, generate show notes and social clips automatically—all in under 10 minutes.</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <div className="text-3xl mb-4">💼</div>
+              <h3 className="font-bold text-gray-900 mb-3 text-lg">For Content Agencies</h3>
+              <p className="text-gray-600 text-sm">Process unlimited client calls, webinars, and interviews. Turn every recording into searchable transcripts, reports, and multi-format deliverables without hiring extra VAs.</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <div className="text-3xl mb-4">🎓</div>
+              <h3 className="font-bold text-gray-900 mb-3 text-lg">For Course Creators</h3>
+              <p className="text-gray-600 text-sm">Transcribe video lessons with word-level timestamps, create accessible captions, and repurpose content into workbooks, email courses, and lead magnets—effortlessly.</p>
+            </div>
+            <div className="bg-white rounded-xl p-6 shadow-lg border border-gray-200">
+              <div className="text-3xl mb-4">📹</div>
+              <h3 className="font-bold text-gray-900 mb-3 text-lg">For YouTubers</h3>
+              <p className="text-gray-600 text-sm">Generate perfect SRT/VTT subtitles, create SEO-optimized video descriptions, and extract viral social clips—automatically.</p>
+            </div>
           </div>
         </div>
       </section>
@@ -725,10 +846,10 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Your 7-Day Free Trial Includes
+              Try Everything Free for 7 Days—No Strings Attached
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Experience everything our platform has to offer—no credit card required, no commitments
+              We know you've been burned by "free trials" that require a credit card and auto-charge you. That's not how we roll.
             </p>
           </div>
 
@@ -737,9 +858,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-green-500 to-green-600 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <CheckCircle className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">90 Minutes Free</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">90 Minutes of Free Transcription</h3>
               <p className="text-gray-600 text-center text-sm">
-                Enough to transcribe multiple meetings, interviews, or podcasts. Split across any number of files.
+                Enough to test multiple files, long-form content, and multi-speaker recordings.
               </p>
             </div>
 
@@ -747,9 +868,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-purple-600 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Users className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">All Features Unlocked</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Every Feature Unlocked</h3>
               <p className="text-gray-600 text-center text-sm">
-                Speaker diarization, AI summaries, bulk upload, word-level highlights, export—everything included.
+                Speaker diarization, AI summaries, content repurposing, unlimited uploads—nothing is hidden or paywalled.
               </p>
             </div>
 
@@ -757,9 +878,9 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Shield className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">No Credit Card</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">No Credit Card Required</h3>
               <p className="text-gray-600 text-center text-sm">
-                Start your trial instantly with just an email. No payment details required until you upgrade.
+                Sign up with just your email. We don't ask for payment until you're ready to upgrade.
               </p>
             </div>
 
@@ -767,35 +888,35 @@ export default function LandingPage() {
               <div className="w-12 h-12 bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg flex items-center justify-center mb-4 mx-auto">
                 <Download className="w-6 h-6 text-white" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Keep Your Files</h3>
+              <h3 className="text-lg font-semibold text-gray-900 mb-2 text-center">Keep Your Work Forever</h3>
               <p className="text-gray-600 text-center text-sm">
-                All trial transcripts stay accessible forever. Export and download even after trial ends.
+                All trial transcripts stay in your account. Export and download anytime, even after your trial ends.
               </p>
             </div>
           </div>
 
           <div className="bg-white rounded-2xl p-8 shadow-lg border-2 border-purple-200">
             <div className="text-center mb-6">
-              <h3 className="text-2xl font-bold text-gray-900 mb-2">What Happens When My Trial Ends?</h3>
+              <h3 className="text-2xl font-bold text-gray-900 mb-2">What Happens After My Trial?</h3>
               <p className="text-gray-600">
-                After 7 days or 90 minutes (whichever comes first), you can upgrade anytime to continue transcribing.
+                After 7 days or 90 minutes (whichever comes first), you decide:
               </p>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">✓</div>
-                <h4 className="font-semibold text-gray-900 mb-1">Keep Your Work</h4>
-                <p className="text-sm text-gray-600">Access all trial transcripts forever</p>
+                <h4 className="font-semibold text-gray-900 mb-1">Upgrade to keep transcribing</h4>
+                <p className="text-sm text-gray-600">choose the plan that fits your workflow</p>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">✓</div>
-                <h4 className="font-semibold text-gray-900 mb-1">Cancel Anytime</h4>
-                <p className="text-sm text-gray-600">No automatic charges or subscriptions</p>
+                <h4 className="font-semibold text-gray-900 mb-1">Keep all your trial files</h4>
+                <p className="text-sm text-gray-600">access and export them forever</p>
               </div>
               <div className="text-center">
                 <div className="text-3xl font-bold text-purple-600 mb-2">✓</div>
-                <h4 className="font-semibold text-gray-900 mb-1">Upgrade When Ready</h4>
-                <p className="text-sm text-gray-600">Choose any plan that fits your needs</p>
+                <h4 className="font-semibold text-gray-900 mb-1">Cancel anytime</h4>
+                <p className="text-sm text-gray-600">no auto-charges, no hidden fees, no questions asked</p>
               </div>
             </div>
           </div>
@@ -824,8 +945,7 @@ export default function LandingPage() {
               Choose Your Perfect Plan
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
-              Start with unlimited transcription, then add AI content repurposing when you need it. 
-              Simple pricing, no hidden fees, cancel anytime.
+              Stop paying per minute. Stop hitting caps. Start scaling your content without limits.
             </p>
             
             {/* Billing Toggle */}
@@ -932,15 +1052,15 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">SRT/VTT subtitles</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
                   <span className="text-gray-700 font-medium">25 languages</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Word timestamps</span>
+                  <span className="text-gray-700 font-medium">SRT/VTT subtitles</span>
+                </li>
+                <li className="flex items-center">
+                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
+                  <span className="text-gray-700 font-medium">Word-level timestamps</span>
                 </li>
                 <li className="flex items-center text-gray-400">
                   <X className="w-5 h-5 mr-3 flex-shrink-0" />
@@ -966,7 +1086,7 @@ export default function LandingPage() {
               
               <div className="text-center mb-8">
                 <h3 className="text-2xl font-bold text-gray-900 mb-2">Creator Plan</h3>
-                <p className="text-gray-600 mb-6 font-medium">For content creators</p>
+                <p className="text-gray-600 mb-6 font-medium">For podcasters, YouTubers & marketers</p>
                 <div className="mb-6">
                   <div className="monthly-pricing">
                     <span className="text-5xl font-bold text-gray-900">$34.99</span>
@@ -985,7 +1105,7 @@ export default function LandingPage() {
               <ul className="space-y-4 mb-8">
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium"><strong>Unlimited</strong> transcription</span>
+                  <span className="text-gray-700 font-medium"><strong>Everything in Transcription Only</strong></span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
@@ -993,19 +1113,15 @@ export default function LandingPage() {
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">30+ content types</span>
+                  <span className="text-gray-700 font-medium">30+ content types (blog, social, marketing)</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Copywriting frameworks</span>
+                  <span className="text-gray-700 font-medium">Copywriting frameworks (AIDA, BAB, PAS)</span>
                 </li>
                 <li className="flex items-center">
                   <CheckCircle className="w-5 h-5 text-purple-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">Custom instructions</span>
-                </li>
-                <li className="flex items-center">
-                  <CheckCircle className="w-5 h-5 text-green-500 mr-3 flex-shrink-0" />
-                  <span className="text-gray-700 font-medium">All transcription features</span>
+                  <span className="text-gray-700 font-medium">Custom creative instructions</span>
                 </li>
               </ul>
               
@@ -1094,19 +1210,65 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* What Makes Us Unbeatable Section */}
+      <section className="bg-white py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
+              What Makes Transovo AI Unbeatable
+            </h2>
+          </div>
+          <div className="grid md:grid-cols-2 gap-8">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-8 border-2 border-purple-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">True Unlimited Processing</h3>
+              <p className="text-gray-700 mb-4">
+                Upload files up to <strong>10 hours and 5GB each</strong>. Process <strong>unlimited files per month</strong>. Most platforms cap you at 3-6 hours per file and charge overages. We don't.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100 rounded-xl p-8 border-2 border-teal-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Speaker Diarization That Actually Works</h3>
+              <p className="text-gray-700 mb-4">
+                Automatically detects and labels unlimited speakers—perfect for interviews, panels, and team meetings. Competitors charge $2-5/minute for this. We include it free.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-8 border-2 border-blue-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">AI Content Repurposing</h3>
+              <p className="text-gray-700 mb-4">
+                Don't just transcribe—transform. Our AI turns your transcripts into blog posts, LinkedIn carousels, email newsletters, video scripts, and 30+ other content types. One upload, infinite outputs.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-8 border-2 border-green-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Lightning-Fast Turnaround</h3>
+              <p className="text-gray-700 mb-4">
+                Upload now, download in minutes. Our AI processes at <strong>30x realtime speed</strong>—so a 2-hour file is ready in under 4 minutes.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-xl p-8 border-2 border-orange-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">25 Languages, Auto-Detected</h3>
+              <p className="text-gray-700 mb-4">
+                English, Spanish, French, German, Italian, Portuguese, and 19 more. Just upload—we handle the rest.
+              </p>
+            </div>
+            <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-xl p-8 border-2 border-red-200">
+              <h3 className="text-xl font-bold text-gray-900 mb-4">Enterprise-Grade Security</h3>
+              <p className="text-gray-700 mb-4">
+                Bank-level encryption, SOC2 compliance, zero data retention. Your client NDAs and sensitive content are safe, always.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Testimonials Section */}
       <section id="testimonials" className="bg-gray-50 py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
-              Loved by Thousands of Users
+              Trusted by Thousands of Creators and Agencies Worldwide
             </h2>
-            <p className="text-xl text-gray-600">
-              See what our customers are saying about Transovo AI
-            </p>
-        </div>
+          </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="bg-white p-6 rounded-xl shadow-md border border-gray-100">
               <div className="flex items-center mb-4">
                 <div className="flex text-yellow-400">
@@ -1115,8 +1277,8 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              <p className="text-gray-700 mb-4">
-                "Transovo AI has revolutionized our podcast workflow. The speaker diarization is incredibly accurate, and we can now create show notes in minutes instead of hours."
+              <p className="text-gray-700 mb-4 italic">
+                "Before Transovo, I was paying $2/minute for transcription that took 3 days. Now I upload my podcast Friday morning and have transcripts, show notes, and social posts ready by lunch. Game changer."
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center mr-3">
@@ -1137,8 +1299,8 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              <p className="text-gray-700 mb-4">
-                "The accuracy is phenomenal. We use it for transcribing client interviews and the word-level timestamps make it perfect for creating video content with precise captions."
+              <p className="text-gray-700 mb-4 italic">
+                "We run a content agency managing 40+ client podcasts. Transovo saves us 60+ hours per month and our clients love how fast we deliver. The unlimited pricing means we never worry about overages."
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center mr-3">
@@ -1146,7 +1308,7 @@ export default function LandingPage() {
                 </div>
                 <div>
                   <div className="font-semibold text-gray-900">David Johnson</div>
-                  <div className="text-sm text-gray-500">Content Creator</div>
+                  <div className="text-sm text-gray-500">Agency Owner</div>
                 </div>
               </div>
             </div>
@@ -1159,15 +1321,15 @@ export default function LandingPage() {
                   ))}
                 </div>
               </div>
-              <p className="text-gray-700 mb-4">
-                "As a researcher, I need accurate transcriptions of focus groups and interviews. Transovo AI delivers 99.8% accuracy and saves me countless hours of manual work."
+              <p className="text-gray-700 mb-4 italic">
+                "As a researcher, I need perfect transcripts of focus groups and interviews. Transovo's speaker diarization is flawless, and I can upload 4-hour sessions without hitting caps. Worth every penny."
               </p>
               <div className="flex items-center">
                 <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-full flex items-center justify-center mr-3">
                   <span className="text-white font-semibold text-sm">AL</span>
                 </div>
                 <div>
-                  <div className="font-semibold text-gray-900">Alex Lee</div>
+                  <div className="font-semibold text-gray-900">Dr. Alex Lee</div>
                   <div className="text-sm text-gray-500">Research Director</div>
                 </div>
               </div>
@@ -1180,13 +1342,13 @@ export default function LandingPage() {
       <section className="bg-gradient-to-r from-purple-600 via-teal-500 to-purple-700 py-20">
         <div className="max-w-4xl mx-auto text-center px-4 sm:px-6 lg:px-8">
           <h2 className="text-3xl md:text-4xl font-bold text-white mb-6">
-            Ready to Transform Your Audio Workflow?
+            Ready to Scale Your Content Without the Bottleneck?
           </h2>
           <p className="text-xl text-white/90 mb-4 max-w-2xl mx-auto">
-            Join thousands of professionals who trust Transovo AI for their transcription needs.
+            Join thousands of podcasters, YouTubers, agencies, and course creators who've ditched slow, expensive transcription for a platform that actually keeps up with their ambition.
           </p>
           <p className="text-2xl font-bold text-white mb-8">
-            🎉 Get 7 days + 90 minutes free • No credit card required
+            🎉 Start your 7-day free trial—90 minutes included, no credit card required
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center mb-6">
             <a 
