@@ -37,6 +37,34 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const { notification, showNotification, updateNotification, hideNotification } = useProgressNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
   
+  // State declarations - must be before useEffect hooks that use them
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [extractedAudioFile, setExtractedAudioFile] = useState<File | null>(null);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const [isExtractingAudio, setIsExtractingAudio] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentRunpodJobId, setCurrentRunpodJobId] = useState<string | null>(null); // Track the current RunPod job ID
+  const [currentFileName, setCurrentFileName] = useState<string | null>(null); // Track filename as fallback for background jobs
+  const [settings, setSettings] = useState({
+    use_diarization: true,
+    pyannote_version: '3.0' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate). Default to 3.0 to match existing behavior
+    num_speakers: null as number | null,
+    include_timestamps: true,
+    audio_format: 'wav'
+  });
+
+  // Enhanced long transcription state
+  const [isLongAudio, setIsLongAudio] = useState(false);
+  const [useSmartSplitting, setUseSmartSplitting] = useState(true);
+  const [useVoiceEmbeddings, setUseVoiceEmbeddings] = useState(true);
+  const [chunks, setChunks] = useState<any[]>([]);
+  const [processingPhase, setProcessingPhase] = useState<'idle' | 'converting' | 'uploading' | 'diarizing' | 'transcribing' | 'saving' | 'splitting' | 'stitching' | 'complete'>('idle');
+  const [chunkProgress, setChunkProgress] = useState(0);
+  
+  // Trial & upgrade modal state
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeReason, setUpgradeReason] = useState('');
+
   // Cleanup audio extraction service on unmount
   useEffect(() => {
     return () => {
@@ -168,32 +196,6 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       }
     };
   }, [currentRunpodJobId, currentFileName, hideNotification, updateNotification, onTranscriptionComplete, notification.isVisible]);
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [extractedAudioFile, setExtractedAudioFile] = useState<File | null>(null);
-  const [isProcessing, setIsProcessing] = useState(false);
-  const [isExtractingAudio, setIsExtractingAudio] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [currentRunpodJobId, setCurrentRunpodJobId] = useState<string | null>(null); // Track the current RunPod job ID
-  const [currentFileName, setCurrentFileName] = useState<string | null>(null); // Track filename as fallback for background jobs
-  const [settings, setSettings] = useState({
-    use_diarization: true,
-    pyannote_version: '3.0' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate). Default to 3.0 to match existing behavior
-    num_speakers: null as number | null,
-    include_timestamps: true,
-    audio_format: 'wav'
-  });
-
-  // Enhanced long transcription state
-  const [isLongAudio, setIsLongAudio] = useState(false);
-  const [useSmartSplitting, setUseSmartSplitting] = useState(true);
-  const [useVoiceEmbeddings, setUseVoiceEmbeddings] = useState(true);
-  const [chunks, setChunks] = useState<any[]>([]);
-  const [processingPhase, setProcessingPhase] = useState<'idle' | 'converting' | 'uploading' | 'diarizing' | 'transcribing' | 'saving' | 'splitting' | 'stitching' | 'complete'>('idle');
-  const [chunkProgress, setChunkProgress] = useState(0);
-  
-  // Trial & upgrade modal state
-  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeReason, setUpgradeReason] = useState('');
 
   const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
