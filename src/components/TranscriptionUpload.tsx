@@ -164,6 +164,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const [uploadProgress, setUploadProgress] = useState(0);
   const [settings, setSettings] = useState({
     use_diarization: true,
+    pyannote_version: '2.1' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate)
     num_speakers: null as number | null,
     include_timestamps: true,
     audio_format: 'wav'
@@ -537,6 +538,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
           settings: {
             use_diarization: settings.use_diarization,
+            pyannote_version: settings.pyannote_version || undefined,
             max_speakers: null, // Always auto-detect speakers
             include_timestamps: settings.include_timestamps,
             speaker_threshold: 0.35, // Lower threshold for better speaker detection
@@ -683,6 +685,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
               settings: {
                 use_diarization: true,
+                pyannote_version: settings.pyannote_version || '2.1', // Use selected version or default to 2.1
                 max_speakers: null,
                 include_timestamps: false, // Only need speaker segments
                 speaker_threshold: 0.35,
@@ -1015,17 +1018,51 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Transcription Settings</h3>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <label className="font-medium text-gray-700">Speaker Diarization</label>
-              <p className="text-sm text-gray-500">Identify "who spoke when"</p>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Speaker Diarization
+            </label>
+            <div className="space-y-3">
+              <label className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="diarization"
+                  value="none"
+                  checked={!settings.use_diarization}
+                  onChange={() => setSettings(prev => ({ ...prev, use_diarization: false, pyannote_version: null }))}
+                  className="w-4 h-4 text-orange-500 focus:ring-orange-500 focus:ring-2"
+                />
+                <span className="text-sm text-gray-700">No diarization</span>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="diarization"
+                  value="2.1"
+                  checked={settings.use_diarization && settings.pyannote_version === '2.1'}
+                  onChange={() => setSettings(prev => ({ ...prev, use_diarization: true, pyannote_version: '2.1' }))}
+                  className="w-4 h-4 text-orange-500 focus:ring-orange-500 focus:ring-2"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Diarization 2.1</span>
+                  <span className="text-xs text-gray-500 ml-1">(Faster)</span>
+                </div>
+              </label>
+              <label className="flex items-center space-x-3 cursor-pointer p-2 rounded hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="diarization"
+                  value="3.0"
+                  checked={settings.use_diarization && settings.pyannote_version === '3.0'}
+                  onChange={() => setSettings(prev => ({ ...prev, use_diarization: true, pyannote_version: '3.0' }))}
+                  className="w-4 h-4 text-orange-500 focus:ring-orange-500 focus:ring-2"
+                />
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Diarization 3.0</span>
+                  <span className="text-xs text-gray-500 ml-1">(More accurate)</span>
+                </div>
+              </label>
             </div>
-            <input
-              type="checkbox"
-              checked={settings.use_diarization}
-              onChange={(e) => setSettings(prev => ({ ...prev, use_diarization: e.target.checked }))}
-              className="w-4 h-4 text-orange-500 rounded"
-            />
           </div>
 
           <div className="flex items-center justify-between">

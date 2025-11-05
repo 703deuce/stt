@@ -238,6 +238,7 @@ class BackgroundProcessingService {
           userId: job.userId,
           settings: {
             use_diarization: settings.use_diarization || true,
+            pyannote_version: settings.pyannote_version || (settings.use_diarization ? '2.1' : undefined),
             max_speakers: null,
             include_timestamps: true,
             speaker_threshold: 0.35,

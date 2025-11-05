@@ -97,6 +97,13 @@ export const ValidationUtils = {
       return false;
     }
     
+    // Validate pyannote_version (optional string: "2.1" or "3.0")
+    if (settings.pyannote_version !== undefined) {
+      if (typeof settings.pyannote_version !== 'string' || !['2.1', '3.0'].includes(settings.pyannote_version)) {
+        return false;
+      }
+    }
+    
     // Validate numeric fields
     if (settings.max_speakers !== undefined && settings.max_speakers !== null) {
       if (typeof settings.max_speakers !== 'number' || settings.max_speakers < 1 || settings.max_speakers > 20) {

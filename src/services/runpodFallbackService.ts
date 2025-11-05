@@ -37,6 +37,7 @@ interface TranscriptionRequest {
   audio_format?: string;
   include_timestamps?: boolean;
   use_diarization?: boolean;
+  pyannote_version?: string; // "2.1" (faster) or "3.0" (more accurate)
   num_speakers?: number | null;
   speaker_threshold?: number;
   single_speaker_mode?: boolean;

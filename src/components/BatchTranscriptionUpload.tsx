@@ -55,6 +55,7 @@ export default function BatchTranscriptionUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [useDiarization, setUseDiarization] = useState(true);
+  const [pyannoteVersion, setPyannoteVersion] = useState<'2.1' | '3.0' | null>('2.1');
   
   // Trial & upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -486,6 +487,7 @@ export default function BatchTranscriptionUpload() {
           filename: originalName,
           settings: {
             use_diarization: useDiarization,
+            pyannote_version: pyannoteVersion || undefined,
             max_speakers: null,
         include_timestamps: true,
             speaker_threshold: 0.35,
@@ -599,6 +601,7 @@ export default function BatchTranscriptionUpload() {
               filename: originalName,
               settings: {
                 use_diarization: true,
+                pyannote_version: pyannoteVersion || '2.1', // Use selected version or default to 2.1
                 max_speakers: null,
                 include_timestamps: false, // Only need speaker segments
                 speaker_threshold: 0.35,
@@ -1019,17 +1022,51 @@ export default function BatchTranscriptionUpload() {
             </div>
             <div className="flex items-center space-x-4">
               {/* Diarization Toggle */}
-              <div className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  id="use-diarization"
-                  checked={useDiarization}
-                  onChange={(e) => setUseDiarization(e.target.checked)}
-                  className="h-4 w-4 text-orange-600 focus:ring-orange-500 border-gray-300 rounded"
-                />
-                <label htmlFor="use-diarization" className="text-sm font-medium text-gray-700">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
                   Speaker Diarization
                 </label>
+                <div className="space-y-2">
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="batch-diarization"
+                      value="none"
+                      checked={!useDiarization}
+                      onChange={() => { setUseDiarization(false); setPyannoteVersion(null); }}
+                      className="w-4 h-4 text-orange-500"
+                    />
+                    <span className="text-sm text-gray-700">No diarization</span>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="batch-diarization"
+                      value="2.1"
+                      checked={useDiarization && pyannoteVersion === '2.1'}
+                      onChange={() => { setUseDiarization(true); setPyannoteVersion('2.1'); }}
+                      className="w-4 h-4 text-orange-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Diarization 2.1</span>
+                      <span className="text-xs text-gray-500 ml-1">(Faster)</span>
+                    </div>
+                  </label>
+                  <label className="flex items-center space-x-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="batch-diarization"
+                      value="3.0"
+                      checked={useDiarization && pyannoteVersion === '3.0'}
+                      onChange={() => { setUseDiarization(true); setPyannoteVersion('3.0'); }}
+                      className="w-4 h-4 text-orange-500"
+                    />
+                    <div>
+                      <span className="text-sm font-medium text-gray-700">Diarization 3.0</span>
+                      <span className="text-xs text-gray-500 ml-1">(More accurate)</span>
+                    </div>
+                  </label>
+                </div>
               </div>
             </div>
             <div className="flex items-center space-x-3">

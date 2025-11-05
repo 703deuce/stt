@@ -9,6 +9,7 @@ interface TranscriptionRequest {
   userId: string;
   settings: {
     use_diarization: boolean;
+    pyannote_version?: string; // "2.1" (faster) or "3.0" (more accurate)
     max_speakers: number | null;
     include_timestamps: boolean;
     speaker_threshold: number;
@@ -237,7 +238,8 @@ export async function POST(request: NextRequest) {
 
     // SINGLE CALL: Run both diarization and transcription together
     console.log('🎯 SINGLE CALL: Running both diarization and transcription together...');
-    console.log('🚀 Calling RunPod API with params:', {
+    // Build API params with pyannote_version if diarization is enabled
+    const apiParams: any = {
       audio_url: body.audio_url,
       audio_format: 'mp3',
       include_timestamps: true, // Get word-level timestamps
@@ -245,22 +247,24 @@ export async function POST(request: NextRequest) {
       num_speakers: body.settings.max_speakers,
       speaker_threshold: body.settings.speaker_threshold,
       single_speaker_mode: body.settings.single_speaker_mode,
-      hf_token: hfToken
-    });
+      filename: body.filename // Pass the filename to RunPod
+    };
+
+    // Add pyannote_version only if diarization is enabled
+    if (body.settings.use_diarization && body.settings.pyannote_version) {
+      apiParams.pyannote_version = body.settings.pyannote_version;
+      apiParams.hf_token = hfToken;
+    } else if (body.settings.use_diarization) {
+      // Default to 2.1 if diarization is enabled but no version specified
+      apiParams.pyannote_version = '2.1';
+      apiParams.hf_token = hfToken;
+    }
+
+    console.log('🚀 Calling RunPod API with params:', apiParams);
     
     let result;
     try {
-      result = await parakeetAPI.transcribeAudio({
-        audio_url: body.audio_url,
-        audio_format: 'mp3',
-        include_timestamps: true, // Get word-level timestamps
-        use_diarization: body.settings.use_diarization, // Enable diarization if requested
-        num_speakers: body.settings.max_speakers,
-        hf_token: hfToken,
-        speaker_threshold: body.settings.speaker_threshold,
-        single_speaker_mode: body.settings.single_speaker_mode,
-        filename: body.filename // Pass the filename to RunPod
-      }, body.filename); // Also pass filename for job mapping
+      result = await parakeetAPI.transcribeAudio(apiParams, body.filename); // Also pass filename for job mapping
     } catch (apiError) {
       console.error('❌ RunPod API call failed:', apiError);
       return NextResponse.json(
