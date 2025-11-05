@@ -55,7 +55,7 @@ export default function BatchTranscriptionUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [useDiarization, setUseDiarization] = useState(true);
-  const [pyannoteVersion, setPyannoteVersion] = useState<'2.1' | '3.0' | null>('2.1');
+  const [pyannoteVersion, setPyannoteVersion] = useState<'2.1' | '3.0' | null>('3.0'); // Default to 3.0 to match existing behavior
   
   // Trial & upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -487,7 +487,7 @@ export default function BatchTranscriptionUpload() {
           filename: originalName,
           settings: {
             use_diarization: useDiarization,
-            pyannote_version: pyannoteVersion || undefined,
+            pyannote_version: useDiarization ? (pyannoteVersion || '3.0') : undefined,
             max_speakers: null,
         include_timestamps: true,
             speaker_threshold: 0.35,
@@ -601,7 +601,7 @@ export default function BatchTranscriptionUpload() {
               filename: originalName,
               settings: {
                 use_diarization: true,
-                pyannote_version: pyannoteVersion || '2.1', // Use selected version or default to 2.1
+                pyannote_version: pyannoteVersion || '3.0', // Use selected version or default to 3.0
                 max_speakers: null,
                 include_timestamps: false, // Only need speaker segments
                 speaker_threshold: 0.35,

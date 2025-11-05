@@ -251,16 +251,18 @@ export async function POST(request: NextRequest) {
     };
 
     // Add pyannote_version only if diarization is enabled
-    if (body.settings.use_diarization && body.settings.pyannote_version) {
-      apiParams.pyannote_version = body.settings.pyannote_version;
+    // Always pass it explicitly to ensure handler uses the correct version
+    if (body.settings.use_diarization) {
+      // Use specified version, or default to "3.0" to match existing behavior
+      apiParams.pyannote_version = body.settings.pyannote_version || '3.0';
       apiParams.hf_token = hfToken;
-    } else if (body.settings.use_diarization) {
-      // Default to 2.1 if diarization is enabled but no version specified
-      apiParams.pyannote_version = '2.1';
-      apiParams.hf_token = hfToken;
+      console.log(`✅ Using PyAnnote version ${apiParams.pyannote_version} for diarization`);
     }
 
-    console.log('🚀 Calling RunPod API with params:', apiParams);
+    console.log('🚀 Calling RunPod API with params:', {
+      ...apiParams,
+      hf_token: apiParams.hf_token ? `${apiParams.hf_token.substring(0, 10)}...` : 'not provided'
+    });
     
     let result;
     try {

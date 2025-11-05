@@ -78,7 +78,7 @@ export default function RecentTranscriptions() {
               name: data.name
             });
             
-            if (change.type === 'modified' && data.status === 'completed') {
+            if ((change.type === 'modified' || change.type === 'added') && data.status === 'completed') {
               console.log('✅ Transcription completed! Updating notification...');
               updateNotification({ progress: 100, status: 'completed' });
               

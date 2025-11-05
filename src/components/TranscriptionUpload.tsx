@@ -64,7 +64,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       const queryRef = firestore.query(
         sttCollection,
         orderBy('timestamp', 'desc'),
-        limit(3) // Listen to recent 3 transcriptions
+        limit(10) // Listen to recent 10 transcriptions to catch all updates
       );
       
       unsubscribe = onSnapshot(queryRef, (snapshot) => {
@@ -109,27 +109,32 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               if (changeData.status === 'completed') {
                 console.log('✅ [TranscriptionUpload] Transcription completed! Updating notification to 100%');
                 
-                // Only show notification if there's an active notification
-                if (notification.isVisible) {
-                  updateNotification({ progress: 100, status: 'completed' });
-                  
-                  setTimeout(() => {
-                    console.log('🕐 [TranscriptionUpload] Hiding notification after completion');
-                    hideNotification();
-                  }, 5000);
-                }
+                // Always show completion notification and update UI
+                updateNotification({ progress: 100, status: 'completed' });
                 
+                setTimeout(() => {
+                  console.log('🕐 [TranscriptionUpload] Hiding notification after completion');
+                  hideNotification();
+                }, 5000);
+                
+                // Reset processing state
+                setIsProcessing(false);
+                setUploadProgress(0);
+                
+                // Call completion callback
                 if (onTranscriptionComplete) {
                   onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
                 }
               } else if (changeData.status === 'failed') {
                 console.log('❌ [TranscriptionUpload] Transcription failed!');
                 
-                // Only show notification if there's an active notification
-                if (notification.isVisible) {
-                  updateNotification({ progress: 0, status: 'failed' });
-                  setTimeout(() => hideNotification(), 3000);
-                }
+                // Always show failure notification
+                updateNotification({ progress: 0, status: 'failed' });
+                setTimeout(() => hideNotification(), 3000);
+                
+                // Reset processing state
+                setIsProcessing(false);
+                setUploadProgress(0);
               }
             }
           });
@@ -164,7 +169,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const [uploadProgress, setUploadProgress] = useState(0);
   const [settings, setSettings] = useState({
     use_diarization: true,
-    pyannote_version: '2.1' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate)
+    pyannote_version: '3.0' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate). Default to 3.0 to match existing behavior
     num_speakers: null as number | null,
     include_timestamps: true,
     audio_format: 'wav'
@@ -538,7 +543,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
           settings: {
             use_diarization: settings.use_diarization,
-            pyannote_version: settings.pyannote_version || undefined,
+            pyannote_version: settings.use_diarization ? (settings.pyannote_version || '3.0') : undefined,
             max_speakers: null, // Always auto-detect speakers
             include_timestamps: settings.include_timestamps,
             speaker_threshold: 0.35, // Lower threshold for better speaker detection
@@ -685,7 +690,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
               settings: {
                 use_diarization: true,
-                pyannote_version: settings.pyannote_version || '2.1', // Use selected version or default to 2.1
+                pyannote_version: settings.pyannote_version || '3.0', // Use selected version or default to 3.0
                 max_speakers: null,
                 include_timestamps: false, // Only need speaker segments
                 speaker_threshold: 0.35,
