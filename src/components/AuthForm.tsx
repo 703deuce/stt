@@ -105,7 +105,7 @@ export default function AuthForm() {
       <div className="text-center mb-8">
         <h2 className="text-3xl font-bold text-gray-900 mb-2">
           {isLogin ? "Sign In" : "Create Account"}
-        </h2>
+      </h2>
         {!isLogin && (
           <div className="inline-flex items-center bg-gradient-to-r from-green-50 to-teal-50 text-green-700 px-3 py-1 rounded-full text-xs font-semibold mt-2 border border-green-200">
             <CheckCircle className="w-3 h-3 mr-1" />
@@ -134,15 +134,15 @@ export default function AuthForm() {
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Mail className="h-5 w-5 text-gray-400" />
             </div>
-            <input
-              id="email"
-              type="email"
+          <input
+            id="email"
+            type="email"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            required
               className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-            />
+          />
           </div>
         </div>
 
@@ -154,15 +154,15 @@ export default function AuthForm() {
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
               <Lock className="h-5 w-5 text-gray-400" />
             </div>
-            <input
-              id="password"
-              type="password"
-              placeholder="Enter your password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+          <input
+            id="password"
+            type="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            required
               className="w-full pl-10 pr-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent transition-all bg-gray-50 focus:bg-white"
-            />
+          />
           </div>
         </div>
 

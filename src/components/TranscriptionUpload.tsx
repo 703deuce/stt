@@ -44,70 +44,79 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
     };
   }, []);
 
-  // Real-time Firestore listener: Listen for transcription completion
+  // Real-time Firestore listener: Listen for specific job completion
   useEffect(() => {
-    if (!auth.currentUser) return;
+    if (!auth.currentUser || (!currentRunpodJobId && !currentFileName)) return;
 
-    console.log('👂 Setting up Firestore listener for transcription updates...');
+    console.log('👂 Setting up Firestore listener for job:', {
+      runpodJobId: currentRunpodJobId,
+      fileName: currentFileName
+    });
     
     let unsubscribe: (() => void) | null = null;
-    let isInitialLoad = true; // Track if this is the initial load
     
     Promise.all([
       import('@/config/firebase'),
       import('firebase/firestore')
     ]).then(([{ db }, firestore]) => {
-      const { collection, onSnapshot, orderBy, limit } = firestore;
-      // Listen to the user's STT subcollection for ANY changes
+      const { collection, onSnapshot, query, where, limit, and, or } = firestore;
+      // Listen to the user's STT subcollection for documents matching our job
       const sttCollection = collection(db, 'users', auth.currentUser!.uid, 'stt');
       
-      const queryRef = firestore.query(
-        sttCollection,
-        orderBy('timestamp', 'desc'),
-        limit(10) // Listen to recent 10 transcriptions to catch all updates
-      );
+      // Build query: match by RunPod job ID if available, otherwise by filename
+      let queryRef;
+      if (currentRunpodJobId) {
+        // Primary: track by RunPod job ID
+        queryRef = firestore.query(
+          sttCollection,
+          where('metadata.runpod_job_id', '==', currentRunpodJobId),
+          limit(1)
+        );
+      } else if (currentFileName) {
+        // Fallback: track by filename (for background jobs)
+        queryRef = firestore.query(
+          sttCollection,
+          where('name', '==', currentFileName),
+          limit(1)
+        );
+      } else {
+        return; // No tracking criteria
+      }
       
       unsubscribe = onSnapshot(queryRef, (snapshot) => {
-        console.log('📡 [TranscriptionUpload] Firestore snapshot received:', {
+        console.log('📡 [TranscriptionUpload] Firestore snapshot received for job:', {
+          jobId: currentRunpodJobId,
           isEmpty: snapshot.empty,
           size: snapshot.size,
           hasPendingWrites: snapshot.metadata.hasPendingWrites,
-          docChanges: snapshot.docChanges().length,
-          isInitialLoad
+          docChanges: snapshot.docChanges().length
         });
         
         if (!snapshot.empty) {
-          const latestDoc = snapshot.docs[0];
-          const data = latestDoc.data();
+          const doc = snapshot.docs[0];
+          const data = doc.data();
           
-          console.log('📡 [TranscriptionUpload] Latest transcription:', {
-            id: latestDoc.id,
+          console.log('📡 [TranscriptionUpload] Document found for job:', {
+            docId: doc.id,
             status: data.status,
-            name: data.name
+            name: data.name,
+            runpodJobId: data.metadata?.runpod_job_id
           });
           
           // Check what changed
           const changes = snapshot.docChanges();
           changes.forEach((change) => {
+            const changeData = change.doc.data();
+            
             console.log('📝 [TranscriptionUpload] Document change:', {
-              type: change.type, // 'added', 'modified', 'removed'
+              type: change.type,
               docId: change.doc.id,
-              status: change.doc.data().status,
-              isInitialLoad
+              status: changeData.status
             });
             
-            // Skip processing on initial load to avoid triggering notifications for existing transcriptions
-            if (isInitialLoad) {
-              console.log('⏭️ [TranscriptionUpload] Skipping initial load changes');
-              return;
-            }
-            
-            // If status changed to completed or failed, update notification
             if (change.type === 'modified' || change.type === 'added') {
-              const changeData = change.doc.data();
-              
               if (changeData.status === 'completed') {
-                console.log('✅ [TranscriptionUpload] Transcription completed! Updating notification to 100%');
+                console.log('✅ [TranscriptionUpload] Transcription completed for job:', currentRunpodJobId);
                 
                 // Always show completion notification and update UI
                 updateNotification({ progress: 100, status: 'completed' });
@@ -120,13 +129,15 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 // Reset processing state
                 setIsProcessing(false);
                 setUploadProgress(0);
+                setCurrentRunpodJobId(null); // Clear job tracking
+                setCurrentFileName(null); // Clear filename tracking
                 
                 // Call completion callback
                 if (onTranscriptionComplete) {
                   onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
                 }
               } else if (changeData.status === 'failed') {
-                console.log('❌ [TranscriptionUpload] Transcription failed!');
+                console.log('❌ [TranscriptionUpload] Transcription failed for job:', currentRunpodJobId || currentFileName);
                 
                 // Always show failure notification
                 updateNotification({ progress: 0, status: 'failed' });
@@ -135,38 +146,35 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 // Reset processing state
                 setIsProcessing(false);
                 setUploadProgress(0);
+                setCurrentRunpodJobId(null); // Clear job tracking
+                setCurrentFileName(null); // Clear filename tracking
               }
             }
           });
-          
-          // Mark initial load as complete after first snapshot
-          if (isInitialLoad) {
-            isInitialLoad = false;
-            console.log('✅ [TranscriptionUpload] Initial load complete, now listening for real changes');
-          }
         } else {
-          console.log('📭 [TranscriptionUpload] No transcriptions found');
-          isInitialLoad = false; // Mark as complete even if no data
+          console.log('📭 [TranscriptionUpload] No document found yet for job:', currentRunpodJobId || currentFileName);
         }
       }, (error) => {
         console.error('❌ [TranscriptionUpload] Firestore listener error:', error);
       });
       
-      console.log('✅ [TranscriptionUpload] Firestore listener successfully set up');
+      console.log('✅ [TranscriptionUpload] Firestore listener successfully set up for job:', currentRunpodJobId || currentFileName);
     });
 
     return () => {
       if (unsubscribe) {
-        console.log('👂 [TranscriptionUpload] Cleaning up Firestore listener');
+        console.log('👂 [TranscriptionUpload] Cleaning up Firestore listener for job:', currentRunpodJobId || currentFileName);
         unsubscribe();
       }
     };
-  }, [hideNotification, updateNotification, onTranscriptionComplete, notification.isVisible]);
+  }, [currentRunpodJobId, currentFileName, hideNotification, updateNotification, onTranscriptionComplete, notification.isVisible]);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [extractedAudioFile, setExtractedAudioFile] = useState<File | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [isExtractingAudio, setIsExtractingAudio] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [currentRunpodJobId, setCurrentRunpodJobId] = useState<string | null>(null); // Track the current RunPod job ID
+  const [currentFileName, setCurrentFileName] = useState<string | null>(null); // Track filename as fallback for background jobs
   const [settings, setSettings] = useState({
     use_diarization: true,
     pyannote_version: '3.0' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate). Default to 3.0 to match existing behavior
@@ -382,6 +390,14 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           );
           console.log(`🚀 Background job started with ID: ${jobId}`);
           
+          // Clear any previous job tracking before starting new one
+          setCurrentRunpodJobId(null);
+          setCurrentFileName(null);
+          
+          // Track by filename for background jobs (RunPod job ID will be set later by the service)
+          setCurrentFileName(selectedFile.name);
+          console.log('🎯 Tracking transcription by filename:', selectedFile.name);
+          
           // Reset form
           setSelectedFile(null);
           setExtractedAudioFile(null);
@@ -530,6 +546,10 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       setProcessingPhase('transcribing');
       setChunkProgress(50);
       
+      // Clear any previous job tracking before starting new one
+      setCurrentRunpodJobId(null);
+      setCurrentFileName(null);
+      
       // Step 3: Call the complete transcription API
       console.log('🎤 Calling complete transcription API...');
       const response = await fetch('/api/transcribe-complete', {
@@ -558,6 +578,16 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       
       const result = await response.json();
       console.log('✅ Complete transcription API response:', result);
+      
+      // Capture the RunPod job ID for tracking
+      if (result.jobId) {
+        setCurrentRunpodJobId(result.jobId);
+        console.log('🎯 Tracking RunPod job ID:', result.jobId);
+      } else {
+        // Fallback: track by filename if no job ID
+        setCurrentFileName(processedFile.name);
+        console.log('🎯 Tracking transcription by filename (no job ID):', processedFile.name);
+      }
       
       setProcessingPhase('saving');
       setChunkProgress(90);

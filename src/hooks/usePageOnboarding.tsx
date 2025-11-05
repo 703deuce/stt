@@ -84,8 +84,8 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
       setCurrentStepIndex(currentStepIndex + 1);
     } else {
       // Last step, just close
-      setIsActive(false);
-      setCurrentStepIndex(null);
+    setIsActive(false);
+    setCurrentStepIndex(null);
     }
   };
 
