@@ -109,31 +109,41 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           const isNewCompletion = (change.type === 'modified' || change.type === 'added') && data.status === 'completed';
           const isNewFailure = (change.type === 'modified' || change.type === 'added') && data.status === 'failed';
           
-          if (isNewCompletion && (matchesJobId || matchesFileName)) {
+          // Check if this is a completion we should handle
+          // Match by jobId/filename OR if we're currently processing (user might have navigated away)
+          const shouldHandleCompletion = isNewCompletion && (
+            matchesJobId || 
+            matchesFileName || 
+            (isProcessing && change.type === 'added' && data.status === 'completed')
+          );
+          
+          if (shouldHandleCompletion) {
             console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
               docId: change.doc.id,
               name: data.name,
-              runpodJobId: data.metadata?.runpod_job_id
+              runpodJobId: data.metadata?.runpod_job_id,
+              matchesJobId,
+              matchesFileName,
+              isProcessing
             });
             
-            // Only update and trigger callback if this matches our tracked job
-            if (matchesJobId || matchesFileName) {
-              updateNotification({ progress: 100, status: 'completed' });
-              
-              setTimeout(() => {
-                hideNotification();
-              }, 5000);
-              
-              setIsProcessing(false);
-              setUploadProgress(0);
-              
-              setCurrentRunpodJobId(null);
-              setCurrentFileName(null);
-              
-              if (onTranscriptionComplete) {
-                onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
-              }
+            // Update UI and trigger callback
+            updateNotification({ progress: 100, status: 'completed' });
+            
+            setTimeout(() => {
+              hideNotification();
+            }, 5000);
+            
+            setIsProcessing(false);
+            setUploadProgress(0);
+            
+            setCurrentRunpodJobId(null);
+            setCurrentFileName(null);
+            
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
             }
+          }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
             console.log('❌ [TranscriptionUpload] Transcription failed (global listener):', {
               docId: change.doc.id,
