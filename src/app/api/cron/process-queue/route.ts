@@ -102,9 +102,6 @@ export async function GET(request: NextRequest) {
         // The queue worker is mainly for retry scenarios
         // In a full implementation, you'd submit to RunPod here
         
-        // For now, move from 'queued' to 'submitted' (RunPod webhook will move to 'processing')
-        // In production, you'd actually call RunPod API here
-        
         // Update status to 'processing' (RunPod starts immediately after submission)
         const { serverTimestamp } = await import('firebase/firestore');
         await databaseService.updateSTTRecord(jobId, {

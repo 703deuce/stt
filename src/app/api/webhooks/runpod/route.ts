@@ -187,7 +187,7 @@ export async function POST(request: NextRequest) {
             let fileName: string;
 
             if (existingRecord && (existingRecord.status === 'processing' || existingRecord.status === 'queued')) {
-              // Update existing processing/queued/submitted record
+              // Update existing processing/queued record
               console.log(`✅ Found existing ${existingRecord.status} record, updating: ${existingRecord.id}`);
               recordId = existingRecord.id!;
               fileName = existingRecord.name || 'transcription';
@@ -450,7 +450,7 @@ export async function POST(request: NextRequest) {
               let fileName: string;
 
               if (existingRecordFallback && (existingRecordFallback.status === 'processing' || existingRecordFallback.status === 'queued')) {
-                // Update existing processing/queued/submitted record
+                // Update existing processing/queued record
                 console.log(`✅ Found existing ${existingRecordFallback.status} record in fallback path, updating: ${existingRecordFallback.id}`);
                 recordId = existingRecordFallback.id!;
                 fileName = existingRecordFallback.name || `Transcription_${new Date().toISOString().replace(/[:.]/g, '-')}`;
