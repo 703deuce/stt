@@ -47,10 +47,12 @@ export async function GET(request: NextRequest) {
     // For now, we'll process a reasonable number of jobs
     const maxJobsToProcess = 50; // Adjust based on your RunPod capacity
     
-    // Get queued jobs ordered by priority (lower = higher priority) then by createdAt (FIFO)
+    // Get queued STT jobs ordered by priority (lower = higher priority) then by createdAt (FIFO)
+    // Note: AI features (ai-summary, content-repurpose) are synchronous and don't need queue worker
     // Note: This requires a composite index in Firestore
     const queuedJobsQuery = query(
       collectionGroup(db, 'activeJobs'),
+      where('featureType', '==', 'stt'), // Only STT jobs (AI features are fast/synchronous)
       where('status', '==', 'queued'),
       orderBy('priority', 'asc'),
       orderBy('createdAt', 'asc'),
