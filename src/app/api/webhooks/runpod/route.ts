@@ -186,14 +186,17 @@ export async function POST(request: NextRequest) {
             let recordId: string;
             let fileName: string;
 
-            if (existingRecord && (existingRecord.status === 'processing' || existingRecord.status === 'queued')) {
-              // Update existing processing/queued record
+            if (existingRecord && (existingRecord.status === 'processing' || existingRecord.status === 'queued' || existingRecord.status === 'submitted')) {
+              // Update existing processing/queued/submitted record
               console.log(`✅ Found existing ${existingRecord.status} record, updating: ${existingRecord.id}`);
               recordId = existingRecord.id!;
               fileName = existingRecord.name || 'transcription';
               
               // Reset retry count on successful completion
               const retryCount = existingRecord.retryCount || 0;
+              
+              // Import activeJobsService for cleanup
+              const { activeJobsService } = await import('@/services/activeJobsService');
               
               // Update the record with completed data
               await databaseService.updateSTTRecord(recordId, {
@@ -214,6 +217,9 @@ export async function POST(request: NextRequest) {
                   execution_time: payload.executionTime
                 }
               }, userId);
+              
+              // Remove from activeJobs when completed
+              await activeJobsService.removeActiveJob(userId, recordId);
               
               // Also update the transcription data in Storage
               try {
@@ -427,11 +433,14 @@ export async function POST(request: NextRequest) {
               let recordId: string;
               let fileName: string;
 
-              if (existingRecordFallback && (existingRecordFallback.status === 'processing' || existingRecordFallback.status === 'queued')) {
-                // Update existing processing/queued record
+              if (existingRecordFallback && (existingRecordFallback.status === 'processing' || existingRecordFallback.status === 'queued' || existingRecordFallback.status === 'submitted')) {
+                // Update existing processing/queued/submitted record
                 console.log(`✅ Found existing ${existingRecordFallback.status} record in fallback path, updating: ${existingRecordFallback.id}`);
                 recordId = existingRecordFallback.id!;
                 fileName = existingRecordFallback.name || `Transcription_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+                
+                // Import activeJobsService for cleanup
+                const { activeJobsService } = await import('@/services/activeJobsService');
                 
                 // Reset retry count on successful completion
                 await databaseService.updateSTTRecord(recordId, {
@@ -454,6 +463,9 @@ export async function POST(request: NextRequest) {
                     ...(output.model_used && { model_used: output.model_used })
                   }
                 }, userId);
+                
+                // Remove from activeJobs when completed
+                await activeJobsService.removeActiveJob(userId, recordId);
                 
                 // Save transcription data to Storage
                 try {

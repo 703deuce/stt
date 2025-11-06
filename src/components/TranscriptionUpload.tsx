@@ -107,6 +107,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           const matchesJobId = currentRunpodJobId && data.metadata?.runpod_job_id === currentRunpodJobId;
           const matchesFileName = currentFileName && data.name === currentFileName;
           const isNewCompletion = (change.type === 'modified' || change.type === 'added') && data.status === 'completed';
+          const isNewFailure = (change.type === 'modified' || change.type === 'added') && data.status === 'failed';
           
           if (isNewCompletion && (matchesJobId || matchesFileName || !currentRunpodJobId)) {
             console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
@@ -133,6 +134,20 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
               }
             }
+          } else if (isNewFailure && (matchesJobId || matchesFileName)) {
+            console.log('❌ [TranscriptionUpload] Transcription failed (global listener):', {
+              docId: change.doc.id,
+              name: data.name,
+              error: data.error
+            });
+            
+            updateNotification({ progress: 0, status: 'failed' });
+            setTimeout(() => hideNotification(), 5000);
+            
+            setIsProcessing(false);
+            setUploadProgress(0);
+            setCurrentRunpodJobId(null);
+            setCurrentFileName(null);
           }
         });
       }, (error) => {
@@ -771,17 +786,35 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       
       // Check if this is a webhook-based job (jobId returned) or synchronous (transcript returned)
       if (result.jobId) {
-        // Webhook path: Create a "processing" record in Firestore immediately
+        // Webhook path: Create a "queued" record in Firestore (queue worker will submit to RunPod)
         setCurrentRunpodJobId(result.jobId);
         
         console.log('🎯 Tracking RunPod job ID:', result.jobId);
-        console.log('💾 Creating processing record in Firestore...');
+        console.log('💾 Creating queued record in Firestore...');
         
-        // Create a Firestore record with status "processing" immediately
+        // Check rate limits before creating job
+        try {
+          const { rateLimitService } = await import('@/services/rateLimitService');
+          const { auth } = await import('@/config/firebase');
+          
+          const rateLimitResult = await rateLimitService.canUserSubmitJob(auth.currentUser?.uid);
+          
+          if (!rateLimitResult.allowed) {
+            throw new Error(rateLimitResult.reason || 'Rate limit exceeded');
+          }
+          
+          console.log('✅ Rate limit check passed:', rateLimitResult);
+        } catch (rateLimitError) {
+          console.error('❌ Rate limit check failed:', rateLimitError);
+          throw rateLimitError; // Stop job creation if rate limited
+        }
+        
+        // Create a Firestore record with status "queued" (queue worker will process it)
         // This persists across devices and survives page refresh/logout
         try {
           const { databaseService } = await import('@/services/databaseService');
           const { jobPriorityService } = await import('@/services/jobPriorityService');
+          const { activeJobsService } = await import('@/services/activeJobsService');
           const { auth } = await import('@/config/firebase');
           
           // Get user priority based on subscription (for 10K+ user scale)
@@ -795,7 +828,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             transcript: '', // Empty until webhook completes
             duration: 0, // Will be updated by webhook
             language: 'en',
-            status: 'processing', // Mark as processing
+            status: 'queued', // Queue worker will submit to RunPod
             priority: priority, // Set priority for queue management
             retryCount: 0, // Initialize retry count
             maxRetries: 3, // Maximum retry attempts
@@ -805,15 +838,28 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             }
           });
           
-          console.log('✅ Created processing record in Firestore:', {
+          // Add to activeJobs collection for efficient cleanup queries
+          await activeJobsService.addActiveJob(
+            auth.currentUser?.uid || 'unknown',
+            processingRecordId,
+            {
+              status: 'queued',
+              priority: priority,
+              retryCount: 0,
+              maxRetries: 3,
+              name: processedFile.name
+            }
+          );
+          
+          console.log('✅ Created queued record in Firestore:', {
             recordId: processingRecordId,
             priority: priority,
             runpodJobId: result.jobId
           });
-          console.log('⏳ Waiting for webhook to complete transcription...');
+          console.log('⏳ Job queued - waiting for queue worker to submit to RunPod...');
         } catch (error) {
-          console.error('❌ Failed to create processing record:', error);
-          // Continue anyway - webhook will create the record
+          console.error('❌ Failed to create queued record:', error);
+          throw error; // Re-throw to show error to user
         }
         
         // Keep processing state active - webhook will update UI when complete

@@ -41,6 +41,7 @@ export async function GET(request: NextRequest) {
         cleaned: results.cleaned,
         retried: results.retried,
         failed: results.failed,
+        movedToDeadLetter: results.movedToDeadLetter,
         errors: results.errors.length > 0 ? results.errors : undefined
       },
       timestamp: new Date().toISOString()
