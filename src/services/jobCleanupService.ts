@@ -62,8 +62,10 @@ class JobCleanupService {
 
       while (hasMore) {
         try {
+          // Only process STT jobs (ai-summary and content-repurpose have separate cleanup)
           let stalledQuery = query(
             collectionGroup(db, 'activeJobs'),
+            where('featureType', '==', 'stt'), // Only STT jobs
             where('status', '==', 'processing'),
             where('createdAt', '<', timeoutTimestamp),
             limit(this.BATCH_SIZE)
@@ -73,6 +75,7 @@ class JobCleanupService {
           if (lastDoc) {
             stalledQuery = query(
               collectionGroup(db, 'activeJobs'),
+              where('featureType', '==', 'stt'), // Only STT jobs
               where('status', '==', 'processing'),
               where('createdAt', '<', timeoutTimestamp),
               startAfter(lastDoc),
