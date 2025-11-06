@@ -125,6 +125,17 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               
               setIsProcessing(false);
               setUploadProgress(0);
+              
+              // Remove from localStorage
+              const userId = auth.currentUser?.uid;
+              if (userId && currentRunpodJobId) {
+                const activeJobsKey = `activeJobs_${userId}`;
+                const activeJobs = JSON.parse(localStorage.getItem(activeJobsKey) || '[]');
+                const updatedJobs = activeJobs.filter((id: string) => id !== currentRunpodJobId);
+                localStorage.setItem(activeJobsKey, JSON.stringify(updatedJobs));
+                console.log('🧹 [TranscriptionUpload] Removed completed job from localStorage (global listener):', currentRunpodJobId);
+              }
+              
               setCurrentRunpodJobId(null);
               setCurrentFileName(null);
               
@@ -270,6 +281,17 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 // Reset processing state
                 setIsProcessing(false);
                 setUploadProgress(0);
+                
+                // Remove from localStorage
+                const userId = auth.currentUser?.uid;
+                if (userId && currentRunpodJobId) {
+                  const activeJobsKey = `activeJobs_${userId}`;
+                  const activeJobs = JSON.parse(localStorage.getItem(activeJobsKey) || '[]');
+                  const updatedJobs = activeJobs.filter((id: string) => id !== currentRunpodJobId);
+                  localStorage.setItem(activeJobsKey, JSON.stringify(updatedJobs));
+                  console.log('🧹 [TranscriptionUpload] Removed completed job from localStorage (job-specific listener):', currentRunpodJobId);
+                }
+                
                 setCurrentRunpodJobId(null); // Clear job tracking
                 setCurrentFileName(null); // Clear filename tracking
                 
@@ -287,6 +309,17 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 // Reset processing state
                 setIsProcessing(false);
                 setUploadProgress(0);
+                
+                // Remove from localStorage (failed jobs are also considered "done")
+                const userId = auth.currentUser?.uid;
+                if (userId && currentRunpodJobId) {
+                  const activeJobsKey = `activeJobs_${userId}`;
+                  const activeJobs = JSON.parse(localStorage.getItem(activeJobsKey) || '[]');
+                  const updatedJobs = activeJobs.filter((id: string) => id !== currentRunpodJobId);
+                  localStorage.setItem(activeJobsKey, JSON.stringify(updatedJobs));
+                  console.log('🧹 [TranscriptionUpload] Removed failed job from localStorage:', currentRunpodJobId);
+                }
+                
                 setCurrentRunpodJobId(null); // Clear job tracking
                 setCurrentFileName(null); // Clear filename tracking
               }
