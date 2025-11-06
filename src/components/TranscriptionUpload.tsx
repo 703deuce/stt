@@ -109,15 +109,15 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           const isNewCompletion = (change.type === 'modified' || change.type === 'added') && data.status === 'completed';
           const isNewFailure = (change.type === 'modified' || change.type === 'added') && data.status === 'failed';
           
-          if (isNewCompletion && (matchesJobId || matchesFileName || !currentRunpodJobId)) {
+          if (isNewCompletion && (matchesJobId || matchesFileName)) {
             console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
               docId: change.doc.id,
               name: data.name,
               runpodJobId: data.metadata?.runpod_job_id
             });
             
-            // Only update if this is our job or we don't have a specific job tracked
-            if (matchesJobId || matchesFileName || (!currentRunpodJobId && !currentFileName)) {
+            // Only update and trigger callback if this matches our tracked job
+            if (matchesJobId || matchesFileName) {
               updateNotification({ progress: 100, status: 'completed' });
               
               setTimeout(() => {
