@@ -826,13 +826,17 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       
       const result = await response.json();
       console.log('✅ Complete transcription API response:', result);
+      console.log('🔍 Job ID check:', { jobId: result.jobId, hasJobId: !!result.jobId, type: typeof result.jobId });
       
       // Check if this is a webhook-based job (jobId returned) or synchronous (transcript returned)
       if (result.jobId) {
         // Webhook path: Create a "queued" record in Firestore (queue worker will submit to RunPod)
         setCurrentRunpodJobId(result.jobId);
+        // ALWAYS also track by filename as fallback (in case jobId is lost or doesn't match)
+        setCurrentFileName(processedFile.name);
         
         console.log('🎯 Tracking RunPod job ID:', result.jobId);
+        console.log('🎯 Also tracking by filename (fallback):', processedFile.name);
         console.log('💾 Creating queued record in Firestore...');
         
         // Check rate limits before creating job
@@ -881,10 +885,19 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             retryCount: 0, // Initialize retry count
             maxRetries: 3, // Maximum retry attempts
             metadata: {
-              runpod_job_id: result.jobId, // Store RunPod job ID for webhook matching
+              runpod_job_id: result.jobId || undefined, // Store RunPod job ID for webhook matching (undefined if null)
               processing_method: 'webhook_processing'
             }
           });
+          
+          // CRITICAL: Verify the record was created with the job ID
+          if (!result.jobId) {
+            console.error('⚠️ WARNING: jobId is null/undefined! Record created without runpod_job_id in metadata.');
+            console.error('⚠️ This will prevent webhook from finding the record. Using filename as fallback.');
+            console.error('⚠️ Webhook will need to find record by filename instead of job ID.');
+          } else {
+            console.log('✅ Record created with runpod_job_id:', result.jobId);
+          }
           
           // Add to activeJobs collection for efficient cleanup queries
           await activeJobsService.addActiveJob(
@@ -905,6 +918,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             recordId: processingRecordId,
             priority: priority,
             runpodJobId: result.jobId,
+            fileName: processedFile.name,
             startedAt: 'set'
           });
           console.log('⏳ Job submitted to RunPod - processing started, waiting for completion...');
@@ -914,6 +928,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         }
         
         // Keep processing state active - webhook will update UI when complete
+        setIsProcessing(true); // CRITICAL: Set processing state so listener can detect completion
         setProcessingPhase('transcribing');
         setChunkProgress(80); // Show we're waiting for processing
         // Don't deduct minutes here - webhook will handle it
