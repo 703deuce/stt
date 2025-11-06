@@ -638,10 +638,35 @@ export async function POST(request: NextRequest) {
     } else if (payload.status === 'FAILED') {
       console.log('❌ Transcription failed for job:', payload.id);
       
+      // Update job status to failed
+      try {
+        const { databaseService } = await import('@/services/databaseService');
+        const { activeJobsService } = await import('@/services/activeJobsService');
+        
+        // Find existing record by RunPod job ID
+        const existingRecord = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
+        
+        if (existingRecord) {
+          // Update main STT record
+          await databaseService.updateSTTRecord(existingRecord.id!, {
+            status: 'failed',
+            error: payload.error || 'Job failed in RunPod'
+          }, userId);
+          
+          // Remove from activeJobs
+          await activeJobsService.removeActiveJob(userId, existingRecord.id!);
+          
+          console.log(`✅ Job ${existingRecord.id} marked as failed`);
+        }
+      } catch (error) {
+        console.error('❌ Error updating job to failed status:', error);
+        // Don't fail the webhook - continue with failure update
+      }
+      
       // Emit failure update
       if (wsManager) {
         await wsManager.emitJobUpdate({
-          userId: 'system', // You'll need to map job ID to user ID
+          userId: userId || 'system',
           jobId: payload.id,
           type: 'transcription',
           status: 'failed',
