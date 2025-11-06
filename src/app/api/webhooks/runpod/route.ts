@@ -125,8 +125,9 @@ export async function POST(request: NextRequest) {
                   const snapshot = await getDocs(q);
                   if (!snapshot.empty) {
                     const doc = snapshot.docs[0];
-                    existingRecord = { id: doc.id, ...doc.data() } as any;
-                    console.log(`✅ Found existing record by filename: ${existingRecord.id}`);
+                    const foundRecord = { id: doc.id, ...doc.data() } as any;
+                    existingRecord = foundRecord;
+                    console.log(`✅ Found existing record by filename: ${foundRecord.id}`);
                   }
                 }
               } catch (error) {
