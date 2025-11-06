@@ -7,7 +7,7 @@ import { jobCleanupService } from '@/services/jobCleanupService';
  * Setup:
  * - Add to Vercel Cron Jobs or use external cron service
  * - Recommended schedule: Every 5-10 minutes
- * - Example cron expression: */5 * * * * (every 5 minutes)
+ * - Example cron expression: every 5 minutes
  * 
  * Security:
  * - Add a secret token in env: CRON_SECRET
