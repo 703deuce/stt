@@ -253,8 +253,8 @@ export async function POST(request: NextRequest) {
     // Add pyannote_version only if diarization is enabled
     // Always pass it explicitly to ensure handler uses the correct version
     if (body.settings.use_diarization) {
-      // Use specified version, or default to "3.1" to match existing behavior
-      apiParams.pyannote_version = body.settings.pyannote_version || '3.1';
+      // Always use 3.1 when diarization is enabled
+      apiParams.pyannote_version = '3.1';
       apiParams.hf_token = hfToken;
       console.log(`✅ Using PyAnnote version ${apiParams.pyannote_version} for diarization`);
     }
