@@ -71,11 +71,89 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
     };
   }, []);
 
-  // Real-time Firestore listener: Listen for specific job completion
+  // Global listener: Listen to ALL user transcriptions (catches jobs completed while away)
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    console.log('👂 Setting up global Firestore listener for all user transcriptions...');
+    
+    let globalUnsubscribe: (() => void) | null = null;
+    
+    Promise.all([
+      import('@/config/firebase'),
+      import('firebase/firestore')
+    ]).then(([{ db }, firestore]) => {
+      const { collection, onSnapshot, query, orderBy, limit } = firestore;
+      // Listen to ALL of the user's transcriptions (recent 20 to catch jobs that completed while away)
+      const sttCollection = collection(db, 'users', auth.currentUser!.uid, 'stt');
+      
+      const queryRef = firestore.query(
+        sttCollection,
+        orderBy('timestamp', 'desc'),
+        limit(20) // Listen to recent 20 transcriptions
+      );
+      
+      globalUnsubscribe = onSnapshot(queryRef, (snapshot) => {
+        console.log('📡 [TranscriptionUpload] Global listener snapshot:', {
+          size: snapshot.size,
+          changes: snapshot.docChanges().length
+        });
+        
+        // Check for any newly completed transcriptions
+        snapshot.docChanges().forEach((change) => {
+          const data = change.doc.data();
+          
+          // Only process if this matches our tracked job OR if it's a new completion
+          const matchesJobId = currentRunpodJobId && data.metadata?.runpod_job_id === currentRunpodJobId;
+          const matchesFileName = currentFileName && data.name === currentFileName;
+          const isNewCompletion = (change.type === 'modified' || change.type === 'added') && data.status === 'completed';
+          
+          if (isNewCompletion && (matchesJobId || matchesFileName || !currentRunpodJobId)) {
+            console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
+              docId: change.doc.id,
+              name: data.name,
+              runpodJobId: data.metadata?.runpod_job_id
+            });
+            
+            // Only update if this is our job or we don't have a specific job tracked
+            if (matchesJobId || matchesFileName || (!currentRunpodJobId && !currentFileName)) {
+              updateNotification({ progress: 100, status: 'completed' });
+              
+              setTimeout(() => {
+                hideNotification();
+              }, 5000);
+              
+              setIsProcessing(false);
+              setUploadProgress(0);
+              setCurrentRunpodJobId(null);
+              setCurrentFileName(null);
+              
+              if (onTranscriptionComplete) {
+                onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
+              }
+            }
+          }
+        });
+      }, (error) => {
+        console.error('❌ [TranscriptionUpload] Global Firestore listener error:', error);
+      });
+      
+      console.log('✅ [TranscriptionUpload] Global Firestore listener set up');
+    });
+
+    return () => {
+      if (globalUnsubscribe) {
+        console.log('👂 [TranscriptionUpload] Cleaning up global Firestore listener');
+        globalUnsubscribe();
+      }
+    };
+  }, [auth.currentUser, currentRunpodJobId, currentFileName, hideNotification, updateNotification, onTranscriptionComplete]);
+
+  // Job-specific listener: Listen for specific job completion (for real-time updates while waiting)
   useEffect(() => {
     if (!auth.currentUser || (!currentRunpodJobId && !currentFileName)) return;
 
-    console.log('👂 Setting up Firestore listener for job:', {
+    console.log('👂 Setting up job-specific Firestore listener for job:', {
       runpodJobId: currentRunpodJobId,
       fileName: currentFileName
     });
@@ -86,7 +164,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       import('@/config/firebase'),
       import('firebase/firestore')
     ]).then(([{ db }, firestore]) => {
-      const { collection, onSnapshot, query, where, limit, and, or } = firestore;
+      const { collection, onSnapshot, query, where, limit } = firestore;
       // Listen to the user's STT subcollection for documents matching our job
       const sttCollection = collection(db, 'users', auth.currentUser!.uid, 'stt');
       
@@ -142,16 +220,27 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               hideNotification();
             }, 5000);
             
-            // Reset processing state
-            setIsProcessing(false);
-            setUploadProgress(0);
-            setCurrentRunpodJobId(null); // Clear job tracking
-            setCurrentFileName(null); // Clear filename tracking
-            
-            // Call completion callback
-            if (onTranscriptionComplete) {
-              onTranscriptionComplete({ jobId: doc.id, status: 'completed' });
-            }
+                // Reset processing state
+                setIsProcessing(false);
+                setUploadProgress(0);
+                
+                // Remove from localStorage
+                const userId = auth.currentUser?.uid;
+                if (userId && currentRunpodJobId) {
+                  const activeJobsKey = `activeJobs_${userId}`;
+                  const activeJobs = JSON.parse(localStorage.getItem(activeJobsKey) || '[]');
+                  const updatedJobs = activeJobs.filter((id: string) => id !== currentRunpodJobId);
+                  localStorage.setItem(activeJobsKey, JSON.stringify(updatedJobs));
+                  console.log('🧹 [TranscriptionUpload] Removed completed job from localStorage:', currentRunpodJobId);
+                }
+                
+                setCurrentRunpodJobId(null); // Clear job tracking
+                setCurrentFileName(null); // Clear filename tracking
+                
+                // Call completion callback
+                if (onTranscriptionComplete) {
+                  onTranscriptionComplete({ jobId: doc.id, status: 'completed' });
+                }
             return; // Don't process changes if already completed
           }
           
@@ -210,16 +299,97 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         console.error('❌ [TranscriptionUpload] Firestore listener error:', error);
       });
       
-      console.log('✅ [TranscriptionUpload] Firestore listener successfully set up for job:', currentRunpodJobId || currentFileName);
+      console.log('✅ [TranscriptionUpload] Job-specific Firestore listener successfully set up for job:', currentRunpodJobId || currentFileName);
     });
 
     return () => {
       if (unsubscribe) {
-        console.log('👂 [TranscriptionUpload] Cleaning up Firestore listener for job:', currentRunpodJobId || currentFileName);
+        console.log('👂 [TranscriptionUpload] Cleaning up job-specific Firestore listener for job:', currentRunpodJobId || currentFileName);
         unsubscribe();
       }
     };
   }, [currentRunpodJobId, currentFileName, hideNotification, updateNotification, onTranscriptionComplete, notification.isVisible]);
+
+  // Check for completed jobs on mount/login (catches jobs that completed while user was away)
+  useEffect(() => {
+    if (!auth.currentUser) return;
+
+    const checkCompletedJobs = async () => {
+      try {
+        console.log('🔍 [TranscriptionUpload] Checking for completed jobs on mount/login...');
+        const { databaseService } = await import('@/services/databaseService');
+        
+        // Get active jobs from localStorage (survives page refresh/logout)
+        const activeJobsKey = `activeJobs_${auth.currentUser!.uid}`;
+        const activeJobIds = JSON.parse(localStorage.getItem(activeJobsKey) || '[]');
+        
+        if (activeJobIds.length === 0) {
+          console.log('📭 [TranscriptionUpload] No active jobs in localStorage');
+          return;
+        }
+        
+        console.log(`🔍 [TranscriptionUpload] Found ${activeJobIds.length} active job(s) in localStorage:`, activeJobIds);
+        
+        // Get recent transcriptions to check for any that completed
+        const recentTranscriptions = await databaseService.getSTTRecords(50); // Check more to catch older jobs
+        
+        // Check each active job to see if it completed
+        const completedJobs: string[] = [];
+        
+        activeJobIds.forEach((jobId: string) => {
+          const completedJob = recentTranscriptions.find(
+            t => t.metadata?.runpod_job_id === jobId && t.status === 'completed'
+          );
+          
+          if (completedJob) {
+            console.log('✅ [TranscriptionUpload] Found completed job from previous session:', {
+              jobId,
+              docId: completedJob.id,
+              name: completedJob.name
+            });
+            
+            // Show notification (user-friendly)
+            updateNotification({ progress: 100, status: 'completed' });
+            setTimeout(() => hideNotification(), 5000);
+            
+            // Call completion callback to refresh UI
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete({ jobId: completedJob.id, status: 'completed' });
+            }
+            
+            completedJobs.push(jobId);
+          }
+        });
+        
+        // Remove completed jobs from localStorage
+        if (completedJobs.length > 0) {
+          const remainingJobs = activeJobIds.filter((id: string) => !completedJobs.includes(id));
+          localStorage.setItem(activeJobsKey, JSON.stringify(remainingJobs));
+          console.log(`🧹 [TranscriptionUpload] Removed ${completedJobs.length} completed job(s) from localStorage`);
+        }
+        
+        // Also check current state jobs
+        if (currentRunpodJobId) {
+          const completedJob = recentTranscriptions.find(
+            t => t.metadata?.runpod_job_id === currentRunpodJobId && t.status === 'completed'
+          );
+          
+          if (completedJob) {
+            console.log('✅ [TranscriptionUpload] Current job already completed:', completedJob.id);
+            setIsProcessing(false);
+            setUploadProgress(0);
+            setCurrentRunpodJobId(null);
+            setCurrentFileName(null);
+          }
+        }
+      } catch (error) {
+        console.error('❌ [TranscriptionUpload] Error checking for completed jobs:', error);
+      }
+    };
+
+    // Check on mount/login
+    checkCompletedJobs();
+  }, [auth.currentUser]); // Only run on mount/login
 
   const handleFileSelect = useCallback(async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -609,6 +779,19 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       if (result.jobId) {
         // Webhook path: Track job ID and wait for webhook to create record
         setCurrentRunpodJobId(result.jobId);
+        
+        // Persist job ID to localStorage so it survives page refresh/logout
+        const userId = auth.currentUser?.uid;
+        if (userId) {
+          const activeJobsKey = `activeJobs_${userId}`;
+          const activeJobs = JSON.parse(localStorage.getItem(activeJobsKey) || '[]');
+          if (!activeJobs.includes(result.jobId)) {
+            activeJobs.push(result.jobId);
+            localStorage.setItem(activeJobsKey, JSON.stringify(activeJobs));
+            console.log('💾 Saved job ID to localStorage:', result.jobId);
+          }
+        }
+        
         console.log('🎯 Tracking RunPod job ID:', result.jobId);
         console.log('⏳ Waiting for webhook to complete transcription...');
         
