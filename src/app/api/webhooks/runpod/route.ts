@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Timestamp } from 'firebase/firestore';
 import { getWebSocketManager } from '@/lib/websocket';
 import { jobMappingService } from '@/services/jobMappingService';
 
