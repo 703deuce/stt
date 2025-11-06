@@ -143,7 +143,6 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             if (onTranscriptionComplete) {
               onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
             }
-          }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
             console.log('❌ [TranscriptionUpload] Transcription failed (global listener):', {
               docId: change.doc.id,
