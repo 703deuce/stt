@@ -83,7 +83,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       import('@/config/firebase'),
       import('firebase/firestore')
     ]).then(([{ db }, firestore]) => {
-      const { collection, onSnapshot, query, orderBy, limit } = firestore;
+      const { collection, onSnapshot, query, orderBy, limit, Timestamp } = firestore;
       // Listen to ALL of the user's transcriptions (recent 20 to catch jobs that completed while away)
       const sttCollection = collection(db, 'users', auth.currentUser!.uid, 'stt');
       
@@ -110,11 +110,29 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           const isNewFailure = (change.type === 'modified' || change.type === 'added') && data.status === 'failed';
           
           // Check if this is a completion we should handle
-          // Match by jobId/filename OR if we're currently processing (user might have navigated away)
+          // Match by jobId/filename OR if we're currently processing OR if it's a very recent completion
+          // (handles case where webhook created new record and user is still on page)
+          const isVeryRecent = data.createdAt || data.timestamp;
+          let isRecentCompletion = false;
+          if (isVeryRecent) {
+            const createdAt = isVeryRecent instanceof Date 
+              ? isVeryRecent.getTime() 
+              : isVeryRecent instanceof Timestamp 
+                ? isVeryRecent.toDate().getTime()
+                : typeof isVeryRecent === 'number'
+                  ? isVeryRecent
+                  : Date.now();
+            // Consider it recent if created within last 10 minutes
+            isRecentCompletion = (Date.now() - createdAt) < 10 * 60 * 1000;
+          }
+          
           const shouldHandleCompletion = isNewCompletion && (
             matchesJobId || 
             matchesFileName || 
-            (isProcessing && change.type === 'added' && data.status === 'completed')
+            (isProcessing && change.type === 'added' && data.status === 'completed') ||
+            // Also handle if it's a newly added completed record that's very recent
+            // (webhook might have created new record instead of updating existing)
+            (change.type === 'added' && data.status === 'completed' && isRecentCompletion && !currentRunpodJobId && !currentFileName)
           );
           
           if (shouldHandleCompletion) {

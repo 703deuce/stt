@@ -100,7 +100,39 @@ export async function POST(request: NextRequest) {
             
             // First, try to find existing "processing" record by RunPod job ID
             console.log(`🔍 Looking for existing processing record with RunPod job ID: ${payload.id}`);
-            const existingRecord = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
+            console.log(`🔍 User ID: ${userId}`);
+            let existingRecord = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
+            console.log(`🔍 Existing record found by job ID:`, existingRecord ? { id: existingRecord.id, status: existingRecord.status, runpodJobId: existingRecord.metadata?.runpod_job_id } : 'null');
+            
+            // Fallback: Try to find by filename if job ID lookup failed
+            if (!existingRecord) {
+              console.log(`🔍 Job ID lookup failed, trying to find by filename from job mapping...`);
+              try {
+                const { jobMappingService } = await import('@/services/jobMappingService');
+                const jobMapping = await jobMappingService.getJobMappingByRunpodId(payload.id);
+                if (jobMapping?.fileName) {
+                  console.log(`🔍 Found job mapping with filename: ${jobMapping.fileName}`);
+                  // Query for processing records with this filename
+                  const { collection, query, where, getDocs, limit } = await import('firebase/firestore');
+                  const { db } = await import('@/config/firebase');
+                  const sttCollection = collection(db, 'users', userId, 'stt');
+                  const q = query(
+                    sttCollection,
+                    where('name', '==', jobMapping.fileName),
+                    where('status', 'in', ['processing', 'queued']),
+                    limit(1)
+                  );
+                  const snapshot = await getDocs(q);
+                  if (!snapshot.empty) {
+                    const doc = snapshot.docs[0];
+                    existingRecord = { id: doc.id, ...doc.data() } as any;
+                    console.log(`✅ Found existing record by filename: ${existingRecord.id}`);
+                  }
+                }
+              } catch (error) {
+                console.error('⚠️ Error finding record by filename:', error);
+              }
+            }
             
             // Extract the actual transcription text from the correct field
             const transcriptText = output.text || output.transcript || output.merged_text || '';
