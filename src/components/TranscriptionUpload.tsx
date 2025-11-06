@@ -885,7 +885,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             retryCount: 0, // Initialize retry count
             maxRetries: 3, // Maximum retry attempts
             metadata: {
-              runpod_job_id: result.jobId || undefined, // Store RunPod job ID for webhook matching (undefined if null)
+              ...(result.jobId && { runpod_job_id: result.jobId }), // Only include if jobId exists (prevents undefined from being removed)
               processing_method: 'webhook_processing'
             }
           });
@@ -897,6 +897,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             console.error('⚠️ Webhook will need to find record by filename instead of job ID.');
           } else {
             console.log('✅ Record created with runpod_job_id:', result.jobId);
+            console.log('✅ Metadata being saved:', { runpod_job_id: result.jobId, processing_method: 'webhook_processing' });
           }
           
           // Add to activeJobs collection for efficient cleanup queries

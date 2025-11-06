@@ -188,6 +188,13 @@ class DatabaseService {
 
       // Clean metadata to remove undefined values
       const cleanedMetadata = data.metadata ? removeUndefined(data.metadata) : undefined;
+      
+      // CRITICAL: Log metadata before and after cleaning to debug jobId issues
+      if (data.metadata?.runpod_job_id) {
+        console.log('🔍 [databaseService] Metadata before cleaning:', JSON.stringify(data.metadata));
+        console.log('🔍 [databaseService] Metadata after cleaning:', JSON.stringify(cleanedMetadata));
+        console.log('🔍 [databaseService] runpod_job_id preserved:', !!cleanedMetadata?.runpod_job_id);
+      }
 
       // Set createdAt explicitly if not provided (for timeout queries)
       const createdAt = data.createdAt || serverTimestamp();
