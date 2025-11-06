@@ -139,7 +139,7 @@ class JobCleanupService {
                 }, userId);
 
                 // Remove from activeJobs
-                await activeJobsService.removeActiveJob(userId, jobId);
+                await activeJobsService.removeActiveJob(userId, jobId, 'stt');
 
                 results.movedToDeadLetter++;
                 results.failed++;

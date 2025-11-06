@@ -235,7 +235,7 @@ export async function POST(request: NextRequest) {
               }, userId);
               
               // Remove from activeJobs when completed
-              await activeJobsService.removeActiveJob(userId, recordId);
+              await activeJobsService.removeActiveJob(userId, recordId, 'stt');
               
               // Also update the transcription data in Storage
               try {
@@ -654,7 +654,7 @@ export async function POST(request: NextRequest) {
           }, userId);
           
           // Remove from activeJobs
-          await activeJobsService.removeActiveJob(userId, existingRecord.id!);
+          await activeJobsService.removeActiveJob(userId, existingRecord.id!, 'stt');
           
           console.log(`✅ Job ${existingRecord.id} marked as failed`);
         }

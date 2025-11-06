@@ -854,7 +854,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               retryCount: 0,
               maxRetries: 3,
               name: processedFile.name
-            }
+            },
+            'stt' // Feature type for STT
           );
           
           console.log('✅ Created processing record in Firestore:', {

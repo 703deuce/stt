@@ -134,7 +134,7 @@ export async function GET(request: NextRequest) {
             error: errorMsg
           }, userId);
           
-          await activeJobsService.removeActiveJob(userId, jobId);
+          await activeJobsService.removeActiveJob(userId, jobId, 'stt');
         } catch (updateError) {
           console.error(`❌ Error updating failed job:`, updateError);
         }
