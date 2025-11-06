@@ -97,9 +97,9 @@ export const ValidationUtils = {
       return false;
     }
     
-    // Validate pyannote_version (optional string: "2.1" or "3.0")
+    // Validate pyannote_version (optional string: "2.1" or "3.1")
     if (settings.pyannote_version !== undefined) {
-      if (typeof settings.pyannote_version !== 'string' || !['2.1', '3.0'].includes(settings.pyannote_version)) {
+      if (typeof settings.pyannote_version !== 'string' || !['2.1', '3.1'].includes(settings.pyannote_version)) {
         return false;
       }
     }

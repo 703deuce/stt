@@ -55,7 +55,7 @@ export default function BatchTranscriptionUpload() {
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
   const [useDiarization, setUseDiarization] = useState(true);
-  const [pyannoteVersion, setPyannoteVersion] = useState<'2.1' | '3.0' | null>('3.0'); // Default to 3.0 to match existing behavior
+  const [pyannoteVersion, setPyannoteVersion] = useState<'2.1' | '3.1' | null>('3.1'); // Default to 3.1 to match existing behavior
   
   // Trial & upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -487,7 +487,7 @@ export default function BatchTranscriptionUpload() {
           filename: originalName,
           settings: {
             use_diarization: useDiarization,
-            pyannote_version: useDiarization ? (pyannoteVersion || '3.0') : undefined,
+            pyannote_version: useDiarization ? (pyannoteVersion || '3.1') : undefined,
             max_speakers: null,
         include_timestamps: true,
             speaker_threshold: 0.35,
@@ -601,7 +601,7 @@ export default function BatchTranscriptionUpload() {
               filename: originalName,
               settings: {
                 use_diarization: true,
-                pyannote_version: pyannoteVersion || '3.0', // Use selected version or default to 3.0
+                pyannote_version: pyannoteVersion || '3.1', // Use selected version or default to 3.1
                 max_speakers: null,
                 include_timestamps: false, // Only need speaker segments
                 speaker_threshold: 0.35,
@@ -1056,13 +1056,13 @@ export default function BatchTranscriptionUpload() {
                     <input
                       type="radio"
                       name="batch-diarization"
-                      value="3.0"
-                      checked={useDiarization && pyannoteVersion === '3.0'}
-                      onChange={() => { setUseDiarization(true); setPyannoteVersion('3.0'); }}
+                      value="3.1"
+                      checked={useDiarization && pyannoteVersion === '3.1'}
+                      onChange={() => { setUseDiarization(true); setPyannoteVersion('3.1'); }}
                       className="w-4 h-4 text-orange-500"
                     />
                     <div>
-                      <span className="text-sm font-medium text-gray-700">Diarization 3.0</span>
+                      <span className="text-sm font-medium text-gray-700">Diarization 3.1</span>
                       <span className="text-xs text-gray-500 ml-1">(More accurate)</span>
                     </div>
                   </label>

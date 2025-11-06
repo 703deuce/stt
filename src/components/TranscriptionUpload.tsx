@@ -47,7 +47,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const [currentFileName, setCurrentFileName] = useState<string | null>(null); // Track filename as fallback for background jobs
   const [settings, setSettings] = useState({
     use_diarization: true,
-    pyannote_version: '3.0' as '2.1' | '3.0' | null, // "2.1" (faster) or "3.0" (more accurate). Default to 3.0 to match existing behavior
+    pyannote_version: '3.1' as '2.1' | '3.1' | null, // "2.1" (faster) or "3.1" (more accurate). Default to 3.1 to match existing behavior
     num_speakers: null as number | null,
     include_timestamps: true,
     audio_format: 'wav'
@@ -565,7 +565,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
           settings: {
             use_diarization: settings.use_diarization,
-            pyannote_version: settings.use_diarization ? (settings.pyannote_version || '3.0') : undefined,
+            pyannote_version: settings.use_diarization ? (settings.pyannote_version || '3.1') : undefined,
             max_speakers: null, // Always auto-detect speakers
             include_timestamps: settings.include_timestamps,
             speaker_threshold: 0.35, // Lower threshold for better speaker detection
@@ -722,7 +722,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
               settings: {
                 use_diarization: true,
-                pyannote_version: settings.pyannote_version || '3.0', // Use selected version or default to 3.0
+                pyannote_version: settings.pyannote_version || '3.1', // Use selected version or default to 3.1
                 max_speakers: null,
                 include_timestamps: false, // Only need speaker segments
                 speaker_threshold: 0.35,
@@ -1089,13 +1089,13 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 <input
                   type="radio"
                   name="diarization"
-                  value="3.0"
-                  checked={settings.use_diarization && settings.pyannote_version === '3.0'}
-                  onChange={() => setSettings(prev => ({ ...prev, use_diarization: true, pyannote_version: '3.0' }))}
+                  value="3.1"
+                  checked={settings.use_diarization && settings.pyannote_version === '3.1'}
+                  onChange={() => setSettings(prev => ({ ...prev, use_diarization: true, pyannote_version: '3.1' }))}
                   className="w-4 h-4 text-orange-500 focus:ring-orange-500 focus:ring-2"
                 />
                 <div>
-                  <span className="text-sm font-medium text-gray-700">Diarization 3.0</span>
+                  <span className="text-sm font-medium text-gray-700">Diarization 3.1</span>
                   <span className="text-xs text-gray-500 ml-1">(More accurate)</span>
                 </div>
               </label>

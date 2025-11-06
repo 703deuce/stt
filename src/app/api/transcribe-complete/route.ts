@@ -9,7 +9,7 @@ interface TranscriptionRequest {
   userId: string;
   settings: {
     use_diarization: boolean;
-    pyannote_version?: string; // "2.1" (faster) or "3.0" (more accurate)
+    pyannote_version?: string; // "2.1" (faster) or "3.1" (more accurate)
     max_speakers: number | null;
     include_timestamps: boolean;
     speaker_threshold: number;
@@ -253,8 +253,8 @@ export async function POST(request: NextRequest) {
     // Add pyannote_version only if diarization is enabled
     // Always pass it explicitly to ensure handler uses the correct version
     if (body.settings.use_diarization) {
-      // Use specified version, or default to "3.0" to match existing behavior
-      apiParams.pyannote_version = body.settings.pyannote_version || '3.0';
+      // Use specified version, or default to "3.1" to match existing behavior
+      apiParams.pyannote_version = body.settings.pyannote_version || '3.1';
       apiParams.hf_token = hfToken;
       console.log(`✅ Using PyAnnote version ${apiParams.pyannote_version} for diarization`);
     }
