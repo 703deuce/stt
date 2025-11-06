@@ -126,14 +126,30 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             isRecentCompletion = (Date.now() - createdAt) < 10 * 60 * 1000;
           }
           
+          // Check if we should handle this completion
+          // Priority: exact match > processing state > recent completion
           const shouldHandleCompletion = isNewCompletion && (
             matchesJobId || 
             matchesFileName || 
             (isProcessing && change.type === 'added' && data.status === 'completed') ||
             // Also handle if it's a newly added completed record that's very recent
-            // (webhook might have created new record instead of updating existing)
+            // AND we don't have any tracked job (meaning user might have navigated away/back)
+            // This catches webhook-created records when user returns to page
             (change.type === 'added' && data.status === 'completed' && isRecentCompletion && !currentRunpodJobId && !currentFileName)
           );
+          
+          // Log why we're handling or not handling this completion
+          if (isNewCompletion && !shouldHandleCompletion) {
+            console.log('⏭️ [TranscriptionUpload] Skipping completion (no match):', {
+              docId: change.doc.id,
+              name: data.name,
+              matchesJobId,
+              matchesFileName,
+              isProcessing,
+              isRecentCompletion,
+              hasTrackedJob: !!(currentRunpodJobId || currentFileName)
+            });
+          }
           
           if (shouldHandleCompletion) {
             console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
