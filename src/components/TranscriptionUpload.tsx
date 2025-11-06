@@ -130,6 +130,31 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             runpodJobId: data.metadata?.runpod_job_id
           });
           
+          // Check if document is already completed (might have been created before listener started)
+          if (data.status === 'completed') {
+            console.log('✅ [TranscriptionUpload] Transcription already completed for job:', currentRunpodJobId || currentFileName);
+            
+            // Always show completion notification and update UI
+            updateNotification({ progress: 100, status: 'completed' });
+            
+            setTimeout(() => {
+              console.log('🕐 [TranscriptionUpload] Hiding notification after completion');
+              hideNotification();
+            }, 5000);
+            
+            // Reset processing state
+            setIsProcessing(false);
+            setUploadProgress(0);
+            setCurrentRunpodJobId(null); // Clear job tracking
+            setCurrentFileName(null); // Clear filename tracking
+            
+            // Call completion callback
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete({ jobId: doc.id, status: 'completed' });
+            }
+            return; // Don't process changes if already completed
+          }
+          
           // Check what changed
           const changes = snapshot.docChanges();
           changes.forEach((change) => {
@@ -143,7 +168,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             
             if (change.type === 'modified' || change.type === 'added') {
               if (changeData.status === 'completed') {
-                console.log('✅ [TranscriptionUpload] Transcription completed for job:', currentRunpodJobId);
+                console.log('✅ [TranscriptionUpload] Transcription completed for job:', currentRunpodJobId || currentFileName);
                 
                 // Always show completion notification and update UI
                 updateNotification({ progress: 100, status: 'completed' });
@@ -580,57 +605,72 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       const result = await response.json();
       console.log('✅ Complete transcription API response:', result);
       
-      // Capture the RunPod job ID for tracking
+      // Check if this is a webhook-based job (jobId returned) or synchronous (transcript returned)
       if (result.jobId) {
+        // Webhook path: Track job ID and wait for webhook to create record
         setCurrentRunpodJobId(result.jobId);
         console.log('🎯 Tracking RunPod job ID:', result.jobId);
-      } else {
-        // Fallback: track by filename if no job ID
+        console.log('⏳ Waiting for webhook to complete transcription...');
+        
+        // Keep processing state active - webhook will update UI when complete
+        setProcessingPhase('transcribing');
+        setChunkProgress(80); // Show we're waiting for processing
+        // Don't save to database here - webhook will handle it
+        // Don't deduct minutes here - webhook will handle it
+        // Don't set result here - webhook will update via Firestore listener
+      } else if (result.transcript) {
+        // Synchronous path: Save immediately (fallback for non-webhook jobs)
         setCurrentFileName(processedFile.name);
-        console.log('🎯 Tracking transcription by filename (no job ID):', processedFile.name);
-      }
-      
-      setProcessingPhase('saving');
-      setChunkProgress(90);
-      
-      // Step 4: Save to database
-      console.log('💾 Saving transcription to database...');
-      const { databaseService } = await import('@/services/databaseService');
-      const { auth } = await import('@/config/firebase');
-      const dbResult = await databaseService.createSTTRecord({
-        user_id: auth.currentUser?.uid || 'unknown',
-        audio_id: uploadResult.url,
-        name: processedFile.name,
-        transcript: result.transcript || '',
-        audio_file_url: uploadResult.url, // Use Firebase URL for audio player
-        duration: result.metadata?.duration || 0,
-        language: 'en',
-        status: 'completed',
-        metadata: {
-          word_count: result.timestamps?.length || 0,
-          speaker_count: result.diarized_transcript?.length || 0,
-          processing_method: result.metadata?.processing_method || 'OPTIMIZED_FULL_PYANNOTE_SEPARATE_PARAKET_WITH_SPEAKER_COMBINATION',
-          chunks_processed: result.metadata?.chunks_processed || 1
+        console.log('🎯 Synchronous transcription complete, saving immediately');
+        
+        setProcessingPhase('saving');
+        setChunkProgress(90);
+        
+        // Step 4: Save to database
+        console.log('💾 Saving transcription to database...');
+        const { databaseService } = await import('@/services/databaseService');
+        const { auth } = await import('@/config/firebase');
+        const dbResult = await databaseService.createSTTRecord({
+          user_id: auth.currentUser?.uid || 'unknown',
+          audio_id: uploadResult.url,
+          name: processedFile.name,
+          transcript: result.transcript || '',
+          audio_file_url: uploadResult.url, // Use Firebase URL for audio player
+          duration: result.metadata?.duration || 0,
+          language: 'en',
+          status: 'completed',
+          metadata: {
+            word_count: result.timestamps?.length || 0,
+            speaker_count: result.diarized_transcript?.length || 0,
+            processing_method: result.metadata?.processing_method || 'OPTIMIZED_FULL_PYANNOTE_SEPARATE_PARAKET_WITH_SPEAKER_COMBINATION',
+            chunks_processed: result.metadata?.chunks_processed || 1
+          }
+        }, result); // Pass full transcription data as second parameter
+        
+        console.log('✅ Transcription saved to database:', dbResult);
+        
+        setProcessingPhase('complete');
+        setChunkProgress(100);
+        
+        // Update the transcription state for UI display
+        setResult(result);
+        
+        // ✅ DEDUCT TRIAL MINUTES
+        try {
+          const actualDuration = result.metadata?.duration || result.duration || estimatedMinutes;
+          const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
+          console.log(`📊 Deducting ${actualMinutes} minutes from trial`);
+          await trialService.deductMinutes(actualMinutes);
+        } catch (error) {
+          console.error('⚠️ Error deducting trial minutes:', error);
+          // Don't fail the transcription if minute deduction fails
         }
-      }, result); // Pass full transcription data as second parameter
-      
-      console.log('✅ Transcription saved to database:', dbResult);
-      
-      setProcessingPhase('complete');
-      setChunkProgress(100);
-      
-      // Update the transcription state for UI display
-      setResult(result);
-      
-      // ✅ DEDUCT TRIAL MINUTES
-      try {
-        const actualDuration = result.metadata?.duration || result.duration || estimatedMinutes;
-        const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
-        console.log(`📊 Deducting ${actualMinutes} minutes from trial`);
-        await trialService.deductMinutes(actualMinutes);
-      } catch (error) {
-        console.error('⚠️ Error deducting trial minutes:', error);
-        // Don't fail the transcription if minute deduction fails
+      } else {
+        // Fallback: track by filename if no job ID or transcript
+        setCurrentFileName(processedFile.name);
+        console.log('🎯 Tracking transcription by filename (no job ID or transcript):', processedFile.name);
+        setProcessingPhase('transcribing');
+        setChunkProgress(80);
       }
       
       // Call completion callback
