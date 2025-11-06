@@ -3,16 +3,16 @@ import { doc, getDoc } from 'firebase/firestore';
 
 /**
  * Service for determining job priority based on user subscription status
- * Priority levels:
- * - 1: Premium/Team plan (highest priority)
- * - 3: Creator plan (medium-high priority)
- * - 5: Standard/Trial users (default priority)
+ * Priority levels (lower = higher priority):
+ * - 1: Transcription with Content plan (highest priority)
+ * - 2: Transcription Only plan (medium priority)
+ * - 3: Free/Trial users (lowest priority)
  */
 class JobPriorityService {
   /**
    * Get priority for a user based on their subscription plan
    * @param userId - Optional user ID, defaults to current user
-   * @returns Priority number (lower = higher priority)
+   * @returns Priority number (lower = higher priority: 1, 2, or 3)
    */
   async getUserPriority(userId?: string): Promise<number> {
     try {
@@ -20,35 +20,35 @@ class JobPriorityService {
       
       if (!targetUserId) {
         console.warn('⚠️ No user ID provided, using default priority');
-        return 5; // Default priority
+        return 3; // Default priority (lowest)
       }
 
       const userDoc = await getDoc(doc(db, 'users', targetUserId));
       
       if (!userDoc.exists()) {
         console.warn('⚠️ User document not found, using default priority');
-        return 5;
+        return 3; // Default priority (lowest)
       }
 
       const userData = userDoc.data();
       const subscriptionPlan = userData?.subscriptionPlan;
       const subscriptionStatus = userData?.subscriptionStatus;
 
-      // Premium/Team plans get highest priority
-      if (subscriptionStatus === 'active' && (subscriptionPlan === 'team' || subscriptionPlan === 'studio')) {
+      // Transcription with Content plan gets highest priority (Priority 1)
+      if (subscriptionStatus === 'active' && subscriptionPlan === 'creator') {
         return 1;
       }
 
-      // Creator plan gets medium-high priority
-      if (subscriptionStatus === 'active' && subscriptionPlan === 'creator') {
-        return 3;
+      // Transcription Only plan gets medium priority (Priority 2)
+      if (subscriptionStatus === 'active' && subscriptionPlan === 'transcription-only') {
+        return 2;
       }
 
-      // Standard/Trial users get default priority
-      return 5;
+      // Free/Trial users get lowest priority (Priority 3)
+      return 3;
     } catch (error) {
       console.error('❌ Error getting user priority:', error);
-      return 5; // Default to lowest priority on error
+      return 3; // Default to lowest priority on error
     }
   }
 
@@ -57,9 +57,9 @@ class JobPriorityService {
    * Use this when you need priority but can't wait for async call
    */
   getUserPrioritySync(): number {
-    // For now, return default priority
+    // For now, return default priority (lowest)
     // In the future, you could cache user data in localStorage or context
-    return 5;
+    return 3;
   }
 }
 

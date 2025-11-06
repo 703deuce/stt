@@ -29,12 +29,10 @@ export interface RateLimitResult {
  */
 class RateLimitService {
   private readonly LIMITS = {
-    trial: { perHour: 5, concurrent: 2 },
-    'transcription-only': { perHour: 10, concurrent: 3 },
-    creator: { perHour: 50, concurrent: 10 },
-    team: { perHour: 200, concurrent: 50 },
-    studio: { perHour: 500, concurrent: 100 },
-    default: { perHour: 5, concurrent: 2 }
+    trial: { perHour: 5, concurrent: 2 }, // Free tier
+    'transcription-only': { perHour: 20, concurrent: 5 }, // Transcription Only plan
+    creator: { perHour: 100, concurrent: 20 }, // Transcription with Content plan
+    default: { perHour: 5, concurrent: 2 } // Default to free tier
   };
 
   /**

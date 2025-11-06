@@ -40,10 +40,13 @@ export interface STTRecord {
   favorited?: boolean; // Whether the transcription is favorited
   isPublic?: boolean; // Whether the transcription can be viewed by anyone with the link
   // Job tracking fields
-  priority?: number; // Lower number = higher priority (1 = premium, 5 = standard)
+  priority?: number; // Lower number = higher priority (1 = Transcription with Content, 2 = Transcription Only, 3 = Free)
   retryCount?: number; // Number of retry attempts
   maxRetries?: number; // Maximum retry attempts (default: 3)
   queuedAt?: Timestamp | Date; // When job was queued
+  startedAt?: Timestamp | Date; // When processing actually started (RunPod begins)
+  completedAt?: Timestamp | Date; // When processing completed
+  processingTime?: number; // Processing time in seconds (completedAt - startedAt)
   error?: string; // Error message if failed
   // Transcription data fields
   diarized_transcript?: Array<{
@@ -197,10 +200,13 @@ class DatabaseService {
         createdAt: createdAt as Timestamp, // Explicit creation timestamp
         type: 'stt',
         // Set defaults for job tracking fields
-        priority: data.priority ?? 5, // Default priority (lower = higher priority)
+        priority: data.priority ?? 3, // Default priority 3 (Free tier - lowest priority)
         retryCount: data.retryCount ?? 0,
         maxRetries: data.maxRetries ?? 3,
         queuedAt: data.queuedAt || (data.status === 'queued' ? serverTimestamp() : undefined) as Timestamp | undefined,
+        startedAt: data.startedAt, // Set when RunPod actually starts processing
+        completedAt: data.completedAt, // Set when job completes
+        processingTime: data.processingTime, // Calculated: completedAt - startedAt
         // Only include transcription_data_url if it has a value
         ...(transcriptionDataUrl && { transcription_data_url: transcriptionDataUrl }),
         // Only include metadata if it exists and has values

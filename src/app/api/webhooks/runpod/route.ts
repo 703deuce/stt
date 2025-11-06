@@ -197,6 +197,20 @@ export async function POST(request: NextRequest) {
               
               // Import activeJobsService for cleanup
               const { activeJobsService } = await import('@/services/activeJobsService');
+              const { serverTimestamp } = await import('firebase/firestore');
+              
+              // Calculate processing time if startedAt exists
+              let processingTime: number | undefined;
+              if (existingRecord.startedAt) {
+                const startedAt = existingRecord.startedAt instanceof Date 
+                  ? existingRecord.startedAt.getTime() 
+                  : existingRecord.startedAt instanceof Timestamp 
+                    ? existingRecord.startedAt.toDate().getTime()
+                    : typeof existingRecord.startedAt === 'number'
+                      ? existingRecord.startedAt
+                      : Date.now();
+                processingTime = Math.round((Date.now() - startedAt) / 1000); // Convert to seconds
+              }
               
               // Update the record with completed data
               await databaseService.updateSTTRecord(recordId, {
@@ -207,6 +221,8 @@ export async function POST(request: NextRequest) {
                 diarized_transcript: mergedSegments,
                 retryCount: 0, // Reset retry count on success
                 error: undefined, // Clear any previous errors
+                completedAt: serverTimestamp() as Timestamp,
+                processingTime: processingTime,
                 metadata: {
                   ...existingRecord.metadata,
                   word_count: transcriptText.split(/\s+/).length,
@@ -441,6 +457,20 @@ export async function POST(request: NextRequest) {
                 
                 // Import activeJobsService for cleanup
                 const { activeJobsService } = await import('@/services/activeJobsService');
+                const { serverTimestamp } = await import('firebase/firestore');
+                
+                // Calculate processing time if startedAt exists
+                let processingTime: number | undefined;
+                if (existingRecordFallback.startedAt) {
+                  const startedAt = existingRecordFallback.startedAt instanceof Date 
+                    ? existingRecordFallback.startedAt.getTime() 
+                    : existingRecordFallback.startedAt instanceof Timestamp 
+                      ? existingRecordFallback.startedAt.toDate().getTime()
+                      : typeof existingRecordFallback.startedAt === 'number'
+                        ? existingRecordFallback.startedAt
+                        : Date.now();
+                  processingTime = Math.round((Date.now() - startedAt) / 1000); // Convert to seconds
+                }
                 
                 // Reset retry count on successful completion
                 await databaseService.updateSTTRecord(recordId, {
@@ -451,6 +481,8 @@ export async function POST(request: NextRequest) {
                   diarized_transcript: mergedSegments,
                   retryCount: 0, // Reset retry count on success
                   error: undefined, // Clear any previous errors
+                  completedAt: serverTimestamp() as Timestamp,
+                  processingTime: processingTime,
                   metadata: {
                     ...existingRecordFallback.metadata,
                     word_count: transcriptText.split(/\s+/).length,
