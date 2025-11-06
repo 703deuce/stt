@@ -292,74 +292,46 @@ export async function POST(request: NextRequest) {
               }, transformedData, userId);
             }
               
-              // Deduct trial minutes
-              try {
-                const { trialService } = await import('@/services/trialService');
-                const actualDuration = output.audio_duration_seconds || output.duration || 0;
-                const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
-                console.log(`📊 Deducting ${actualMinutes} minutes from trial for: ${fileName}`);
-                await trialService.deductMinutesForUser(userId, actualMinutes);
-              } catch (error) {
-                console.error('⚠️ Error deducting trial minutes:', error);
-                // Don't fail the transcription if minute deduction fails
-              }
+            // Deduct trial minutes
+            try {
+              const { trialService } = await import('@/services/trialService');
+              const actualDuration = output.audio_duration_seconds || output.duration || 0;
+              const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
+              console.log(`📊 Deducting ${actualMinutes} minutes from trial for: ${fileName}`);
+              await trialService.deductMinutesForUser(userId, actualMinutes);
+            } catch (error) {
+              console.error('⚠️ Error deducting trial minutes:', error);
+              // Don't fail the transcription if minute deduction fails
+            }
               
-              // Initialize default speaker mappings (with retry logic to avoid race condition)
-              try {
-                const { speakerMappingService } = await import('@/services/speakerMappingService');
-                const uniqueSpeakers = [...new Set(mergedSegments.map(seg => seg.speaker))];
-                
-                console.log(`🔧 Debug: Initializing speaker mappings for recordId: ${recordId}, userId: ${userId}, speakers: ${uniqueSpeakers.length}`);
-                
-                // Retry logic to handle race condition
-                let retries = 3;
-                while (retries > 0) {
-                  try {
-                    await speakerMappingService.initializeDefaultMappings(recordId, uniqueSpeakers, userId);
-                    console.log(`✅ Speaker mappings initialized for ${recordId}`);
-                    break;
-                  } catch (error: any) {
-                    console.log(`❌ Speaker mapping attempt failed: ${error.message}, collection: ${error.message.includes('stt_records') ? 'stt_records (OLD)' : 'users subcollection (NEW)'}`);
-                    if (error.code === 'not-found' && retries > 1) {
-                      console.log(`⏳ Document not ready, retrying in 500ms... (${retries} retries left)`);
-                      await new Promise(resolve => setTimeout(resolve, 500));
-                      retries--;
-                    } else {
-                      throw error;
-                    }
+            // Initialize default speaker mappings (with retry logic to avoid race condition)
+            try {
+              const { speakerMappingService } = await import('@/services/speakerMappingService');
+              const uniqueSpeakers = [...new Set(mergedSegments.map(seg => seg.speaker))];
+              
+              console.log(`🔧 Debug: Initializing speaker mappings for recordId: ${recordId}, userId: ${userId}, speakers: ${uniqueSpeakers.length}`);
+              
+              // Retry logic to handle race condition
+              let retries = 3;
+              while (retries > 0) {
+                try {
+                  await speakerMappingService.initializeDefaultMappings(recordId, uniqueSpeakers, userId);
+                  console.log(`✅ Speaker mappings initialized for ${recordId}`);
+                  break;
+                } catch (error: any) {
+                  console.log(`❌ Speaker mapping attempt failed: ${error.message}, collection: ${error.message.includes('stt_records') ? 'stt_records (OLD)' : 'users subcollection (NEW)'}`);
+                  if (error.code === 'not-found' && retries > 1) {
+                    console.log(`⏳ Document not ready, retrying in 500ms... (${retries} retries left)`);
+                    await new Promise(resolve => setTimeout(resolve, 500));
+                    retries--;
+                  } else {
+                    throw error;
                   }
                 }
-              } catch (error) {
-                console.error('❌ Error initializing speaker mappings:', error);
-                // This is not critical - speaker mappings can be initialized later
               }
-              
-              // Update background job with results
-              (backgroundJob as any).result = { ...output, recordId };
-              (backgroundJob as any).status = 'completed';
-              (backgroundJob as any).progress = 100;
-              (backgroundJob as any).endTime = Date.now();
-              
-              // Notify listeners and emit real-time update
-              const { backgroundProcessingService } = await import('@/services/backgroundProcessingService');
-              backgroundProcessingService.notifyListeners((backgroundJob as any).id, backgroundJob as any);
-              
-              // Emit real-time update to client
-              try {
-                const { getWebSocketManager } = await import('@/lib/websocket');
-                const wsManager = getWebSocketManager();
-                if (wsManager) {
-                  await wsManager.emitJobUpdate({
-                    userId: (backgroundJob as any).userId,
-                    jobId: (backgroundJob as any).id,
-                    type: 'transcription',
-                    status: 'completed',
-                    progress: 100,
-                    data: { recordId, ...output }
-                  });
-                }
-              } catch (error) {
-              }
+            } catch (error) {
+              console.error('❌ Error initializing speaker mappings:', error);
+              // This is not critical - speaker mappings can be initialized later
             }
           } catch (error) {
             console.error('❌ Error saving transcription to database:', error);
