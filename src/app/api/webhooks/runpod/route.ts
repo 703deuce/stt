@@ -97,118 +97,162 @@ export async function POST(request: NextRequest) {
           try {
             const { databaseService } = await import('@/services/databaseService');
             
-            // Find the background job by RunPod job ID
+            // First, try to find existing "processing" record by RunPod job ID
+            console.log(`🔍 Looking for existing processing record with RunPod job ID: ${payload.id}`);
+            const existingRecord = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
             
-            // Get job info from database mapping (this is the reliable way in serverless)
-            let backgroundJob = null;
+            // Extract the actual transcription text from the correct field
+            const transcriptText = output.text || output.transcript || output.merged_text || '';
             
-            try {
-              const { jobMappingService } = await import('@/services/jobMappingService');
-              const jobMapping = await jobMappingService.getJobMappingByRunpodId(payload.id);
-              if (jobMapping) {
-              } else {
-              }
-            } catch (error) {
-            }
+            // Get the best available timestamp data
+            const wordTimestamps = output.word_timestamps || [];
+            const segmentTimestamps = output.segment_timestamps || [];
+            const charTimestamps = output.char_timestamps || [];
             
-            if (!backgroundJob) {
-            }
+            // Use word timestamps if available, otherwise use segment timestamps
+            const timestamps = wordTimestamps.length > 0 ? wordTimestamps.map(w => ({
+              start: w.start,
+              end: w.end,
+              text: w.word || w.text || ''
+            })) : segmentTimestamps.length > 0 ? segmentTimestamps.map(s => ({
+              start: s.start,
+              end: s.end,
+              text: s.segment || ''
+            })) : charTimestamps.length > 0 ? charTimestamps.map(c => ({
+              start: c.start,
+              end: c.end,
+              text: c.char?.join('') || ''
+            })) : [];
             
-            if (backgroundJob) {
+            
+            // Transform diarized transcript to include word-level data
+            const enhancedDiarizedTranscript = (output.diarized_transcript || []).map(segment => {
+              // Find words that fall within this segment's time range
+              const segmentWords = (output.word_timestamps || []).filter(word => 
+                word.start >= segment.start_time && word.end <= segment.end_time
+              );
               
-              // Extract the actual transcription text from the correct field
-              const transcriptText = output.text || output.transcript || output.merged_text || '';
-              
-              // Get the best available timestamp data
-              const wordTimestamps = output.word_timestamps || [];
-              const segmentTimestamps = output.segment_timestamps || [];
-              const charTimestamps = output.char_timestamps || [];
-              
-              // Use word timestamps if available, otherwise use segment timestamps
-              const timestamps = wordTimestamps.length > 0 ? wordTimestamps.map(w => ({
-                start: w.start,
-                end: w.end,
-                text: w.word || w.text || ''
-              })) : segmentTimestamps.length > 0 ? segmentTimestamps.map(s => ({
-                start: s.start,
-                end: s.end,
-                text: s.segment || ''
-              })) : charTimestamps.length > 0 ? charTimestamps.map(c => ({
-                start: c.start,
-                end: c.end,
-                text: c.char?.join('') || ''
-              })) : [];
-              
-              
-              // Transform diarized transcript to include word-level data
-              const enhancedDiarizedTranscript = (output.diarized_transcript || []).map(segment => {
-                // Find words that fall within this segment's time range
-                const segmentWords = (output.word_timestamps || []).filter(word => 
-                  word.start >= segment.start_time && word.end <= segment.end_time
-                );
-                
-                return {
-                  ...segment,
-                  words: segmentWords.map(word => ({
-                    start: word.start,
-                    end: word.end,
-                    text: word.word || word.text || '',
-                    speaker: segment.speaker
-                  }))
+              return {
+                ...segment,
+                words: segmentWords.map(word => ({
+                  start: word.start,
+                  end: word.end,
+                  text: word.word || word.text || '',
+                  speaker: segment.speaker
+                }))
+              };
+            });
+            
+            
+            // Combine consecutive speakers into merged segments
+            const mergedSegments = [];
+            let currentSegment = null;
+            
+            for (const segment of enhancedDiarizedTranscript) {
+              if (!currentSegment || currentSegment.speaker !== segment.speaker) {
+                // Different speaker - start new segment
+                if (currentSegment) {
+                  mergedSegments.push(currentSegment);
+                }
+                currentSegment = {
+                  speaker: segment.speaker,
+                  start_time: segment.start_time,
+                  end_time: segment.end_time,
+                  text: segment.text,
+                  words: segment.words || []
                 };
+              } else {
+                // Same speaker - combine with current segment
+                currentSegment.end_time = segment.end_time;
+                currentSegment.text += ' ' + segment.text;
+                currentSegment.words.push(...(segment.words || []));
+              }
+            }
+            
+            // Add the last segment
+            if (currentSegment) {
+              mergedSegments.push(currentSegment);
+            }
+            
+            
+            // Transform RunPod data to match expected format
+            const transformedData = {
+              transcript: transcriptText,
+              timestamps: timestamps,
+              diarized_transcript: mergedSegments,
+              runpod_output: output
+            };
+
+            let recordId: string;
+            let fileName: string;
+
+            if (existingRecord && existingRecord.status === 'processing') {
+              // Update existing processing record
+              console.log(`✅ Found existing processing record, updating: ${existingRecord.id}`);
+              recordId = existingRecord.id!;
+              fileName = existingRecord.name || 'transcription';
+              
+              // Update the record with completed data
+              await databaseService.updateSTTRecord(recordId, {
+                status: 'completed',
+                transcript: transcriptText,
+                duration: output.audio_duration_seconds || output.duration || 0,
+                timestamps: timestamps,
+                diarized_transcript: mergedSegments,
+                metadata: {
+                  ...existingRecord.metadata,
+                  word_count: transcriptText.split(/\s+/).length,
+                  speaker_count: output.segment_timestamps?.length || output.diarized_transcript?.length || 0,
+                  processing_method: 'webhook_processing',
+                  chunks_processed: 1,
+                  runpod_job_id: payload.id,
+                  execution_time: payload.executionTime
+                }
               });
               
+              // Also update the transcription data in Storage
+              try {
+                const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                const { storage } = await import('@/config/firebase');
+                const transcriptionDataRef = ref(storage, `transcription_data/${userId}/transcription_data_${payload.id}.json`);
+                await uploadBytes(transcriptionDataRef, new Blob([JSON.stringify(transformedData)], { type: 'application/json' }));
+                const transcriptionDataUrl = await getDownloadURL(transcriptionDataRef);
+                
+                await databaseService.updateSTTRecord(recordId, {
+                  transcription_data_url: transcriptionDataUrl
+                });
+                console.log(`✅ Updated transcription data URL: ${transcriptionDataUrl}`);
+              } catch (storageError) {
+                console.error('⚠️ Failed to save transcription data to Storage:', storageError);
+              }
               
-              // Combine consecutive speakers into merged segments
-              const mergedSegments = [];
-              let currentSegment = null;
+              console.log(`✅ Updated existing record ${recordId} to completed status`);
+            } else {
+              // No existing record found - create new one (fallback for old jobs)
+              console.log('⚠️ No existing processing record found, creating new record (fallback)');
               
-              for (const segment of enhancedDiarizedTranscript) {
-                if (!currentSegment || currentSegment.speaker !== segment.speaker) {
-                  // Different speaker - start new segment
-                  if (currentSegment) {
-                    mergedSegments.push(currentSegment);
-                  }
-                  currentSegment = {
-                    speaker: segment.speaker,
-                    start_time: segment.start_time,
-                    end_time: segment.end_time,
-                    text: segment.text,
-                    words: segment.words || []
-                  };
-                } else {
-                  // Same speaker - combine with current segment
-                  currentSegment.end_time = segment.end_time;
-                  currentSegment.text += ' ' + segment.text;
-                  currentSegment.words.push(...(segment.words || []));
+              // Get job info from database mapping for filename
+              fileName = 'Transcription';
+              try {
+                const { jobMappingService } = await import('@/services/jobMappingService');
+                const jobMapping = await jobMappingService.getJobMappingByRunpodId(payload.id);
+                if (jobMapping?.fileName) {
+                  fileName = jobMapping.fileName;
                 }
+              } catch (error) {
+                console.warn('⚠️ Could not get job mapping:', error);
               }
               
-              // Add the last segment
-              if (currentSegment) {
-                mergedSegments.push(currentSegment);
-              }
-              
-              
-              // Transform RunPod data to match expected format
-              const transformedData = {
-                transcript: transcriptText,
-                timestamps: timestamps,
-                diarized_transcript: mergedSegments, // Use merged segments instead of enhanced
-                // Keep original RunPod data for reference
-                runpod_output: output
-              };
-
-              const recordId = await databaseService.createSTTRecord({
+              recordId = await databaseService.createSTTRecord({
                 user_id: userId,
-                audio_id: (backgroundJob as any).fileId || 'unknown',
-                name: (backgroundJob as any).fileName || 'Transcription',
-                audio_file_url: output.audio_url || '', // Use the audio URL from RunPod
+                audio_id: payload.id,
+                name: fileName,
+                audio_file_url: output.audio_url || '',
                 transcript: transcriptText,
                 duration: output.audio_duration_seconds || output.duration || 0,
                 language: 'en',
                 status: 'completed',
-                timestamps: timestamps, // Use the best available timestamp data
+                timestamps: timestamps,
                 diarized_transcript: mergedSegments,
                 metadata: {
                   word_count: transcriptText.split(/\s+/).length,
@@ -219,14 +263,14 @@ export async function POST(request: NextRequest) {
                   execution_time: payload.executionTime
                 } as any
               }, transformedData, userId);
-
+            }
               
               // Deduct trial minutes
               try {
                 const { trialService } = await import('@/services/trialService');
                 const actualDuration = output.audio_duration_seconds || output.duration || 0;
                 const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
-                console.log(`📊 Deducting ${actualMinutes} minutes from trial for: ${(backgroundJob as any).fileName || 'transcription'}`);
+                console.log(`📊 Deducting ${actualMinutes} minutes from trial for: ${fileName}`);
                 await trialService.deductMinutesForUser(userId, actualMinutes);
               } catch (error) {
                 console.error('⚠️ Error deducting trial minutes:', error);
@@ -369,39 +413,86 @@ export async function POST(request: NextRequest) {
               const transformedData = {
                 transcript: transcriptText,
                 timestamps: timestamps,
-                diarized_transcript: mergedSegments, // Use merged segments instead of enhanced
-                // Keep original RunPod data for reference
+                diarized_transcript: mergedSegments,
                 runpod_output: output
               };
 
-              // Try to extract filename from job mapping, output, or use fallback
-              let extractedFilename = `Transcription_${new Date().toISOString().replace(/[:.]/g, '-')}`;
-              
-              // First, try to get filename from job mapping
-              try {
-                const jobMapping = await jobMappingService.getJobMappingByRunpodId(payload.id);
-                if (jobMapping?.fileName) {
-                  extractedFilename = jobMapping.fileName;
-                  console.log(`📝 Using filename from job mapping: ${extractedFilename}`);
-                } else if (output.audio_url) {
-                  // Try to extract from audio URL (fallback)
-                  const urlParts = output.audio_url.split('/');
-                  const lastPart = urlParts[urlParts.length - 1];
-                  // Remove query parameters and decode
-                  const decodedPart = decodeURIComponent(lastPart.split('?')[0]);
-                  // Extract filename if it looks like a filename
-                  if (decodedPart.includes('.') && decodedPart.length < 100) {
-                    // Remove timestamp prefix if present (e.g., "1761749988037_filename.wav")
-                    const match = decodedPart.match(/\d+_(.+)$/);
-                    extractedFilename = match ? match[1] : decodedPart;
-                    console.log(`📝 Extracted filename from audio URL: ${extractedFilename}`);
+              // Try to find existing processing record first (fallback path)
+              const existingRecordFallback = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
+              let recordId: string;
+              let fileName: string;
+
+              if (existingRecordFallback && existingRecordFallback.status === 'processing') {
+                // Update existing processing record
+                console.log(`✅ Found existing processing record in fallback path, updating: ${existingRecordFallback.id}`);
+                recordId = existingRecordFallback.id!;
+                fileName = existingRecordFallback.name || `Transcription_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+                
+                await databaseService.updateSTTRecord(recordId, {
+                  status: 'completed',
+                  transcript: transcriptText,
+                  duration: output.audio_duration_seconds || output.duration || 0,
+                  timestamps: timestamps,
+                  diarized_transcript: mergedSegments,
+                  metadata: {
+                    ...existingRecordFallback.metadata,
+                    word_count: transcriptText.split(/\s+/).length,
+                    speaker_count: output.speakers_detected || output.diarized_transcript?.length || 0,
+                    processing_method: 'webhook_processing_fallback',
+                    chunks_processed: output.chunks_processed || 1,
+                    runpod_job_id: payload.id,
+                    ...(payload.executionTime && { execution_time: payload.executionTime }),
+                    ...(output.workflow && { workflow: output.workflow }),
+                    ...(output.model_used && { model_used: output.model_used })
                   }
+                }, userId);
+                
+                // Save transcription data to Storage
+                try {
+                  const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+                  const { storage } = await import('@/config/firebase');
+                  const transcriptionDataRef = ref(storage, `transcription_data/${userId}/transcription_data_${payload.id}.json`);
+                  await uploadBytes(transcriptionDataRef, new Blob([JSON.stringify(transformedData)], { type: 'application/json' }));
+                  const transcriptionDataUrl = await getDownloadURL(transcriptionDataRef);
+                  
+                  await databaseService.updateSTTRecord(recordId, {
+                    transcription_data_url: transcriptionDataUrl
+                  }, userId);
+                } catch (storageError) {
+                  console.error('⚠️ Failed to save transcription data to Storage:', storageError);
                 }
-              } catch (error) {
-                console.warn('⚠️ Could not extract filename, using fallback:', error);
-              }
-              
-              const recordId = await databaseService.createSTTRecord({
+              } else {
+                // No existing record - create new one (fallback for old jobs)
+                // Try to extract filename from job mapping, output, or use fallback
+                let extractedFilename = `Transcription_${new Date().toISOString().replace(/[:.]/g, '-')}`;
+                
+                // First, try to get filename from job mapping
+                try {
+                  const jobMapping = await jobMappingService.getJobMappingByRunpodId(payload.id);
+                  if (jobMapping?.fileName) {
+                    extractedFilename = jobMapping.fileName;
+                    console.log(`📝 Using filename from job mapping: ${extractedFilename}`);
+                  } else if (output.audio_url) {
+                    // Try to extract from audio URL (fallback)
+                    const urlParts = output.audio_url.split('/');
+                    const lastPart = urlParts[urlParts.length - 1];
+                    // Remove query parameters and decode
+                    const decodedPart = decodeURIComponent(lastPart.split('?')[0]);
+                    // Extract filename if it looks like a filename
+                    if (decodedPart.includes('.') && decodedPart.length < 100) {
+                      // Remove timestamp prefix if present (e.g., "1761749988037_filename.wav")
+                      const match = decodedPart.match(/\d+_(.+)$/);
+                      extractedFilename = match ? match[1] : decodedPart;
+                      console.log(`📝 Extracted filename from audio URL: ${extractedFilename}`);
+                    }
+                  }
+                } catch (error) {
+                  console.warn('⚠️ Could not extract filename, using fallback:', error);
+                }
+                
+                fileName = extractedFilename;
+                
+                recordId = await databaseService.createSTTRecord({
                 user_id: userId,
                 audio_id: payload.id, // Use RunPod job ID as audio ID
                 name: extractedFilename,

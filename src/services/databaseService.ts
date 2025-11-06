@@ -217,17 +217,34 @@ class DatabaseService {
     }
   }
 
-  async getSTTRecords(limitCount: number = 50): Promise<STTRecord[]> {
+  async getSTTRecords(limitCount: number = 50, status?: 'processing' | 'completed' | 'failed'): Promise<STTRecord[]> {
     try {
       const userId = this.getCurrentUserId();
-      const q = query(
-        collection(db, 'users', userId, 'stt'),
-        orderBy('timestamp', 'desc'),
-        limit(limitCount)
-      );
+      const sttCollection = collection(db, 'users', userId, 'stt');
+      
+      let q;
+      if (status) {
+        // Query by status
+        q = query(
+          sttCollection,
+          where('status', '==', status),
+          orderBy('timestamp', 'desc'),
+          limit(limitCount)
+        );
+      } else {
+        // Query all records
+        q = query(
+          sttCollection,
+          orderBy('timestamp', 'desc'),
+          limit(limitCount)
+        );
+      }
 
       console.log('🔍 Fetching STT records for user:', userId);
       console.log('📊 Query limit:', limitCount);
+      if (status) {
+        console.log('📊 Filtering by status:', status);
+      }
       
       const querySnapshot = await getDocs(q);
       const records: STTRecord[] = [];
@@ -337,15 +354,42 @@ class DatabaseService {
     }
   }
 
-  async updateSTTRecord(recordId: string, updates: Partial<STTRecord>): Promise<void> {
+  async findSTTRecordByRunpodJobId(runpodJobId: string, userId?: string): Promise<STTRecord | null> {
     try {
-      const userId = this.getCurrentUserId();
-      const docRef = doc(db, 'users', userId, 'stt', recordId);
+      const currentUserId = userId || this.getCurrentUserId();
+      const sttCollection = collection(db, 'users', currentUserId, 'stt');
+      
+      // Query for records with matching runpod_job_id in metadata
+      const q = query(
+        sttCollection,
+        where('metadata.runpod_job_id', '==', runpodJobId),
+        limit(1)
+      );
+      
+      const querySnapshot = await getDocs(q);
+      
+      if (!querySnapshot.empty) {
+        const doc = querySnapshot.docs[0];
+        return {
+          id: doc.id,
+          ...doc.data()
+        } as STTRecord;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Error finding STT record by RunPod job ID:', error);
+      return null;
+    }
+  }
+
+  async updateSTTRecord(recordId: string, updates: Partial<STTRecord>, userId?: string): Promise<void> {
+    try {
+      const currentUserId = userId || this.getCurrentUserId();
+      const docRef = doc(db, 'users', currentUserId, 'stt', recordId);
       
       // Filter out undefined values to avoid Firestore errors
-      const cleanUpdates = Object.fromEntries(
-        Object.entries(updates).filter(([_, value]) => value !== undefined)
-      );
+      const cleanUpdates = removeUndefined(updates);
       
       await updateDoc(docRef, cleanUpdates);
       console.log('✅ STT record updated:', recordId);
