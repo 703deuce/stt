@@ -655,14 +655,45 @@ export async function POST(request: NextRequest) {
     } else if (payload.status === 'IN_PROGRESS') {
       console.log('⏳ Transcription in progress for job:', payload.id);
       
+      // Update status to 'processing' and set startedAt timestamp
+      try {
+        const { databaseService } = await import('@/services/databaseService');
+        const { activeJobsService } = await import('@/services/activeJobsService');
+        const { serverTimestamp } = await import('firebase/firestore');
+        
+        // Find existing record by RunPod job ID
+        const existingRecord = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
+        
+        if (existingRecord && (existingRecord.status === 'queued' || existingRecord.status === 'submitted')) {
+          console.log(`🔄 Updating job ${existingRecord.id} from ${existingRecord.status} to processing`);
+          
+          // Update main STT record
+          await databaseService.updateSTTRecord(existingRecord.id!, {
+            status: 'processing',
+            startedAt: serverTimestamp() as Timestamp
+          }, userId);
+          
+          // Update activeJobs record
+          await activeJobsService.addActiveJob(userId, existingRecord.id!, {
+            status: 'processing',
+            startedAt: serverTimestamp() as Timestamp
+          });
+          
+          console.log(`✅ Job ${existingRecord.id} updated to processing with startedAt timestamp`);
+        }
+      } catch (error) {
+        console.error('❌ Error updating job to processing status:', error);
+        // Don't fail the webhook - continue with progress update
+      }
+      
       // Emit progress update
       if (wsManager) {
         await wsManager.emitJobUpdate({
-          userId: 'system', // You'll need to map job ID to user ID
+          userId: userId || 'system',
           jobId: payload.id,
           type: 'transcription',
           status: 'processing',
-          progress: 50, // You could calculate this based on execution time
+          progress: 50,
           data: {
             executionTime: payload.executionTime
           }
