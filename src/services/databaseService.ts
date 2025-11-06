@@ -257,13 +257,24 @@ class DatabaseService {
       
       let q;
       if (status) {
-        // Query by status
-        q = query(
-          sttCollection,
-          where('status', '==', status),
-          orderBy('timestamp', 'desc'),
-          limit(limitCount)
-        );
+        // Query by status - use createdAt for ordering (more reliable for job tracking)
+        // If createdAt index doesn't exist, we'll fetch without ordering and sort in memory
+        try {
+          q = query(
+            sttCollection,
+            where('status', '==', status),
+            orderBy('createdAt', 'desc'),
+            limit(limitCount)
+          );
+        } catch (indexError: any) {
+          // If index doesn't exist, query without orderBy and sort in memory
+          console.warn('⚠️ Index not found for status+createdAt, querying without orderBy:', indexError.message);
+          q = query(
+            sttCollection,
+            where('status', '==', status),
+            limit(limitCount)
+          );
+        }
       } else {
         // Query all records
         q = query(
