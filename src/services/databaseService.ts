@@ -256,25 +256,16 @@ class DatabaseService {
       const sttCollection = collection(db, 'users', userId, 'stt');
       
       let q;
+      let needsInMemorySort = false;
       if (status) {
         // Query by status - use createdAt for ordering (more reliable for job tracking)
         // If createdAt index doesn't exist, we'll fetch without ordering and sort in memory
-        try {
-          q = query(
-            sttCollection,
-            where('status', '==', status),
-            orderBy('createdAt', 'desc'),
-            limit(limitCount)
-          );
-        } catch (indexError: any) {
-          // If index doesn't exist, query without orderBy and sort in memory
-          console.warn('⚠️ Index not found for status+createdAt, querying without orderBy:', indexError.message);
-          q = query(
-            sttCollection,
-            where('status', '==', status),
-            limit(limitCount)
-          );
-        }
+        q = query(
+          sttCollection,
+          where('status', '==', status),
+          orderBy('createdAt', 'desc'),
+          limit(limitCount)
+        );
       } else {
         // Query all records
         q = query(
@@ -290,7 +281,25 @@ class DatabaseService {
         console.log('📊 Filtering by status:', status);
       }
       
-      const querySnapshot = await getDocs(q);
+      let querySnapshot;
+      try {
+        querySnapshot = await getDocs(q);
+      } catch (queryError: any) {
+        // If query failed due to missing index, try without orderBy
+        if (queryError.code === 'failed-precondition' && status) {
+          console.warn('⚠️ Index not found for status+createdAt, querying without orderBy and sorting in memory');
+          const fallbackQuery = query(
+            sttCollection,
+            where('status', '==', status),
+            limit(limitCount)
+          );
+          querySnapshot = await getDocs(fallbackQuery);
+          needsInMemorySort = true;
+        } else {
+          throw queryError;
+        }
+      }
+      
       const records: STTRecord[] = [];
 
       querySnapshot.forEach((doc) => {
@@ -299,6 +308,23 @@ class DatabaseService {
           ...doc.data()
         } as STTRecord);
       });
+
+      // If we queried without orderBy (due to missing index), sort in memory by createdAt
+      if (needsInMemorySort && records.length > 0) {
+        records.sort((a, b) => {
+          const aTime = a.createdAt instanceof Date 
+            ? a.createdAt.getTime() 
+            : a.createdAt instanceof Timestamp 
+              ? a.createdAt.toDate().getTime() 
+              : 0;
+          const bTime = b.createdAt instanceof Date 
+            ? b.createdAt.getTime() 
+            : b.createdAt instanceof Timestamp 
+              ? b.createdAt.toDate().getTime() 
+              : 0;
+          return bTime - aTime; // Descending order (newest first)
+        });
+      }
 
       console.log('✅ Retrieved STT records:', records.length);
       return records;
