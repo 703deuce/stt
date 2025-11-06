@@ -231,7 +231,7 @@ export async function POST(request: NextRequest) {
                 
                 await databaseService.updateSTTRecord(recordId, {
                   transcription_data_url: transcriptionDataUrl
-                });
+                }, userId);
                 console.log(`✅ Updated transcription data URL: ${transcriptionDataUrl}`);
               } catch (storageError) {
                 console.error('⚠️ Failed to save transcription data to Storage:', storageError);
