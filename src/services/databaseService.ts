@@ -29,15 +29,22 @@ export interface STTRecord {
   transcription_data_url?: string; // URL to the full transcription data file in Storage
   transcript: string; // Shortened transcript for preview (first 500 chars)
   timestamp: Timestamp | Date;
+  createdAt?: Timestamp | Date; // Explicit creation timestamp for timeout queries
   duration: number;
   confidence?: number;
   language: string;
-  status: 'processing' | 'completed' | 'failed';
+  status: 'queued' | 'processing' | 'completed' | 'failed';
   type: 'stt';
   tags?: string[];
   archived?: boolean; // Whether the transcription is archived
   favorited?: boolean; // Whether the transcription is favorited
   isPublic?: boolean; // Whether the transcription can be viewed by anyone with the link
+  // Job tracking fields
+  priority?: number; // Lower number = higher priority (1 = premium, 5 = standard)
+  retryCount?: number; // Number of retry attempts
+  maxRetries?: number; // Maximum retry attempts (default: 3)
+  queuedAt?: Timestamp | Date; // When job was queued
+  error?: string; // Error message if failed
   // Transcription data fields
   diarized_transcript?: Array<{
     speaker: string;
@@ -61,6 +68,10 @@ export interface STTRecord {
     speaker_count?: number;
     processing_method?: string;
     chunks_processed?: number;
+    runpod_job_id?: string; // RunPod job ID for webhook matching
+    execution_time?: number;
+    workflow?: string;
+    model_used?: string;
     // Only store summary metadata, not the full data
   };
   // Speaker mappings specific to this transcription
@@ -175,12 +186,21 @@ class DatabaseService {
       // Clean metadata to remove undefined values
       const cleanedMetadata = data.metadata ? removeUndefined(data.metadata) : undefined;
 
+      // Set createdAt explicitly if not provided (for timeout queries)
+      const createdAt = data.createdAt || serverTimestamp();
+      
       const sttData: Omit<STTRecord, 'id'> = {
         ...data,
         transcript: shortTranscript, // Store shortened version
         user_id: currentUserId,
         timestamp: serverTimestamp() as Timestamp,
+        createdAt: createdAt as Timestamp, // Explicit creation timestamp
         type: 'stt',
+        // Set defaults for job tracking fields
+        priority: data.priority ?? 5, // Default priority (lower = higher priority)
+        retryCount: data.retryCount ?? 0,
+        maxRetries: data.maxRetries ?? 3,
+        queuedAt: data.queuedAt || (data.status === 'queued' ? serverTimestamp() : undefined) as Timestamp | undefined,
         // Only include transcription_data_url if it has a value
         ...(transcriptionDataUrl && { transcription_data_url: transcriptionDataUrl }),
         // Only include metadata if it exists and has values
@@ -217,7 +237,7 @@ class DatabaseService {
     }
   }
 
-  async getSTTRecords(limitCount: number = 50, status?: 'processing' | 'completed' | 'failed'): Promise<STTRecord[]> {
+  async getSTTRecords(limitCount: number = 50, status?: 'queued' | 'processing' | 'completed' | 'failed'): Promise<STTRecord[]> {
     try {
       const userId = this.getCurrentUserId();
       const sttCollection = collection(db, 'users', userId, 'stt');

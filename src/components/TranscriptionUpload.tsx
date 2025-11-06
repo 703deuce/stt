@@ -781,7 +781,11 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         // This persists across devices and survives page refresh/logout
         try {
           const { databaseService } = await import('@/services/databaseService');
+          const { jobPriorityService } = await import('@/services/jobPriorityService');
           const { auth } = await import('@/config/firebase');
+          
+          // Get user priority based on subscription (for 10K+ user scale)
+          const priority = await jobPriorityService.getUserPriority(auth.currentUser?.uid);
           
           const processingRecordId = await databaseService.createSTTRecord({
             user_id: auth.currentUser?.uid || 'unknown',
@@ -792,13 +796,20 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             duration: 0, // Will be updated by webhook
             language: 'en',
             status: 'processing', // Mark as processing
+            priority: priority, // Set priority for queue management
+            retryCount: 0, // Initialize retry count
+            maxRetries: 3, // Maximum retry attempts
             metadata: {
               runpod_job_id: result.jobId, // Store RunPod job ID for webhook matching
               processing_method: 'webhook_processing'
             }
           });
           
-          console.log('✅ Created processing record in Firestore:', processingRecordId);
+          console.log('✅ Created processing record in Firestore:', {
+            recordId: processingRecordId,
+            priority: priority,
+            runpodJobId: result.jobId
+          });
           console.log('⏳ Waiting for webhook to complete transcription...');
         } catch (error) {
           console.error('❌ Failed to create processing record:', error);

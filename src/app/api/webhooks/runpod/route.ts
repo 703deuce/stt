@@ -186,11 +186,14 @@ export async function POST(request: NextRequest) {
             let recordId: string;
             let fileName: string;
 
-            if (existingRecord && existingRecord.status === 'processing') {
-              // Update existing processing record
-              console.log(`✅ Found existing processing record, updating: ${existingRecord.id}`);
+            if (existingRecord && (existingRecord.status === 'processing' || existingRecord.status === 'queued')) {
+              // Update existing processing/queued record
+              console.log(`✅ Found existing ${existingRecord.status} record, updating: ${existingRecord.id}`);
               recordId = existingRecord.id!;
               fileName = existingRecord.name || 'transcription';
+              
+              // Reset retry count on successful completion
+              const retryCount = existingRecord.retryCount || 0;
               
               // Update the record with completed data
               await databaseService.updateSTTRecord(recordId, {
@@ -199,6 +202,8 @@ export async function POST(request: NextRequest) {
                 duration: output.audio_duration_seconds || output.duration || 0,
                 timestamps: timestamps,
                 diarized_transcript: mergedSegments,
+                retryCount: 0, // Reset retry count on success
+                error: undefined, // Clear any previous errors
                 metadata: {
                   ...existingRecord.metadata,
                   word_count: transcriptText.split(/\s+/).length,
@@ -208,7 +213,7 @@ export async function POST(request: NextRequest) {
                   runpod_job_id: payload.id,
                   execution_time: payload.executionTime
                 }
-              });
+              }, userId);
               
               // Also update the transcription data in Storage
               try {
@@ -422,18 +427,21 @@ export async function POST(request: NextRequest) {
               let recordId: string;
               let fileName: string;
 
-              if (existingRecordFallback && existingRecordFallback.status === 'processing') {
-                // Update existing processing record
-                console.log(`✅ Found existing processing record in fallback path, updating: ${existingRecordFallback.id}`);
+              if (existingRecordFallback && (existingRecordFallback.status === 'processing' || existingRecordFallback.status === 'queued')) {
+                // Update existing processing/queued record
+                console.log(`✅ Found existing ${existingRecordFallback.status} record in fallback path, updating: ${existingRecordFallback.id}`);
                 recordId = existingRecordFallback.id!;
                 fileName = existingRecordFallback.name || `Transcription_${new Date().toISOString().replace(/[:.]/g, '-')}`;
                 
+                // Reset retry count on successful completion
                 await databaseService.updateSTTRecord(recordId, {
                   status: 'completed',
                   transcript: transcriptText,
                   duration: output.audio_duration_seconds || output.duration || 0,
                   timestamps: timestamps,
                   diarized_transcript: mergedSegments,
+                  retryCount: 0, // Reset retry count on success
+                  error: undefined, // Clear any previous errors
                   metadata: {
                     ...existingRecordFallback.metadata,
                     word_count: transcriptText.split(/\s+/).length,
@@ -514,14 +522,14 @@ export async function POST(request: NextRequest) {
                   ...(output.model_used && { model_used: output.model_used })
                 } as any
               }, transformedData, userId);
-
+              }
               
-              // Deduct trial minutes for fallback
+              // Deduct trial minutes
               try {
                 const { trialService } = await import('@/services/trialService');
                 const actualDuration = output.audio_duration_seconds || output.duration || 0;
                 const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
-                console.log(`📊 Deducting ${actualMinutes} minutes from trial for fallback transcription: ${extractedFilename}`);
+                console.log(`📊 Deducting ${actualMinutes} minutes from trial for transcription: ${fileName}`);
                 await trialService.deductMinutesForUser(userId, actualMinutes);
               } catch (error) {
                 console.error('⚠️ Error deducting trial minutes for fallback:', error);
