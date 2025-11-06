@@ -186,7 +186,7 @@ export async function POST(request: NextRequest) {
             let recordId: string;
             let fileName: string;
 
-            if (existingRecord && (existingRecord.status === 'processing' || existingRecord.status === 'queued' || existingRecord.status === 'submitted')) {
+            if (existingRecord && (existingRecord.status === 'processing' || existingRecord.status === 'queued')) {
               // Update existing processing/queued/submitted record
               console.log(`✅ Found existing ${existingRecord.status} record, updating: ${existingRecord.id}`);
               recordId = existingRecord.id!;
@@ -449,7 +449,7 @@ export async function POST(request: NextRequest) {
               let recordId: string;
               let fileName: string;
 
-              if (existingRecordFallback && (existingRecordFallback.status === 'processing' || existingRecordFallback.status === 'queued' || existingRecordFallback.status === 'submitted')) {
+              if (existingRecordFallback && (existingRecordFallback.status === 'processing' || existingRecordFallback.status === 'queued')) {
                 // Update existing processing/queued/submitted record
                 console.log(`✅ Found existing ${existingRecordFallback.status} record in fallback path, updating: ${existingRecordFallback.id}`);
                 recordId = existingRecordFallback.id!;
@@ -689,8 +689,11 @@ export async function POST(request: NextRequest) {
         // Find existing record by RunPod job ID
         const existingRecord = await databaseService.findSTTRecordByRunpodJobId(payload.id, userId);
         
-        if (existingRecord && (existingRecord.status === 'queued' || existingRecord.status === 'submitted')) {
-          console.log(`🔄 Updating job ${existingRecord.id} from ${existingRecord.status} to processing`);
+        // Note: IN_PROGRESS webhook is not typically sent by RunPod
+        // Status should already be 'processing' from immediate update after submission
+        // This handler is kept for edge cases but shouldn't normally be needed
+        if (existingRecord && existingRecord.status === 'queued') {
+          console.log(`🔄 Updating job ${existingRecord.id} from queued to processing`);
           
           // Update main STT record
           await databaseService.updateSTTRecord(existingRecord.id!, {
@@ -705,6 +708,8 @@ export async function POST(request: NextRequest) {
           });
           
           console.log(`✅ Job ${existingRecord.id} updated to processing with startedAt timestamp`);
+        } else {
+          console.log(`ℹ️ Job ${existingRecord?.id} already in processing state (expected)`);
         }
       } catch (error) {
         console.error('❌ Error updating job to processing status:', error);

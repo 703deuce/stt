@@ -22,8 +22,8 @@ import { activeJobsService } from '@/services/activeJobsService';
  * 1. Check RunPod capacity
  * 2. Get highest priority queued jobs
  * 3. Submit to RunPod
- * 4. Update status to 'submitted'
- * 5. Webhook will update to 'processing' when RunPod starts
+ * 4. Update status to 'processing' (RunPod starts immediately)
+ * 5. Webhook will update to 'completed' when done
  */
 export async function GET(request: NextRequest) {
   try {
@@ -105,15 +105,17 @@ export async function GET(request: NextRequest) {
         // For now, move from 'queued' to 'submitted' (RunPod webhook will move to 'processing')
         // In production, you'd actually call RunPod API here
         
-        // Update status to 'submitted'
+        // Update status to 'processing' (RunPod starts immediately after submission)
+        const { serverTimestamp } = await import('firebase/firestore');
         await databaseService.updateSTTRecord(jobId, {
-          status: 'submitted',
-          // submittedAt will be set by serverTimestamp
+          status: 'processing',
+          startedAt: serverTimestamp() as Timestamp
         }, userId);
 
         // Update activeJobs
         await updateDoc(jobDoc.ref, {
-          status: 'submitted',
+          status: 'processing',
+          startedAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
 

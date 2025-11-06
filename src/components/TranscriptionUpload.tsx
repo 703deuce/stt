@@ -820,6 +820,10 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           // Get user priority based on subscription (for 10K+ user scale)
           const priority = await jobPriorityService.getUserPriority(auth.currentUser?.uid);
           
+          const { serverTimestamp } = await import('firebase/firestore');
+          
+          // Create record with status 'processing' immediately after RunPod submission
+          // RunPod serverless starts processing within seconds, so we assume it's processing
           const processingRecordId = await databaseService.createSTTRecord({
             user_id: auth.currentUser?.uid || 'unknown',
             audio_id: uploadResult.url,
@@ -828,7 +832,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             transcript: '', // Empty until webhook completes
             duration: 0, // Will be updated by webhook
             language: 'en',
-            status: 'queued', // Queue worker will submit to RunPod
+            status: 'processing', // RunPod starts processing immediately
+            startedAt: serverTimestamp() as Timestamp, // Set startedAt when RunPod begins
             priority: priority, // Set priority for queue management
             retryCount: 0, // Initialize retry count
             maxRetries: 3, // Maximum retry attempts
@@ -843,7 +848,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             auth.currentUser?.uid || 'unknown',
             processingRecordId,
             {
-              status: 'queued',
+              status: 'processing',
+              startedAt: serverTimestamp() as Timestamp,
               priority: priority,
               retryCount: 0,
               maxRetries: 3,
@@ -851,12 +857,13 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             }
           );
           
-          console.log('✅ Created queued record in Firestore:', {
+          console.log('✅ Created processing record in Firestore:', {
             recordId: processingRecordId,
             priority: priority,
-            runpodJobId: result.jobId
+            runpodJobId: result.jobId,
+            startedAt: 'set'
           });
-          console.log('⏳ Job queued - waiting for queue worker to submit to RunPod...');
+          console.log('⏳ Job submitted to RunPod - processing started, waiting for completion...');
         } catch (error) {
           console.error('❌ Failed to create queued record:', error);
           throw error; // Re-throw to show error to user

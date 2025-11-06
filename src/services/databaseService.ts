@@ -33,7 +33,7 @@ export interface STTRecord {
   duration: number;
   confidence?: number;
   language: string;
-  status: 'queued' | 'submitted' | 'processing' | 'completed' | 'failed';
+  status: 'queued' | 'processing' | 'completed' | 'failed';
   type: 'stt';
   tags?: string[];
   archived?: boolean; // Whether the transcription is archived
@@ -243,7 +243,7 @@ class DatabaseService {
     }
   }
 
-  async getSTTRecords(limitCount: number = 50, status?: 'queued' | 'submitted' | 'processing' | 'completed' | 'failed'): Promise<STTRecord[]> {
+  async getSTTRecords(limitCount: number = 50, status?: 'queued' | 'processing' | 'completed' | 'failed'): Promise<STTRecord[]> {
     try {
       const userId = this.getCurrentUserId();
       const sttCollection = collection(db, 'users', userId, 'stt');

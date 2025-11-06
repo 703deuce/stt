@@ -92,7 +92,7 @@ class RateLimitService {
       // Check concurrent limit (active jobs)
       const activeJobsQuery = query(
         sttCollection,
-        where('status', 'in', ['queued', 'submitted', 'processing'])
+        where('status', 'in', ['queued', 'processing'])
       );
       
       const activeJobsSnapshot = await getDocs(activeJobsQuery);
