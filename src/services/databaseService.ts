@@ -230,6 +230,15 @@ class DatabaseService {
         metadataSize: JSON.stringify(cleanedSttData.metadata || {}).length
       });
 
+      const sttCollectionPath = `users/${currentUserId}/stt`;
+      const sttCollection = collection(db, 'users', currentUserId, 'stt');
+      console.log('🗂️ [databaseService] Creating STT record at path:', sttCollectionPath);
+      if (cleanedMetadata?.runpod_job_id) {
+        console.log('🗂️ [databaseService] STT record metadata includes runpod_job_id:', cleanedMetadata.runpod_job_id);
+      } else {
+        console.log('🗂️ [databaseService] STT record metadata runpod_job_id missing or undefined');
+      }
+
       const docRef = await addDoc(collection(db, 'users', currentUserId, 'stt'), cleanedSttData);
       console.log('✅ STT record created:', docRef.id);
       return docRef.id;
