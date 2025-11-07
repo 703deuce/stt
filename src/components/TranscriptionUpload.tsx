@@ -158,6 +158,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             });
           }
           
+          const hasTrackedJob = Boolean(currentRunpodJobId || currentFileName || isProcessing);
+
           if (shouldHandleCompletion) {
             console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
               docId,
@@ -182,7 +184,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             setCurrentRunpodJobId(null);
             setCurrentFileName(null);
             
-            if (onTranscriptionComplete) {
+            if (hasTrackedJob && onTranscriptionComplete) {
               onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
             }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
@@ -282,9 +284,11 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           });
           
           // Check if document is already completed (might have been created before listener started)
+          const hasTrackedJob = Boolean(currentRunpodJobId || currentFileName || isProcessing);
+
           if (data.status === 'completed') {
             console.log('✅ [TranscriptionUpload] Transcription already completed for job:', currentRunpodJobId || currentFileName);
-            handledCompletionIdsRef.current.add(docId);
+            handledCompletionIdsRef.current.add(doc.id);
             
             // Always show completion notification and update UI
             updateNotification({ progress: 100, status: 'completed' });
@@ -312,7 +316,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 setCurrentFileName(null); // Clear filename tracking
                 
                 // Call completion callback
-                if (onTranscriptionComplete) {
+                if (hasTrackedJob && onTranscriptionComplete) {
                   onTranscriptionComplete({ jobId: doc.id, status: 'completed' });
                 }
             return; // Don't process changes if already completed
@@ -356,7 +360,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 setCurrentFileName(null); // Clear filename tracking
                 
                 // Call completion callback
-                if (onTranscriptionComplete) {
+                if (hasTrackedJob && onTranscriptionComplete) {
                   onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
                 }
               } else if (changeData.status === 'failed') {
