@@ -2,6 +2,9 @@ import { databaseService } from './databaseService';
 import { trialService } from './trialService';
 import { getWebSocketManager, JobUpdate } from '@/lib/websocket';
 import { jobMappingService } from './jobMappingService';
+import { jobPriorityService } from './jobPriorityService';
+import { activeJobsService } from './activeJobsService';
+import type { Timestamp } from 'firebase/firestore';
 
 export interface ProcessingJob {
   id: string;
@@ -270,7 +273,59 @@ class BackgroundProcessingService {
         job.result = { runpodJobId: result.jobId };
         this.jobs.set(jobId, job);
         console.log('📝 Job updated with RunPod ID:', job.result.runpodJobId);
-        
+ 
+        // Ensure a processing record exists in Firestore for webhook update
+        try {
+          const existingRecord = await databaseService.findSTTRecordByRunpodJobId(result.jobId, job.userId);
+          if (existingRecord) {
+            console.log('ℹ️ Processing record already exists for RunPod job:', {
+              recordId: existingRecord.id,
+              status: existingRecord.status
+            });
+          } else {
+            const { serverTimestamp } = await import('firebase/firestore');
+            const priority = await jobPriorityService.getUserPriority(job.userId);
+            const processingRecordId = await databaseService.createSTTRecord({
+              user_id: job.userId,
+              audio_id: uploadResult.url,
+              name: job.fileName,
+              audio_file_url: uploadResult.url,
+              transcript: '',
+              duration: 0,
+              language: 'en',
+              status: 'processing',
+              startedAt: serverTimestamp() as Timestamp,
+              priority,
+              retryCount: 0,
+              maxRetries: 3,
+              metadata: {
+                runpod_job_id: result.jobId,
+                processing_method: 'webhook_processing'
+              }
+            });
+            console.log('✅ Created processing record for RunPod job:', {
+              processingRecordId,
+              runpodJobId: result.jobId
+            });
+
+            await activeJobsService.addActiveJob(
+              job.userId,
+              processingRecordId,
+              {
+                status: 'processing',
+                startedAt: serverTimestamp(),
+                priority,
+                retryCount: 0,
+                maxRetries: 3,
+                name: job.fileName
+              },
+              'stt'
+            );
+          }
+        } catch (recordError) {
+          console.error('⚠️ Failed to ensure processing record exists:', recordError);
+        }
+
         // Also create persistent mapping in database for webhook access
         try {
           await jobMappingService.mapJobToUser(result.jobId, job.userId, 'transcription', job.fileName);
