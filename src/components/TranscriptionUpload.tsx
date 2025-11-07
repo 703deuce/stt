@@ -146,13 +146,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           // Check if we should handle this completion
           // Priority: tracked job > active processing > webhook completion fallback
           const shouldHandleCompletion = isNewCompletion && (
-            matchesJobId || 
-            matchesFileName || 
-            (isProcessing && change.type === 'added' && data.status === 'completed') ||
-            isWebhookCompletion
+            matchesJobId ||
+            matchesFileName ||
+            isWebhookCompletion ||
+            isRecentCompletion
           );
-          
-          // Log why we're handling or not handling this completion
+
           if (isNewCompletion && !shouldHandleCompletion) {
             console.log('⏭️ [TranscriptionUpload] Skipping completion (no match):', {
               docId: change.doc.id,
@@ -160,11 +159,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               matchesJobId,
               matchesFileName,
               isProcessing,
+              isWebhookCompletion,
               isRecentCompletion,
-              hasTrackedJob: Boolean(currentRunpodJobId || currentFileName)
+              alreadyHandled: handledCompletionIdsRef.current.has(docId)
             });
           }
-          
+
           const hasTrackedJob = Boolean(currentRunpodJobId || currentFileName || isProcessing);
 
           if (shouldHandleCompletion) {
@@ -175,24 +175,24 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               matchesJobId,
               matchesFileName,
               isProcessing,
-              isWebhookCompletion
+              isWebhookCompletion,
+              isRecentCompletion
             });
             handledCompletionIdsRef.current.add(docId);
-            
-            // Update UI and trigger callback
+
             updateNotification({ progress: 100, status: 'completed' });
-            
+
             setTimeout(() => {
               hideNotification();
             }, 5000);
-            
+
             setIsProcessing(false);
             setUploadProgress(0);
-            
+
             setCurrentRunpodJobId(null);
             setCurrentFileName(null);
-            
-            if ((hasTrackedJob || isWebhookCompletion) && onTranscriptionComplete) {
+
+            if ((hasTrackedJob || isWebhookCompletion || isRecentCompletion) && onTranscriptionComplete) {
               onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
             }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
