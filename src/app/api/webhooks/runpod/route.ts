@@ -277,6 +277,7 @@ export async function POST(request: NextRequest) {
                 status: 'completed',
                 transcript: transcriptText,
                 duration: output.audio_duration_seconds || output.duration || 0,
+                timestamp: serverTimestamp(), // CRITICAL: Update timestamp so frontend listeners detect the change
                 timestamps,
                 diarized_transcript: mergedSegments,
                 retryCount: 0,
@@ -323,6 +324,7 @@ export async function POST(request: NextRequest) {
                 user_id: userId,
                 audio_id: payload.id,
                 name: fileName,
+                timestamp: serverTimestamp() as Timestamp, // CRITICAL: Set timestamp for listener queries
                 audio_file_url: output.audio_url || '',
                 transcript: transcriptText,
                 duration: output.audio_duration_seconds || output.duration || 0,
