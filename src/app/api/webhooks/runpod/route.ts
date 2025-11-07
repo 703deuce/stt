@@ -257,17 +257,32 @@ export async function POST(request: NextRequest) {
                 processingTime = Math.round((Date.now() - startedAt) / 1000); // Convert to seconds
               }
               
-              // Update the record with completed data
-              await databaseService.updateSTTRecord(recordId, {
+              const { setDoc, doc: firestoreDoc } = await import('firebase/firestore');
+              const { storage, db } = await import('@/config/firebase');
+              const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
+
+              const recordRef = firestoreDoc(db, 'users', userId, 'stt', recordId);
+
+              let transcriptionDataUrl: string | undefined;
+              try {
+                const transcriptionDataRef = ref(storage, `transcription_data/${userId}/transcription_data_${payload.id}.json`);
+                await uploadBytes(transcriptionDataRef, new Blob([JSON.stringify(transformedData)], { type: 'application/json' }));
+                transcriptionDataUrl = await getDownloadURL(transcriptionDataRef);
+                console.log(`✅ Updated transcription data URL: ${transcriptionDataUrl}`);
+              } catch (storageError) {
+                console.error('⚠️ Failed to save transcription data to Storage:', storageError);
+              }
+
+              const updatePayload: any = {
                 status: 'completed',
                 transcript: transcriptText,
                 duration: output.audio_duration_seconds || output.duration || 0,
-                timestamps: timestamps,
+                timestamps,
                 diarized_transcript: mergedSegments,
-                retryCount: 0, // Reset retry count on success
-                error: undefined, // Clear any previous errors
-                completedAt: serverTimestamp() as Timestamp,
-                processingTime: processingTime,
+                retryCount: 0,
+                error: null,
+                completedAt: serverTimestamp(),
+                processingTime,
                 metadata: {
                   ...existingRecord.metadata,
                   word_count: transcriptText.split(/\s+/).length,
@@ -277,41 +292,17 @@ export async function POST(request: NextRequest) {
                   runpod_job_id: payload.id,
                   execution_time: payload.executionTime
                 }
-              }, userId);
+              };
 
-              try {
-                const verifyRecord = await databaseService.getSTTRecordById(recordId, userId);
-                console.log('🔁 Verification after update:', {
-                  recordId,
-                  status: verifyRecord?.status,
-                  completedAt: verifyRecord?.completedAt,
-                  hasTranscript: !!verifyRecord?.transcript,
-                  metadataStatus: verifyRecord?.metadata?.processing_method
-                });
-              } catch (verifyError) {
-                console.error('⚠️ Failed to verify record after update:', verifyError);
+              if (transcriptionDataUrl) {
+                updatePayload.transcription_data_url = transcriptionDataUrl;
               }
-              
-              // Remove from activeJobs when completed
-              await activeJobsService.removeActiveJob(userId, recordId, 'stt');
-              
-              // Also update the transcription data in Storage
-              try {
-                const { ref, uploadBytes, getDownloadURL } = await import('firebase/storage');
-                const { storage } = await import('@/config/firebase');
-                const transcriptionDataRef = ref(storage, `transcription_data/${userId}/transcription_data_${payload.id}.json`);
-                await uploadBytes(transcriptionDataRef, new Blob([JSON.stringify(transformedData)], { type: 'application/json' }));
-                const transcriptionDataUrl = await getDownloadURL(transcriptionDataRef);
-                
-                await databaseService.updateSTTRecord(recordId, {
-                  transcription_data_url: transcriptionDataUrl
-                }, userId);
-                console.log(`✅ Updated transcription data URL: ${transcriptionDataUrl}`);
-              } catch (storageError) {
-                console.error('⚠️ Failed to save transcription data to Storage:', storageError);
-              }
-              
+
+              await setDoc(recordRef, updatePayload, { merge: true });
+
               console.log(`✅ Updated existing record ${recordId} to completed status`);
+              
+              await activeJobsService.removeActiveJob(userId, recordId, 'stt');
             } else {
               // No existing record found - create new one (fallback for old jobs)
               console.log('⚠️ No existing processing record found, creating new record (fallback)');
