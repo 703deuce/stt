@@ -36,6 +36,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const { startJob, getActiveJobs } = useBackgroundProcessing();
   const { notification, showNotification, updateNotification, hideNotification } = useProgressNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const handledCompletionIdsRef = useRef<Set<string>>(new Set());
   
   // State declarations - must be before useEffect hooks that use them
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -102,6 +103,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         // Check for any newly completed transcriptions
         snapshot.docChanges().forEach((change) => {
           const data = change.doc.data();
+          const docId = change.doc.id;
+          const alreadyHandled = handledCompletionIdsRef.current.has(docId);
+          if (alreadyHandled) {
+            console.log('⏭️ [TranscriptionUpload] Skipping completion (already handled):', docId);
+            return;
+          }
           
           // Only process if this matches our tracked job OR if it's a new completion
           const matchesJobId = currentRunpodJobId && data.metadata?.runpod_job_id === currentRunpodJobId;
@@ -153,13 +160,14 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           
           if (shouldHandleCompletion) {
             console.log('✅ [TranscriptionUpload] Transcription completed (global listener):', {
-              docId: change.doc.id,
+              docId,
               name: data.name,
               runpodJobId: data.metadata?.runpod_job_id,
               matchesJobId,
               matchesFileName,
               isProcessing
             });
+            handledCompletionIdsRef.current.add(docId);
             
             // Update UI and trigger callback
             updateNotification({ progress: 100, status: 'completed' });
@@ -179,7 +187,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
             console.log('❌ [TranscriptionUpload] Transcription failed (global listener):', {
-              docId: change.doc.id,
+              docId,
               name: data.name,
               error: data.error
             });
@@ -259,6 +267,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         if (!snapshot.empty) {
           const doc = snapshot.docs[0];
           const data = doc.data();
+          const docId = doc.id;
+          const alreadyHandled = handledCompletionIdsRef.current.has(docId);
+          if (alreadyHandled) {
+            console.log('⏭️ [TranscriptionUpload] Skipping completion (already handled):', docId);
+            return;
+          }
           
           console.log('📡 [TranscriptionUpload] Document found for job:', {
             docId: doc.id,
@@ -270,6 +284,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           // Check if document is already completed (might have been created before listener started)
           if (data.status === 'completed') {
             console.log('✅ [TranscriptionUpload] Transcription already completed for job:', currentRunpodJobId || currentFileName);
+            handledCompletionIdsRef.current.add(docId);
             
             // Always show completion notification and update UI
             updateNotification({ progress: 100, status: 'completed' });
@@ -307,6 +322,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           const changes = snapshot.docChanges();
           changes.forEach((change) => {
             const changeData = change.doc.data();
+            const changeDocId = change.doc.id;
+            const alreadyHandled = handledCompletionIdsRef.current.has(changeDocId);
+            if (alreadyHandled) {
+              console.log('⏭️ [TranscriptionUpload] Skipping completion (already handled):', changeDocId);
+              return;
+            }
             
             console.log('📝 [TranscriptionUpload] Document change:', {
               type: change.type,
@@ -317,6 +338,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             if (change.type === 'modified' || change.type === 'added') {
               if (changeData.status === 'completed') {
                 console.log('✅ [TranscriptionUpload] Transcription completed for job:', currentRunpodJobId || currentFileName);
+                handledCompletionIdsRef.current.add(change.doc.id);
                 
                 // Always show completion notification and update UI
                 updateNotification({ progress: 100, status: 'completed' });
