@@ -136,39 +136,40 @@ export default function RecentTranscriptions() {
     }
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'Unknown';
-    
-    try {
-      let date: Date;
-      if (timestamp instanceof Date) {
-        date = timestamp;
-      } else if (timestamp instanceof Timestamp) {
-        date = timestamp.toDate();
-      } else if (typeof timestamp === 'string') {
-        date = new Date(timestamp);
-      } else if (typeof timestamp === 'number') {
-        date = new Date(timestamp);
-      } else {
-        return 'Unknown';
-      }
-      
-      const now = new Date();
-      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-      
-      if (diffInHours < 1) return 'Just now';
-      if (diffInHours < 24) return `${diffInHours}h ago`;
-      if (diffInHours < 48) return 'Yesterday';
-      
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (err) {
-      return 'Unknown';
+  const normalizeDate = (value: any): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (value instanceof Timestamp) return value.toDate();
+    if (typeof value === 'object' && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number') {
+      return new Date(value.seconds * 1000 + value.nanoseconds / 1_000_000);
     }
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  };
+
+  const formatDate = (record: STTRecord) => {
+    const date = normalizeDate(record.completedAt) 
+      || normalizeDate(record.timestamp)
+      || normalizeDate(record.createdAt);
+
+    if (!date) return 'Unknown';
+
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return 'Yesterday';
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const formatDuration = (seconds: number) => {
@@ -362,7 +363,7 @@ export default function RecentTranscriptions() {
 
               {/* Timestamp and Status */}
               <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span>{transcription.timestamp ? formatDate(transcription.timestamp) : 'Unknown'}</span>
+                <span>{formatDate(transcription)}</span>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon(transcription.status)}
                   <span className="text-xs font-medium text-gray-600">

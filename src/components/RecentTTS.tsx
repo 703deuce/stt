@@ -16,6 +16,7 @@ import {
   X,
   Clock
 } from 'lucide-react';
+import { Timestamp } from 'firebase/firestore';
 
 export default function RecentTTS() {
   const { user } = useAuth();
@@ -62,27 +63,40 @@ export default function RecentTTS() {
     }
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'Unknown';
-    
-    try {
-      const date = timestamp instanceof Date ? timestamp : timestamp.toDate();
-      const now = new Date();
-      const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
-      
-      if (diffInHours < 1) return 'Just now';
-      if (diffInHours < 24) return `${diffInHours}h ago`;
-      if (diffInHours < 48) return 'Yesterday';
-      
-      return date.toLocaleDateString('en-US', { 
-        month: 'short', 
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      });
-    } catch (err) {
-      return 'Unknown';
+  const normalizeDate = (value: any): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (value instanceof Timestamp) return value.toDate();
+    if (typeof value === 'object' && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number') {
+      return new Date(value.seconds * 1000 + value.nanoseconds / 1_000_000);
     }
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  };
+
+  const formatDate = (record: TTSRecord) => {
+    const date = normalizeDate(record.completedAt)
+      || normalizeDate(record.timestamp)
+      || normalizeDate(record.createdAt);
+
+    if (!date) return 'Unknown';
+
+    const now = new Date();
+    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+
+    if (diffInHours < 1) return 'Just now';
+    if (diffInHours < 24) return `${diffInHours}h ago`;
+    if (diffInHours < 48) return 'Yesterday';
+
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const copyToClipboard = (text: string) => {
@@ -280,7 +294,7 @@ export default function RecentTTS() {
 
               {/* Timestamp and Status */}
               <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span>{ttsRecord.timestamp ? formatDate(ttsRecord.timestamp) : 'Unknown'}</span>
+                <span>{formatDate(ttsRecord)}</span>
                 <div className="flex items-center space-x-2">
                   {getStatusIcon(ttsRecord.status)}
                   <span className="text-xs font-medium text-gray-600">
