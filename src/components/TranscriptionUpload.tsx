@@ -117,32 +117,21 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           const isNewFailure = (change.type === 'modified' || change.type === 'added') && data.status === 'failed';
           
           // Check if this is a completion we should handle
-          // Match by jobId/filename OR if we're currently processing OR if it's a very recent completion
-          // (handles case where webhook created new record and user is still on page)
-          const isVeryRecent = data.createdAt || data.timestamp;
-          let isRecentCompletion = false;
-          if (isVeryRecent) {
-            const createdAt = isVeryRecent instanceof Date 
-              ? isVeryRecent.getTime() 
-              : isVeryRecent instanceof Timestamp 
-                ? isVeryRecent.toDate().getTime()
-                : typeof isVeryRecent === 'number'
-                  ? isVeryRecent
-                  : Date.now();
-            // Consider it recent if created within last 10 minutes
-            isRecentCompletion = (Date.now() - createdAt) < 10 * 60 * 1000;
-          }
-          
+          // Detect webhook-created completions when no tracked job exists
+          const isWebhookCompletion = isNewCompletion 
+            && change.type === 'added'
+            && data.metadata?.processing_method === 'webhook_processing'
+            && isRecentCompletion
+            && !currentRunpodJobId
+            && !currentFileName;
+
           // Check if we should handle this completion
-          // Priority: exact match > processing state > recent completion
+          // Priority: tracked job > active processing > webhook completion fallback
           const shouldHandleCompletion = isNewCompletion && (
             matchesJobId || 
             matchesFileName || 
             (isProcessing && change.type === 'added' && data.status === 'completed') ||
-            // Also handle if it's a newly added completed record that's very recent
-            // AND we don't have any tracked job (meaning user might have navigated away/back)
-            // This catches webhook-created records when user returns to page
-            (change.type === 'added' && data.status === 'completed' && isRecentCompletion && !currentRunpodJobId && !currentFileName)
+            isWebhookCompletion
           );
           
           // Log why we're handling or not handling this completion
@@ -167,7 +156,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               runpodJobId: data.metadata?.runpod_job_id,
               matchesJobId,
               matchesFileName,
-              isProcessing
+              isProcessing,
+              isWebhookCompletion
             });
             handledCompletionIdsRef.current.add(docId);
             
@@ -184,7 +174,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             setCurrentRunpodJobId(null);
             setCurrentFileName(null);
             
-            if (hasTrackedJob && onTranscriptionComplete) {
+            if ((hasTrackedJob || isWebhookCompletion) && onTranscriptionComplete) {
               onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
             }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
@@ -853,6 +843,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       const result = await response.json();
       console.log('✅ Complete transcription API response:', result);
       console.log('🔍 Job ID check:', { jobId: result.jobId, hasJobId: !!result.jobId, type: typeof result.jobId });
+      console.log('📋 Full API response:', JSON.stringify(result, null, 2));
       
       // Check if this is a webhook-based job (jobId returned) or synchronous (transcript returned)
       if (result.jobId) {
@@ -897,6 +888,13 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           
           // Create record with status 'processing' immediately after RunPod submission
           // RunPod serverless starts processing within seconds, so we assume it's processing
+          console.log('💾 [TranscriptionUpload] Creating Firestore record with:', {
+            jobId: result.jobId,
+            fileName: processedFile.name,
+            status: 'processing',
+            hasJobId: !!result.jobId
+          });
+          
           const processingRecordId = await databaseService.createSTTRecord({
             user_id: auth.currentUser?.uid || 'unknown',
             audio_id: uploadResult.url,
@@ -914,6 +912,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               ...(result.jobId && { runpod_job_id: result.jobId }), // Only include if jobId exists (prevents undefined from being removed)
               processing_method: 'webhook_processing'
             }
+          });
+          
+          console.log('✅ [TranscriptionUpload] Firestore record created:', {
+            recordId: processingRecordId,
+            jobId: result.jobId,
+            fileName: processedFile.name
           });
           
           // CRITICAL: Verify the record was created with the job ID
@@ -948,6 +952,22 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             fileName: processedFile.name,
             startedAt: 'set'
           });
+          
+          // CRITICAL: Verify the record was actually saved
+          const { databaseService: verifyService } = await import('@/services/databaseService');
+          try {
+            const savedRecord = await verifyService.getSTTRecord(processingRecordId);
+            console.log('🔍 VERIFICATION: Record in Firestore:', {
+              exists: !!savedRecord,
+              id: savedRecord?.id,
+              status: savedRecord?.status,
+              name: savedRecord?.name,
+              runpodJobId: savedRecord?.metadata?.runpod_job_id,
+              metadataKeys: savedRecord?.metadata ? Object.keys(savedRecord.metadata) : []
+            });
+          } catch (verifyError) {
+            console.error('❌ VERIFICATION FAILED: Could not read back record:', verifyError);
+          }
           console.log('⏳ Job submitted to RunPod - processing started, waiting for completion...');
         } catch (error) {
           console.error('❌ Failed to create queued record:', error);
