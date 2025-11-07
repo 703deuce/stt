@@ -110,13 +110,31 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             return;
           }
           
-          // Only process if this matches our tracked job OR if it's a new completion
+          // Check if this is a completion we should handle
           const matchesJobId = currentRunpodJobId && data.metadata?.runpod_job_id === currentRunpodJobId;
           const matchesFileName = currentFileName && data.name === currentFileName;
           const isNewCompletion = (change.type === 'modified' || change.type === 'added') && data.status === 'completed';
           const isNewFailure = (change.type === 'modified' || change.type === 'added') && data.status === 'failed';
-          
-          // Check if this is a completion we should handle
+
+          const getTimestampMillis = (value: any): number | null => {
+            if (!value) return null;
+            if (value instanceof Date) return value.getTime();
+            if (value instanceof Timestamp) return value.toDate().getTime();
+            if (typeof value === 'object' && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number') {
+              return value.seconds * 1000 + value.nanoseconds / 1_000_000;
+            }
+            if (typeof value === 'string' || typeof value === 'number') {
+              const parsed = new Date(value);
+              return isNaN(parsed.getTime()) ? null : parsed.getTime();
+            }
+            return null;
+          };
+
+          const createdTimestamp = getTimestampMillis(data.completedAt) 
+            || getTimestampMillis(data.timestamp)
+            || getTimestampMillis(data.createdAt);
+          const isRecentCompletion = Boolean(createdTimestamp && (Date.now() - createdTimestamp) < 10 * 60 * 1000);
+
           // Detect webhook-created completions when no tracked job exists
           const isWebhookCompletion = isNewCompletion 
             && change.type === 'added'
@@ -143,7 +161,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               matchesFileName,
               isProcessing,
               isRecentCompletion,
-              hasTrackedJob: !!(currentRunpodJobId || currentFileName)
+              hasTrackedJob: Boolean(currentRunpodJobId || currentFileName)
             });
           }
           
