@@ -278,6 +278,19 @@ export async function POST(request: NextRequest) {
                   execution_time: payload.executionTime
                 }
               }, userId);
+
+              try {
+                const verifyRecord = await databaseService.getSTTRecordById(recordId, userId);
+                console.log('🔁 Verification after update:', {
+                  recordId,
+                  status: verifyRecord?.status,
+                  completedAt: verifyRecord?.completedAt,
+                  hasTranscript: !!verifyRecord?.transcript,
+                  metadataStatus: verifyRecord?.metadata?.processing_method
+                });
+              } catch (verifyError) {
+                console.error('⚠️ Failed to verify record after update:', verifyError);
+              }
               
               // Remove from activeJobs when completed
               await activeJobsService.removeActiveJob(userId, recordId, 'stt');
