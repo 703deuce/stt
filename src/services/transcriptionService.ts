@@ -179,7 +179,7 @@ class TranscriptionService {
       const userId = auth.currentUser?.uid;
       if (userId && result.jobId) {
         try {
-          await jobMappingService.mapJobToUser(result.jobId, userId, 'transcription');
+          await jobMappingService.mapJobToUser(result.jobId, userId, 'transcription', request.file_name || request.filename, result.jobId);
           console.log('📝 Job mapping created for webhook handling');
         } catch (mappingError) {
           console.error('❌ Failed to create job mapping:', mappingError);
