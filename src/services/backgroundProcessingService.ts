@@ -13,6 +13,7 @@ export interface ProcessingJob {
   progress: number;
   fileId: string;
   fileName: string;
+  runpodJobId?: string;
   error?: string;
   result?: any;
   startTime: number;
@@ -34,7 +35,7 @@ class BackgroundProcessingService {
     fileName: string, 
     audioFile: File,
     settings: any,
-    onProgress?: (progress: number, status: string) => void
+    onProgress?: (progress: number, status: string, details?: Record<string, any>) => void
   ): Promise<string> {
     console.log('🚀 BackgroundProcessingService.startJob called with:', {
       userId,
@@ -201,7 +202,7 @@ class BackgroundProcessingService {
   /**
    * Process job in background
    */
-  private async processJob(jobId: string, audioFile: File, settings: any, onProgress?: (progress: number, status: string) => void) {
+  private async processJob(jobId: string, audioFile: File, settings: any, onProgress?: (progress: number, status: string, details?: Record<string, any>) => void) {
     const job = this.jobs.get(jobId);
     if (!job) return;
 
@@ -258,8 +259,14 @@ class BackgroundProcessingService {
       
       if (result.success && result.jobId) {
         console.log(`📤 Transcription job submitted with webhook: ${result.jobId}`);
+        job.runpodJobId = result.jobId;
+        this.jobs.set(jobId, job);
+        this.notifyListeners(jobId, job);
+
         this.updateJobStatus(jobId, 'processing', 80);
         onProgress?.(80, 'processing');
+
+        onProgress?.(80, 'runpod_job_mapped', { runpodJobId: result.jobId });
         
         // Map RunPod job ID to internal job ID
         this.mapRunpodJob(result.jobId, jobId);
@@ -272,7 +279,7 @@ class BackgroundProcessingService {
         // Update job with RunPod job ID for webhook mapping
         job.result = { runpodJobId: result.jobId };
         this.jobs.set(jobId, job);
-        console.log('📝 Job updated with RunPod ID:', job.result.runpodJobId);
+        console.log('📝 Job updated with RunPod ID:', result.jobId);
  
         // Ensure a processing record exists in Firestore for webhook update
         try {

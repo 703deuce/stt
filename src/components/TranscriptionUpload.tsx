@@ -651,17 +651,22 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           });
           
           const jobId = await startJob(
-            fileToProcess, 
-            selectedFile.name, 
+            fileToProcess,
+            selectedFile.name,
             settings,
-            (progress, status) => {
+            (progress, status, details) => {
+              if (status === 'runpod_job_mapped' && details?.runpodJobId) {
+                console.log('🎯 Received RunPod job ID from background service:', details.runpodJobId);
+                setCurrentRunpodJobId(details.runpodJobId);
+                return;
+              }
+
               console.log(`📊 Progress update: ${progress}% - ${status}`);
               updateNotification({
                 progress,
                 status: status as 'uploading' | 'processing' | 'completed' | 'failed'
               });
-              
-              // Auto-hide notification when completed
+
               if (status === 'completed') {
                 console.log('✅ Transcription completed, hiding notification in 5 seconds');
                 setTimeout(() => {

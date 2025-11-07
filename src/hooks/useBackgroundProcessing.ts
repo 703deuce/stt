@@ -32,7 +32,7 @@ export function useBackgroundProcessing() {
     audioFile: File,
     fileName: string,
     settings: any = {},
-    onProgress?: (progress: number, status: string) => void
+    onProgress?: (progress: number, status: string, details?: Record<string, any>) => void
   ): Promise<string> => {
     console.log('🚀 useBackgroundProcessing.startJob called with:', {
       fileName,
