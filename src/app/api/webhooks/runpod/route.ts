@@ -279,6 +279,10 @@ export async function POST(request: NextRequest) {
                 ? transcriptText.substring(0, 500) + '...' 
                 : transcriptText;
 
+              // Calculate unique speakers from merged segments
+              const uniqueSpeakers = new Set(mergedSegments.map(seg => seg.speaker));
+              const speakerCount = uniqueSpeakers.size;
+
               const updatePayload: any = {
                 status: 'completed',
                 transcript: previewTranscript, // Only store preview (500 chars)
@@ -294,8 +298,8 @@ export async function POST(request: NextRequest) {
                 metadata: {
                   ...existingRecord.metadata,
                   word_count: transcriptText.split(/\s+/).length,
-                  speaker_count: output.segment_timestamps?.length || output.diarized_transcript?.length || 0,
-                  segment_count: mergedSegments.length, // Store count, not full data
+                  speaker_count: speakerCount, // Actual unique speakers (e.g., 2-5)
+                  segment_count: mergedSegments.length, // Total segments (e.g., 487)
                   timestamp_count: timestamps.length, // Store count, not full data
                   processing_method: 'webhook_processing',
                   chunks_processed: 1,
