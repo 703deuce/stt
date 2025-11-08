@@ -27,7 +27,8 @@ import {
   Archive,
   Star,
   ArchiveRestore,
-  Mic
+  Mic,
+  User
 } from 'lucide-react';
 
 export default function AllTranscriptionsPage() {
