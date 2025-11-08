@@ -138,15 +138,48 @@ export default function RecentTranscriptions() {
 
   const normalizeDate = (value: any): Date | null => {
     if (!value) return null;
-    if (value instanceof Date) return value;
-    if (value instanceof Timestamp) return value.toDate();
-    if (typeof value === 'object' && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number') {
-      return new Date(value.seconds * 1000 + value.nanoseconds / 1_000_000);
+    
+    console.log('🔍 normalizeDate input:', { value, type: typeof value, constructor: value?.constructor?.name });
+    
+    // Check if it's already a Date
+    if (value instanceof Date) {
+      console.log('✅ Is Date instance');
+      return value;
     }
+    
+    // Check if it's a Firestore Timestamp
+    if (value instanceof Timestamp) {
+      console.log('✅ Is Timestamp instance');
+      return value.toDate();
+    }
+    
+    // Check if it has toDate method (Firestore Timestamp)
+    if (value && typeof value.toDate === 'function') {
+      console.log('✅ Has toDate method');
+      try {
+        return value.toDate();
+      } catch (e) {
+        console.warn('⚠️ toDate() failed:', e);
+      }
+    }
+    
+    // Check if it's a plain object with seconds/nanoseconds (Firestore Timestamp structure)
+    if (typeof value === 'object' && value !== null && typeof value.seconds === 'number') {
+      console.log('✅ Has seconds property');
+      const nanoseconds = typeof value.nanoseconds === 'number' ? value.nanoseconds : 0;
+      return new Date(value.seconds * 1000 + nanoseconds / 1_000_000);
+    }
+    
+    // Try parsing as string or number
     if (typeof value === 'string' || typeof value === 'number') {
       const parsed = new Date(value);
-      return isNaN(parsed.getTime()) ? null : parsed;
+      if (!isNaN(parsed.getTime())) {
+        console.log('✅ Parsed from string/number');
+        return parsed;
+      }
     }
+    
+    console.warn('❌ Could not normalize date:', value);
     return null;
   };
 
