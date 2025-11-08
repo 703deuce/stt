@@ -214,23 +214,34 @@ export default function AllTranscriptionsPage() {
     }
   };
 
-  const formatDate = (timestamp: any) => {
-    if (!timestamp) return 'Unknown';
+  const normalizeDate = (value: any): Date | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value;
+    if (value instanceof Timestamp) return value.toDate();
+    if (typeof value === 'object' && typeof value.seconds === 'number' && typeof value.nanoseconds === 'number') {
+      return new Date(value.seconds * 1000 + value.nanoseconds / 1_000_000);
+    }
+    if (typeof value === 'string' || typeof value === 'number') {
+      const parsed = new Date(value);
+      return isNaN(parsed.getTime()) ? null : parsed;
+    }
+    return null;
+  };
+
+  const formatDate = (record: STTRecord) => {
+    // Try multiple timestamp fields in priority order
+    const date = normalizeDate(record.completedAt) 
+      || normalizeDate(record.timestamp)
+      || normalizeDate(record.createdAt)
+      || normalizeDate(record.startedAt)
+      || normalizeDate(record.queuedAt);
+    
+    if (!date) {
+      console.warn('⚠️ No valid date found for record:', record.id);
+      return 'Unknown';
+    }
     
     try {
-      let date: Date;
-      if (timestamp instanceof Date) {
-        date = timestamp;
-      } else if (timestamp instanceof Timestamp) {
-        date = timestamp.toDate();
-      } else if (typeof timestamp === 'string') {
-        date = new Date(timestamp);
-      } else if (typeof timestamp === 'number') {
-        date = new Date(timestamp);
-      } else {
-        return 'Unknown';
-      }
-      
       return date.toLocaleDateString('en-US', { 
         month: 'short', 
         day: 'numeric',
@@ -567,7 +578,7 @@ export default function AllTranscriptionsPage() {
                             <div className="flex flex-wrap items-center gap-4 text-sm text-gray-500">
                               <div className="flex items-center space-x-1">
                                 <Calendar className="w-4 h-4" />
-                                <span>{formatDate(transcription.timestamp)}</span>
+                                <span>{formatDate(transcription)}</span>
                               </div>
                               <div className="flex items-center space-x-1">
                                 <Clock className="w-4 h-4" />

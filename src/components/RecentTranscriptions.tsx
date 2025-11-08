@@ -153,9 +153,21 @@ export default function RecentTranscriptions() {
   const formatDate = (record: STTRecord) => {
     const date = normalizeDate(record.completedAt) 
       || normalizeDate(record.timestamp)
-      || normalizeDate(record.createdAt);
+      || normalizeDate(record.createdAt)
+      || normalizeDate(record.startedAt)
+      || normalizeDate(record.queuedAt);
 
-    if (!date) return 'Unknown';
+    if (!date) {
+      console.warn('⚠️ No valid date found for record:', {
+        id: record.id,
+        completedAt: record.completedAt,
+        timestamp: record.timestamp,
+        createdAt: record.createdAt,
+        startedAt: record.startedAt,
+        queuedAt: record.queuedAt
+      });
+      return 'Unknown';
+    }
 
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
