@@ -573,17 +573,19 @@ export default function AllTranscriptionsPage() {
                                 <Clock className="w-4 h-4" />
                                 <span>{formatDuration(transcription.duration)}</span>
                               </div>
-                              {(transcription.metadata as any)?.speaker_segments && (
+                              {transcription.metadata?.word_count && (
                                 <div className="flex items-center space-x-1">
+                                  <FileText className="w-4 h-4" />
                                   <span className="font-medium">
-                                    {(transcription.metadata as any).speaker_segments} speaker segments
+                                    {transcription.metadata.word_count.toLocaleString()} words
                                   </span>
                                 </div>
                               )}
-                              {transcription.timestamps && (
+                              {transcription.metadata?.speaker_count && (
                                 <div className="flex items-center space-x-1">
+                                  <User className="w-4 h-4" />
                                   <span className="font-medium">
-                                    {transcription.timestamps.length} words
+                                    {transcription.metadata.speaker_count} speakers
                                   </span>
                                 </div>
                               )}

@@ -319,7 +319,7 @@ export default function RecentTranscriptions() {
                 </div>
               </div>
 
-              {/* Document Name */}
+              {/* Document Info */}
               <div className="flex-1 min-w-0">
                 {editingId === transcription.id ? (
                   <div className="flex items-center space-x-2">
@@ -350,26 +350,46 @@ export default function RecentTranscriptions() {
                     </button>
                   </div>
                 ) : (
-                  <h3 className="font-medium text-gray-900 truncate">
-                    <a 
-                      href={`/transcriptions/${transcription.id}`}
-                      className="hover:text-orange-600 transition-colors"
-                    >
-                      {transcription.name || transcription.audio_id || 'Untitled Transcription'}
-                    </a>
-                  </h3>
+                  <div>
+                    <h3 className="font-medium text-gray-900 truncate mb-1">
+                      <a 
+                        href={`/transcriptions/${transcription.id}`}
+                        className="hover:text-orange-600 transition-colors"
+                      >
+                        {transcription.name || transcription.audio_id || 'Untitled Transcription'}
+                      </a>
+                    </h3>
+                    {/* Preview Text */}
+                    {transcription.transcript && (
+                      <p className="text-sm text-gray-600 truncate mb-2">
+                        {transcription.transcript.substring(0, 100)}...
+                      </p>
+                    )}
+                    {/* Metadata Row */}
+                    <div className="flex items-center space-x-4 text-xs text-gray-500">
+                      <div className="flex items-center space-x-1">
+                        <Calendar className="w-3 h-3" />
+                        <span>{formatDate(transcription)}</span>
+                      </div>
+                      <div className="flex items-center space-x-1">
+                        <Clock className="w-3 h-3" />
+                        <span>{formatDuration(transcription.duration)}</span>
+                      </div>
+                      {transcription.metadata?.word_count && (
+                        <div className="flex items-center space-x-1">
+                          <FileText className="w-3 h-3" />
+                          <span>{transcription.metadata.word_count.toLocaleString()} words</span>
+                        </div>
+                      )}
+                      <div className="flex items-center space-x-1">
+                        {getStatusIcon(transcription.status)}
+                        <span className="font-medium">
+                          {getStatusText(transcription.status)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
                 )}
-              </div>
-
-              {/* Timestamp and Status */}
-              <div className="flex items-center space-x-4 text-sm text-gray-500">
-                <span>{formatDate(transcription)}</span>
-                <div className="flex items-center space-x-2">
-                  {getStatusIcon(transcription.status)}
-                  <span className="text-xs font-medium text-gray-600">
-                    {getStatusText(transcription.status)}
-                  </span>
-                </div>
               </div>
 
               {/* Action Icons */}
