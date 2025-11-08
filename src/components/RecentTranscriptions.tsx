@@ -55,7 +55,7 @@ export default function RecentTranscriptions() {
       const queryRef = firestore.query(
         sttCollection,
         orderBy('timestamp', 'desc'),
-        limit(5)
+        limit(20) // Increased from 5 to catch more updates
       );
       
       unsubscribe = onSnapshot(queryRef, (snapshot) => {
