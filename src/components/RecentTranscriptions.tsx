@@ -151,6 +151,16 @@ export default function RecentTranscriptions() {
   };
 
   const formatDate = (record: STTRecord) => {
+    console.log('🔍 [RecentTranscriptions] formatDate called for:', {
+      id: record.id,
+      name: record.name,
+      completedAt: record.completedAt,
+      timestamp: record.timestamp,
+      createdAt: record.createdAt,
+      startedAt: record.startedAt,
+      queuedAt: record.queuedAt
+    });
+
     const date = normalizeDate(record.completedAt) 
       || normalizeDate(record.timestamp)
       || normalizeDate(record.createdAt)
@@ -158,7 +168,7 @@ export default function RecentTranscriptions() {
       || normalizeDate(record.queuedAt);
 
     if (!date) {
-      console.warn('⚠️ No valid date found for record:', {
+      console.warn('⚠️ [RecentTranscriptions] No valid date found for record:', {
         id: record.id,
         completedAt: record.completedAt,
         timestamp: record.timestamp,
@@ -168,6 +178,8 @@ export default function RecentTranscriptions() {
       });
       return 'Unknown';
     }
+
+    console.log('✅ [RecentTranscriptions] Date found:', date);
 
     const now = new Date();
     const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
