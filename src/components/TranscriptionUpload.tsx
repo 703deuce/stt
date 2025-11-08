@@ -918,10 +918,18 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             hasJobId: !!result.jobId
           });
           
+          // Create unique name by appending timestamp if duplicate exists
+          const uniqueName = `${processedFile.name.replace(/\.[^/.]+$/, '')} (${new Date().toLocaleString('en-US', { 
+            month: 'short', 
+            day: 'numeric', 
+            hour: '2-digit', 
+            minute: '2-digit' 
+          })})${processedFile.name.match(/\.[^/.]+$/)?.[0] || ''}`;
+
           const processingRecordId = await databaseService.createSTTRecord({
             user_id: auth.currentUser?.uid || 'unknown',
             audio_id: uploadResult.url,
-            name: processedFile.name,
+            name: uniqueName, // Use unique name with timestamp
             audio_file_url: uploadResult.url,
             transcript: '', // Empty until webhook completes
             duration: 0, // Will be updated by webhook
