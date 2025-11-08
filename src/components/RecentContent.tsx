@@ -120,12 +120,12 @@ export default function RecentContent() {
     if (diffInHours < 24) return `${diffInHours}h ago`;
     if (diffInHours < 48) return 'Yesterday';
 
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
+      return date.toLocaleDateString('en-US', { 
+        month: 'short', 
+        day: 'numeric',
       hour: '2-digit',
       minute: '2-digit'
-    });
+      });
   };
 
   const copyToClipboard = (text: string) => {

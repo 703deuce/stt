@@ -273,13 +273,20 @@ export async function POST(request: NextRequest) {
                 console.error('⚠️ Failed to save transcription data to Storage:', storageError);
               }
 
+              // CRITICAL: Only store preview data in Firestore document (max 1MB limit)
+              // Full data is already saved to Firebase Storage above
+              const previewTranscript = transcriptText.length > 500 
+                ? transcriptText.substring(0, 500) + '...' 
+                : transcriptText;
+
               const updatePayload: any = {
                 status: 'completed',
-                transcript: transcriptText,
+                transcript: previewTranscript, // Only store preview (500 chars)
                 duration: output.audio_duration_seconds || output.duration || 0,
                 timestamp: serverTimestamp(), // CRITICAL: Update timestamp so frontend listeners detect the change
-                timestamps,
-                diarized_transcript: mergedSegments,
+                // ❌ DO NOT store full arrays - causes document size limit & console freeze
+                // timestamps: timestamps,  // Stored in Firebase Storage instead
+                // diarized_transcript: mergedSegments,  // Stored in Firebase Storage instead
                 retryCount: 0,
                 error: null,
                 completedAt: serverTimestamp(),
@@ -288,6 +295,8 @@ export async function POST(request: NextRequest) {
                   ...existingRecord.metadata,
                   word_count: transcriptText.split(/\s+/).length,
                   speaker_count: output.segment_timestamps?.length || output.diarized_transcript?.length || 0,
+                  segment_count: mergedSegments.length, // Store count, not full data
+                  timestamp_count: timestamps.length, // Store count, not full data
                   processing_method: 'webhook_processing',
                   chunks_processed: 1,
                   runpod_job_id: payload.id,
