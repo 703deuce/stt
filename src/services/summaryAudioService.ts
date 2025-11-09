@@ -6,7 +6,7 @@ export interface SummaryAudioRecord {
   id?: string;
   user_id: string;
   transcription_id: string;
-  summary_type: 'brief' | 'detailed' | 'key_points' | 'action_items';
+  summary_type: 'brief' | 'detailed' | 'key_points';
   audio_url: string;
   filename: string;
   content_type: string;
@@ -32,7 +32,7 @@ class SummaryAudioService {
     audioBlob: Blob,
     userId: string,
     transcriptionId: string,
-    summaryType: 'brief' | 'detailed' | 'key_points' | 'action_items',
+    summaryType: 'brief' | 'detailed' | 'key_points',
     summaryText: string,
     contentType: string = 'audio/wav'
   ): Promise<SummaryAudioUploadResult> {
@@ -121,7 +121,7 @@ class SummaryAudioService {
   async getSummaryAudioRecord(
     userId: string,
     transcriptionId: string,
-    summaryType: 'brief' | 'detailed' | 'key_points' | 'action_items'
+    summaryType: 'brief' | 'detailed' | 'key_points'
   ): Promise<SummaryAudioRecord | null> {
     try {
       console.log('🔍 Getting summary audio record...');
@@ -204,7 +204,7 @@ class SummaryAudioService {
   async deleteSummaryAudio(
     userId: string,
     transcriptionId: string,
-    summaryType: 'brief' | 'detailed' | 'key_points' | 'action_items'
+    summaryType: 'brief' | 'detailed' | 'key_points'
   ): Promise<boolean> {
     try {
       console.log('🗑️ Deleting summary audio...');
@@ -238,7 +238,7 @@ class SummaryAudioService {
   async hasSummaryAudio(
     userId: string,
     transcriptionId: string,
-    summaryType: 'brief' | 'detailed' | 'key_points' | 'action_items'
+    summaryType: 'brief' | 'detailed' | 'key_points'
   ): Promise<boolean> {
     const record = await this.getSummaryAudioRecord(userId, transcriptionId, summaryType);
     return record !== null;

@@ -18,7 +18,7 @@ export interface DeepSeekProcessingJob {
   contentTypeName?: string;
   contentCategory?: string;
   maxWords?: number;
-  summaryType?: 'brief' | 'detailed' | 'key_points' | 'action_items'; // For summary jobs
+  summaryType?: 'brief' | 'detailed' | 'key_points'; // For summary jobs
   
   // Results
   result?: string;
@@ -71,7 +71,7 @@ class DeepSeekBackgroundProcessingService {
     contentCategory?: string;
     maxWords?: number;
     fileName?: string;
-    summaryType?: 'brief' | 'detailed' | 'key_points' | 'action_items';
+    summaryType?: 'brief' | 'detailed' | 'key_points';
   }): Promise<string> {
     console.log('🚀 DeepSeek BackgroundProcessingService.startJob called with:', {
       userId: params.userId,
@@ -680,9 +680,6 @@ Return ONLY the formatted content without any preamble, explanations, or remarks
         break;
       case 'key_points':
         instruction = 'Extract the key points from this transcription. Present them as a bulleted list with brief explanations.';
-        break;
-      case 'action_items':
-        instruction = 'Identify any action items, tasks, or next steps mentioned in this transcription. Present them as a clear, actionable list.';
         break;
       default:
         instruction = 'Provide a summary of this transcription in approximately 300 words.';

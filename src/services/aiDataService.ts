@@ -11,7 +11,6 @@ export interface AIDataRecord {
     brief?: SummaryResponse;
     detailed?: SummaryResponse;
     key_points?: SummaryResponse;
-    action_items?: SummaryResponse;
   };
   chatHistory?: ChatMessage[];
   createdAt: Timestamp | Date;
@@ -27,7 +26,7 @@ class AIDataService {
   async saveSummaryData(
     transcriptionId: string, 
     userId: string, 
-    summaryType: 'brief' | 'detailed' | 'key_points' | 'action_items',
+    summaryType: 'brief' | 'detailed' | 'key_points',
     summaryData: SummaryResponse
   ): Promise<void> {
     try {
@@ -88,7 +87,6 @@ class AIDataService {
       brief: SummaryResponse;
       detailed: SummaryResponse;
       key_points: SummaryResponse;
-      action_items: SummaryResponse;
     }
   ): Promise<void> {
     try {

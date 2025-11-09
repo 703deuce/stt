@@ -8,13 +8,23 @@ import { deepseekBackgroundProcessingService } from '@/services/deepseekBackgrou
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { 
-      userId, 
-      transcriptionId, 
-      transcriptionText, 
+    const {
+      userId,
+      transcriptionId,
+      transcriptionText,
       summaryType = 'brief',
       maxLength = 200
     } = body;
+
+    const allowedSummaryTypes = ['brief', 'detailed', 'key_points'] as const;
+    type SummaryType = (typeof allowedSummaryTypes)[number];
+    const requestedSummaryType =
+      typeof summaryType === 'string' ? summaryType : 'brief';
+    const normalizedSummaryType: SummaryType = (allowedSummaryTypes.includes(
+      requestedSummaryType as SummaryType
+    )
+      ? requestedSummaryType
+      : 'brief') as SummaryType;
 
     // Validate required fields
     if (!userId || !transcriptionText) {
@@ -27,7 +37,7 @@ export async function POST(request: NextRequest) {
     console.log('🚀 Starting DeepSeek summary job:', {
       userId,
       transcriptionId,
-      summaryType,
+      summaryType: normalizedSummaryType,
       maxLength,
       transcriptionLength: transcriptionText.length,
       transcriptionPreview: transcriptionText.substring(0, 200) + '...'
@@ -35,7 +45,7 @@ export async function POST(request: NextRequest) {
 
     // Create prompt based on summary type
     let prompt = '';
-    switch (summaryType) {
+    switch (normalizedSummaryType) {
       case 'brief':
         prompt = `Please provide a brief summary of this transcription in approximately ${maxLength} words. Focus on the main topic and key points.`;
         break;
@@ -44,9 +54,6 @@ export async function POST(request: NextRequest) {
         break;
       case 'key_points':
         prompt = `Please extract the key points from this transcription. Present them as a bulleted list with brief explanations.`;
-        break;
-      case 'action_items':
-        prompt = `Please identify any action items, tasks, or next steps mentioned in this transcription. Present them as a clear, actionable list.`;
         break;
       default:
         prompt = `Please provide a summary of this transcription in approximately ${maxLength} words.`;
@@ -59,7 +66,7 @@ export async function POST(request: NextRequest) {
       transcriptionId,
       transcriptionText,
       prompt,
-      summaryType: summaryType // Store summary type for database save
+      summaryType: normalizedSummaryType // Store summary type for database save
     });
 
     console.log('✅ DeepSeek summary job started:', jobId);

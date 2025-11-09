@@ -1,14 +1,13 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { 
-  Brain, 
-  Sparkles, 
-  FileText, 
-  List, 
-  CheckSquare, 
-  Copy, 
-  RefreshCw, 
+import {
+  Brain,
+  Sparkles,
+  FileText,
+  List,
+  Copy,
+  RefreshCw,
   Loader2,
   AlertCircle,
   ChevronDown,
@@ -37,12 +36,11 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
     brief?: SummaryResponse;
     detailed?: SummaryResponse;
     key_points?: SummaryResponse;
-    action_items?: SummaryResponse;
   }>({});
   
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'brief' | 'detailed' | 'key_points' | 'action_items'>('brief');
+  const [activeTab, setActiveTab] = useState<'brief' | 'detailed' | 'key_points'>('brief');
   const [audioForTabs, setAudioForTabs] = useState<Record<string, string>>({});
   const [savedAudioRecords, setSavedAudioRecords] = useState<Record<string, SummaryAudioRecord>>({});
   const [expanded, setExpanded] = useState(true);
@@ -243,7 +241,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       console.log('📝 Text preview:', textToUse.substring(0, 200) + '...');
       
       // Use background processing for better scalability
-      const summaryTypes = ['brief', 'detailed', 'key_points', 'action_items'];
+      const summaryTypes = ['brief', 'detailed', 'key_points'];
       const jobPromises = summaryTypes.map(async (type) => {
         const response = await fetch('/api/deepseek/summary', {
           method: 'POST',
@@ -441,7 +439,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
     }
   };
 
-  const handleTabChange = (tab: 'brief' | 'detailed' | 'key_points' | 'action_items') => {
+  const handleTabChange = (tab: 'brief' | 'detailed' | 'key_points') => {
     setActiveTab(tab);
     
     // Stop current audio
@@ -482,7 +480,6 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       case 'brief': return <FileText className="w-4 h-4" />;
       case 'detailed': return <FileText className="w-4 h-4" />;
       case 'key_points': return <List className="w-4 h-4" />;
-      case 'action_items': return <CheckSquare className="w-4 h-4" />;
       default: return <FileText className="w-4 h-4" />;
     }
   };
@@ -492,7 +489,6 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       case 'brief': return 'Brief';
       case 'detailed': return 'Detailed';
       case 'key_points': return 'Key Points';
-      case 'action_items': return 'Action Items';
       default: return type;
     }
   };
@@ -666,7 +662,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
             <div className="space-y-4">
               {/* Tab Navigation */}
               <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
-                {(['brief', 'detailed', 'key_points', 'action_items'] as const).map((tab) => (
+                {(['brief', 'detailed', 'key_points'] as const).map((tab) => (
                   <button
                     key={tab}
                     onClick={() => handleTabChange(tab)}
