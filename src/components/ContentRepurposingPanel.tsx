@@ -301,6 +301,33 @@ export default function ContentRepurposingPanel({
   const [customInstructions, setCustomInstructions] = useState('');
   const [showCustomInstructions, setShowCustomInstructions] = useState(false);
 
+  const extractTranscriptFromData = (data: any): string => {
+    if (!data) return '';
+
+    const normalize = (value: string) =>
+      value.replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n');
+
+    const candidates = [
+      data?.transcript,
+      data?.merged_text,
+      data?.text,
+      data?.runpod_output?.transcript,
+      data?.runpod_output?.merged_text,
+      data?.runpod_output?.text,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const normalized = normalize(candidate);
+        if (normalized.trim().length > 0) {
+          return normalized;
+        }
+      }
+    }
+
+    return '';
+  };
+
   // Fetch full transcription text on mount
   useEffect(() => {
     const fetchFullTranscriptionText = async () => {
@@ -316,27 +343,27 @@ export default function ContentRepurposingPanel({
           console.log('📥 [ContentRepurposingPanel] Found transcription_data_url, fetching full text...');
           const fullData = await databaseService.getFullTranscriptionData(transcriptionRecord.transcription_data_url);
           console.log('🧾 [ContentRepurposingPanel] Full transcription data keys:', Object.keys(fullData || {}));
-          
-          const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
+
+          const fullTranscript = extractTranscriptFromData(fullData);
+
           console.log(
-            '🧾 [ContentRepurposingPanel] fullTranscript type:',
-            typeof fullTranscript,
-            'length:',
-            fullTranscript ? fullTranscript.length : 0,
-            'firstChars:',
-            fullTranscript ? fullTranscript.substring(0, 100) : '',
-            'charCodes:',
-            fullTranscript ? Array.from(fullTranscript.substring(0, 20)).map(ch => ch.charCodeAt(0)) : []
+            '🧾 [ContentRepurposingPanel] Selected transcript diagnostics:',
+            {
+              type: typeof fullTranscript,
+              length: fullTranscript.length,
+              firstChars: fullTranscript.substring(0, 100),
+              charCodes: Array.from(fullTranscript.substring(0, 20)).map(ch => ch.charCodeAt(0))
+            }
           );
-          
-          if (fullTranscript && fullTranscript.trim().length > 0) {
+
+          if (fullTranscript.trim().length > 0) {
             console.log('✅ [ContentRepurposingPanel] Full transcription text loaded:', {
               length: fullTranscript.length,
               preview: fullTranscript.substring(0, 100) + '...'
             });
             setFullTranscriptionText(fullTranscript);
           } else {
-            console.warn('⚠️ [ContentRepurposingPanel] Full transcription data missing transcript field, falling back to preview text. Transcript value:', fullTranscript);
+            console.warn('⚠️ [ContentRepurposingPanel] Full transcription data did not contain usable transcript. Falling back to preview text.');
             setFullTranscriptionText(transcriptionText);
           }
         } else {

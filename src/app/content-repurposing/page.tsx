@@ -394,6 +394,33 @@ export default function ContentRepurposingPage() {
     }
   };
 
+  const extractTranscriptFromData = (data: any): string => {
+    if (!data) return '';
+
+    const normalize = (value: string) =>
+      value.replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n');
+
+    const candidates = [
+      data?.transcript,
+      data?.merged_text,
+      data?.text,
+      data?.runpod_output?.transcript,
+      data?.runpod_output?.merged_text,
+      data?.runpod_output?.text,
+    ];
+
+    for (const candidate of candidates) {
+      if (typeof candidate === 'string') {
+        const normalized = normalize(candidate);
+        if (normalized.trim().length > 0) {
+          return normalized;
+        }
+      }
+    }
+
+    return '';
+  };
+
   const loadTranscriptions = async () => {
     if (!user) return;
     
@@ -480,31 +507,30 @@ export default function ContentRepurposingPage() {
       console.log('🚀 Starting background content generation...');
       
       // Get full transcription text from Storage if available
-      let fullTranscriptionText = selectedTranscription.transcript;
+      let fullTranscriptionText = selectedTranscription.transcript?.replace(/\r\n/g, '\n') || '';
       if (selectedTranscription.transcription_data_url) {
         try {
           console.log('📥 Fetching full transcription text for content generation...');
           const fullData = await databaseService.getFullTranscriptionData(selectedTranscription.transcription_data_url);
           console.log('🧾 [ContentRepurposingPage] Full transcription data keys:', Object.keys(fullData || {}));
-          const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
-          console.log(
-            '🧾 [ContentRepurposingPage] fullTranscript type:',
-            typeof fullTranscript,
-            'length:',
-            fullTranscript ? fullTranscript.length : 0,
-            'firstChars:',
-            fullTranscript ? fullTranscript.substring(0, 100) : '',
-            'charCodes:',
-            fullTranscript ? Array.from(fullTranscript.substring(0, 20)).map(ch => ch.charCodeAt(0)) : []
-          );
-          if (fullTranscript && fullTranscript.trim().length > 0) {
+
+          const fullTranscript = extractTranscriptFromData(fullData);
+
+          console.log('🧾 [ContentRepurposingPage] Selected transcript diagnostics:', {
+            type: typeof fullTranscript,
+            length: fullTranscript.length,
+            firstChars: fullTranscript.substring(0, 100),
+            charCodes: Array.from(fullTranscript.substring(0, 20)).map(ch => ch.charCodeAt(0))
+          });
+
+          if (fullTranscript.trim().length > 0) {
             fullTranscriptionText = fullTranscript;
             console.log('✅ Using full transcription text:', {
               length: fullTranscriptionText.length,
               preview: fullTranscriptionText.substring(0, 100) + '...'
             });
           } else {
-            console.warn('⚠️ Full transcription data missing transcript field, using preview text instead. Transcript value:', fullTranscript);
+            console.warn('⚠️ Full transcription data did not contain usable transcript. Using preview text instead.');
           }
         } catch (error) {
           console.warn('⚠️ Failed to fetch full transcription text, using preview:', error);
@@ -512,7 +538,7 @@ export default function ContentRepurposingPage() {
       }
 
       const transcriptSource = fullTranscriptionText && fullTranscriptionText.trim().length > 0
-        ? fullTranscriptionText.replace(/\r\n/g, '\n')
+        ? fullTranscriptionText
         : selectedTranscription.transcript?.replace(/\r\n/g, '\n') || '';
 
       if (!transcriptSource || transcriptSource.trim().length === 0) {
