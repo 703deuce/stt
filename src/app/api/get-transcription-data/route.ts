@@ -1,6 +1,44 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ValidationUtils, addSecurityHeaders, secureErrorResponse } from '@/middleware/security';
 
+async function fetchStorageUrl(url: string) {
+  const baseHeaders: Record<string, string> = {
+    'Accept': 'application/json'
+  };
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: baseHeaders,
+      cache: 'no-store'
+    });
+
+    if (response.status === 401) {
+      console.warn('⚠️ [get-transcription-data] Received 401, retrying without headers...');
+      const retryResponse = await fetch(url, {
+        method: 'GET',
+        cache: 'no-store'
+      });
+      if (!retryResponse.ok) {
+        throw retryResponse;
+      }
+      return retryResponse;
+    }
+
+    if (!response.ok) {
+      throw response;
+    }
+
+    return response;
+  } catch (err) {
+    if (err instanceof Response) {
+      const text = await err.text().catch(() => '');
+      throw new Error(`HTTP ${err.status}: ${err.statusText} ${text ? '- ' + text : ''}`);
+    }
+    throw err;
+  }
+}
+
 export async function POST(request: NextRequest) {
   try {
     const { transcriptionDataUrl } = await request.json();
@@ -17,18 +55,8 @@ export async function POST(request: NextRequest) {
       return secureErrorResponse({ message: 'Invalid storage URL' }, 400);
     }
     
-    // Server-side fetch (no CORS issues)
-    const response = await fetch(transcriptionDataUrl, {
-      method: 'GET',
-      headers: {
-        'Accept': 'application/json',
-      }
-    });
-    
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-    }
-    
+    // Server-side fetch (with retry logic)
+    const response = await fetchStorageUrl(transcriptionDataUrl);
     const raw = await response.text();
     let fullData: any = raw;
 
