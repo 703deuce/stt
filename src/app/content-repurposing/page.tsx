@@ -487,6 +487,7 @@ export default function ContentRepurposingPage() {
           const fullData = await databaseService.getFullTranscriptionData(selectedTranscription.transcription_data_url);
           console.log('🧾 [ContentRepurposingPage] Full transcription data keys:', Object.keys(fullData || {}));
           const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
+          console.log('🧾 [ContentRepurposingPage] fullTranscript type:', typeof fullTranscript, 'length:', fullTranscript ? fullTranscript.length : 0);
           if (fullTranscript && fullTranscript.trim().length > 0) {
             fullTranscriptionText = fullTranscript;
             console.log('✅ Using full transcription text:', {
@@ -494,7 +495,7 @@ export default function ContentRepurposingPage() {
               preview: fullTranscriptionText.substring(0, 100) + '...'
             });
           } else {
-            console.warn('⚠️ Full transcription data missing transcript field, using preview text instead');
+            console.warn('⚠️ Full transcription data missing transcript field, using preview text instead. Transcript value:', fullTranscript);
           }
         } catch (error) {
           console.warn('⚠️ Failed to fetch full transcription text, using preview:', error);
