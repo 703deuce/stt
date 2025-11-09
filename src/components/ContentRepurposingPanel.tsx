@@ -315,6 +315,7 @@ export default function ContentRepurposingPanel({
         if (transcriptionRecord?.transcription_data_url) {
           console.log('📥 [ContentRepurposingPanel] Found transcription_data_url, fetching full text...');
           const fullData = await databaseService.getFullTranscriptionData(transcriptionRecord.transcription_data_url);
+          console.log('🧾 [ContentRepurposingPanel] Full transcription data keys:', Object.keys(fullData || {}));
           
           const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
           

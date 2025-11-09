@@ -485,6 +485,7 @@ export default function ContentRepurposingPage() {
         try {
           console.log('📥 Fetching full transcription text for content generation...');
           const fullData = await databaseService.getFullTranscriptionData(selectedTranscription.transcription_data_url);
+          console.log('🧾 [ContentRepurposingPage] Full transcription data keys:', Object.keys(fullData || {}));
           const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
           if (fullTranscript && fullTranscript.trim().length > 0) {
             fullTranscriptionText = fullTranscript;
