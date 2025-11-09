@@ -202,7 +202,11 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             setCurrentFileName(null);
 
             if ((hasTrackedJob || isWebhookCompletion || isRecentCompletion) && onTranscriptionComplete) {
-              onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
+              onTranscriptionComplete({
+                jobId: change.doc.id,
+                status: 'completed',
+                clientId: data.metadata?.client_pending_id
+              });
             }
           } else if (isNewFailure && (matchesJobId || matchesFileName)) {
             console.log('❌ [TranscriptionUpload] Transcription failed (global listener):', {
@@ -210,14 +214,19 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               name: data.name,
               error: data.error
             });
-            
             updateNotification({ progress: 0, status: 'failed' });
             setTimeout(() => hideNotification(), 5000);
-            
             setIsProcessing(false);
             setUploadProgress(0);
             setCurrentRunpodJobId(null);
             setCurrentFileName(null);
+            if (onTranscriptionComplete) {
+              onTranscriptionComplete({
+                jobId: change.doc.id,
+                status: 'failed',
+                clientId: data.metadata?.client_pending_id
+              });
+            }
           }
         });
       }, (error) => {
@@ -334,7 +343,11 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 
                 // Call completion callback
                 if (hasTrackedJob && onTranscriptionComplete) {
-                  onTranscriptionComplete({ jobId: doc.id, status: 'completed' });
+                  onTranscriptionComplete({
+                    jobId: doc.id,
+                    status: 'completed',
+                    clientId: data.metadata?.client_pending_id
+                  });
                 }
             return; // Don't process changes if already completed
           }
@@ -378,21 +391,27 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 
                 // Call completion callback
                 if (hasTrackedJob && onTranscriptionComplete) {
-                  onTranscriptionComplete({ jobId: change.doc.id, status: 'completed' });
+                  onTranscriptionComplete({
+                    jobId: change.doc.id,
+                    status: 'completed',
+                    clientId: data.metadata?.client_pending_id
+                  });
                 }
               } else if (changeData.status === 'failed') {
                 console.log('❌ [TranscriptionUpload] Transcription failed for job:', currentRunpodJobId || currentFileName);
-                
-                // Always show failure notification
                 updateNotification({ progress: 0, status: 'failed' });
                 setTimeout(() => hideNotification(), 3000);
-                
-                // Reset processing state
                 setIsProcessing(false);
                 setUploadProgress(0);
-                
-                setCurrentRunpodJobId(null); // Clear job tracking
-                setCurrentFileName(null); // Clear filename tracking
+                setCurrentRunpodJobId(null);
+                setCurrentFileName(null);
+                if (onTranscriptionComplete) {
+                  onTranscriptionComplete({
+                    jobId: change.doc.id,
+                    status: 'failed',
+                    clientId: changeData.metadata?.client_pending_id
+                  });
+                }
               }
             }
           });
@@ -453,12 +472,14 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               name: completedRecord.name,
               runpodJobId: completedRecord.metadata?.runpod_job_id
             });
-            
             updateNotification({ progress: 100, status: 'completed' });
             setTimeout(() => hideNotification(), 5000);
-            
             if (onTranscriptionComplete) {
-              onTranscriptionComplete({ jobId: completedRecord.id, status: 'completed' });
+              onTranscriptionComplete({
+                jobId: completedRecord.id,
+                status: 'completed',
+                clientId: completedRecord.metadata?.client_pending_id
+              });
             }
           }
         });
@@ -1146,7 +1167,32 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       
       // Call completion callback
       if (onTranscriptionComplete) {
-        onTranscriptionComplete(result);
+        const completedRecord: STTRecord = {
+          id: dbResult,
+          user_id: auth.currentUser?.uid || 'unknown',
+          audio_id: uploadResult.url,
+          name: processedFile.name,
+          audio_file_url: uploadResult.url,
+          transcript: result.transcript || '',
+          timestamp: new Date(),
+          createdAt: new Date(),
+          startedAt: new Date(),
+          completedAt: new Date(),
+          duration: result.metadata?.duration || result.duration || 0,
+          language: 'en',
+          status: 'completed',
+          type: 'stt',
+          metadata: {
+            word_count: result.metadata?.word_count || result.timestamps?.length || 0,
+            processing_method: result.metadata?.processing_method || 'synchronous_transcription'
+          }
+        };
+
+        onTranscriptionComplete({
+          jobId: dbResult,
+          status: 'completed',
+          record: completedRecord
+        });
       }
       
     } catch (error) {
@@ -1352,7 +1398,33 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       
       // Trigger the callback to refresh the transcription list
       if (onTranscriptionComplete) {
-        onTranscriptionComplete(finalResult);
+        const completedRecord: STTRecord = {
+          id: savedTranscriptionId,
+          user_id: auth.currentUser?.uid || 'unknown',
+          audio_id: selectedFile?.name || 'enhanced_long_transcription',
+          name: `Enhanced: ${selectedFile?.name || 'Long Audio Transcription'}`,
+          audio_file_url: originalAudioUpload.url,
+          transcript: finalResult.merged_text || finalResult.text || '',
+          timestamp: new Date(),
+          createdAt: new Date(),
+          startedAt: new Date(),
+          completedAt: new Date(),
+          duration: finalResult.duration || 0,
+          language: 'en',
+          status: 'completed',
+          type: 'stt',
+          metadata: {
+            word_count: finalResult.word_count,
+            speaker_count: finalResult.speaker_count || 0,
+            processing_method: 'enhanced_chunking'
+          }
+        };
+
+        onTranscriptionComplete({
+          jobId: savedTranscriptionId,
+          status: 'completed',
+          record: completedRecord
+        });
       }
       
     } catch (error) {

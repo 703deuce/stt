@@ -11,7 +11,6 @@ import { STTRecord } from '@/services/databaseService';
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
-  const [refreshKey, setRefreshKey] = useState(0);
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
 
   const handleTranscriptionEvent = (event: TranscriptionEvent) => {
@@ -25,9 +24,15 @@ export default function TranscriptionsPage() {
     }
 
     if (status === 'completed' && jobId) {
-      setPendingTranscriptions(prev => prev.filter(item => item.id !== jobId && item.metadata?.client_pending_id !== clientId));
-      setActiveTab('recent');
-      setRefreshKey(prev => prev + 1);
+      let removedPending = false;
+      setPendingTranscriptions(prev => {
+        const filtered = prev.filter(item => item.id !== jobId && item.metadata?.client_pending_id !== clientId);
+        removedPending = filtered.length !== prev.length;
+        return filtered;
+      });
+      if (clientId || removedPending) {
+        setActiveTab('recent');
+      }
       return;
     }
 
@@ -41,9 +46,8 @@ export default function TranscriptionsPage() {
       });
     }
 
-    if (status === 'started' || status === 'processing') {
+    if ((status === 'started' || status === 'processing') && clientId) {
       setActiveTab('recent');
-      setRefreshKey(prev => prev + 1);
     }
   };
 
@@ -163,7 +167,7 @@ export default function TranscriptionsPage() {
 
         {activeTab === 'recent' && (
           <div>
-            <RecentTranscriptions key={refreshKey} pendingTranscriptions={pendingTranscriptions} />
+            <RecentTranscriptions pendingTranscriptions={pendingTranscriptions} />
           </div>
         )}
       </div>
