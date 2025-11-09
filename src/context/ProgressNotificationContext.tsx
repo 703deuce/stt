@@ -30,7 +30,7 @@ export function ProgressNotificationProvider({ children }: { children: ReactNode
 
   const showNotification = (fileName: string, status: 'uploading' | 'processing' | 'completed' | 'failed', progress: number, error?: string) => {
     setNotification({
-      isVisible: true,
+      isVisible: status === 'uploading',
       fileName,
       status,
       progress,
@@ -39,11 +39,12 @@ export function ProgressNotificationProvider({ children }: { children: ReactNode
   };
 
   const updateNotification = (updates: Partial<ProgressNotification>) => {
-    console.log('📢 Updating notification:', updates);
     setNotification(prev => {
       const updated = { ...prev, ...updates };
-      console.log('📢 Notification state:', updated);
-      return updated;
+      if (updated.status !== 'uploading') {
+        return { ...prev, isVisible: false };
+      }
+      return { ...updated, isVisible: true };
     });
   };
 

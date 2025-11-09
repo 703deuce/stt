@@ -943,12 +943,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           }
           
           // Show notification
-          showNotification(
-            processedFile.name,
-            'processing',
-            30,
-            `Queued (position ${result.queuePosition})`
-          );
+          hideNotification();
         } catch (error) {
           console.error('❌ Error handling queued job:', error);
         }
