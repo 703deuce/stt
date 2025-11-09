@@ -29,7 +29,17 @@ export async function POST(request: NextRequest) {
       throw new Error(`HTTP ${response.status}: ${response.statusText}`);
     }
     
-    const fullData = await response.json();
+    let fullData = await response.json();
+
+    if (typeof fullData === 'string') {
+      console.log('🧾 [get-transcription-data] Received string payload, attempting JSON parsing...');
+      try {
+        fullData = JSON.parse(fullData);
+      } catch (parseError) {
+        console.error('❌ [get-transcription-data] Failed to parse string payload as JSON:', parseError);
+        fullData = { fullText: fullData };
+      }
+    }
     
     console.log('✅ Server-side transcription data retrieved:', {
       hasTranscript: !!fullData.transcript,

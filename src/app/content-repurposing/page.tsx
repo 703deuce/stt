@@ -407,6 +407,7 @@ export default function ContentRepurposingPage() {
       data?.runpod_output?.transcript,
       data?.runpod_output?.merged_text,
       data?.runpod_output?.text,
+      data?.fullText,
     ];
 
     for (const candidate of candidates) {
