@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
-import TranscriptionUpload from '@/components/TranscriptionUpload';
+import TranscriptionUpload, { TranscriptionEvent } from '@/components/TranscriptionUpload';
 import RecentTranscriptions from '@/components/RecentTranscriptions';
 import { Mic, Upload, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
 import { STTRecord } from '@/services/databaseService';
@@ -13,41 +13,35 @@ export default function TranscriptionsPage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
   const [refreshKey, setRefreshKey] = useState(0);
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
-  const [userInitiatedJob, setUserInitiatedJob] = useState(false);
 
-  const handleTranscriptionEvent = (event: { status: string; jobId?: string; record?: STTRecord }) => {
-    if (event.status === 'processing' || event.status === 'started') {
-      setUserInitiatedJob(true);
-    }
+  const handleTranscriptionEvent = (event: TranscriptionEvent) => {
+    const { status, jobId, record, clientId } = event;
 
-    if (event.status === 'completed' && event.jobId) {
-      setPendingTranscriptions(prev => {
-        const updated = prev.filter(item => item.id !== event.jobId);
-        if (updated.length === 0) {
-          setUserInitiatedJob(false);
-        }
-        return updated;
-      });
-      if (userInitiatedJob) {
-        setActiveTab('recent');
-        setRefreshKey(prev => prev + 1);
+    if (status === 'failed') {
+      if (clientId) {
+        setPendingTranscriptions(prev => prev.filter(item => item.metadata?.client_pending_id !== clientId));
       }
       return;
     }
 
-    if (event.status === 'started') {
+    if (status === 'completed' && jobId) {
+      setPendingTranscriptions(prev => prev.filter(item => item.id !== jobId && item.metadata?.client_pending_id !== clientId));
       setActiveTab('recent');
       setRefreshKey(prev => prev + 1);
+      return;
     }
 
-    if (event.record) {
+    if (record) {
       setPendingTranscriptions(prev => {
-        const filtered = prev.filter(item => item.id !== event.record!.id);
-        return [event.record!, ...filtered];
+        const filtered = prev.filter(item =>
+          item.id !== record.id &&
+          item.metadata?.client_pending_id !== clientId
+        );
+        return [record, ...filtered];
       });
     }
 
-    if (event.status === 'processing' && event.record) {
+    if (status === 'started' || status === 'processing') {
       setActiveTab('recent');
       setRefreshKey(prev => prev + 1);
     }

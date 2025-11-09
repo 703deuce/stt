@@ -28,8 +28,15 @@ import {
   Users
 } from 'lucide-react';
 
+export interface TranscriptionEvent {
+  status: 'started' | 'processing' | 'completed' | 'failed';
+  jobId?: string;
+  record?: STTRecord;
+  clientId?: string;
+}
+
 interface TranscriptionUploadProps {
-  onTranscriptionComplete?: (result: any) => void;
+  onTranscriptionComplete?: (event: TranscriptionEvent) => void;
 }
 
 export default function TranscriptionUpload({ onTranscriptionComplete }: TranscriptionUploadProps) {
@@ -38,6 +45,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   const { notification, showNotification, updateNotification, hideNotification } = useProgressNotification();
   const fileInputRef = useRef<HTMLInputElement>(null);
   const handledCompletionIdsRef = useRef<Set<string>>(new Set());
+  const clientPendingIdRef = useRef<string | null>(null);
   
   // State declarations - must be before useEffect hooks that use them
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
@@ -694,7 +702,38 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           
           // Call completion callback if provided
           if (onTranscriptionComplete) {
-            onTranscriptionComplete({ jobId, status: 'started' });
+            const clientPendingId = `pending-${Date.now()}`;
+            clientPendingIdRef.current = clientPendingId;
+
+            const placeholderRecord: STTRecord = {
+              id: clientPendingId,
+              user_id: auth.currentUser?.uid || 'unknown',
+              audio_id: 'pending',
+              name: selectedFile.name,
+              audio_file_url: '',
+              transcript: '',
+              timestamp: new Date(),
+              createdAt: new Date(),
+              startedAt: new Date(),
+              duration: 0,
+              language: (settings as any)?.language || 'en',
+              status: 'processing',
+              type: 'stt',
+              priority: 3,
+              retryCount: 0,
+              maxRetries: 3,
+              metadata: {
+                processing_method: 'client_upload',
+                client_pending_id: clientPendingId
+              }
+            };
+
+            onTranscriptionComplete({
+              jobId,
+              status: 'started',
+              clientId: clientPendingIdRef.current || undefined,
+              record: placeholderRecord
+            });
           }
           
         } catch (error) {
@@ -977,14 +1016,16 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               maxRetries: 3,
               metadata: {
                 processing_method: 'webhook_processing',
-                ...(result.jobId ? { runpod_job_id: result.jobId } : {})
+                ...(result.jobId ? { runpod_job_id: result.jobId } : {}),
+                ...(clientPendingIdRef.current ? { client_pending_id: clientPendingIdRef.current } : {})
               }
             };
 
             onTranscriptionComplete({
               jobId: processingRecordId,
               status: 'processing',
-              record: pendingRecord
+              record: pendingRecord,
+              clientId: clientPendingIdRef.current || undefined
             });
           }
           
