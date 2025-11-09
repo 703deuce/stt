@@ -1,0 +1,7 @@
+warning: in the working copy of 'src/app/content-repurposing/page.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/components/TranscriptionUpload.tsx', LF will be replaced by CRLF the next time Git touches it
+warning: in the working copy of 'src/services/databaseService.ts', LF will be replaced by CRLF the next time Git touches it
+ src/app/content-repurposing/page.tsx    | 129 [32m++++[m[31m--[m
+ src/components/RecentTranscriptions.tsx | 722 [32m+++++++++++++[m[31m-------------------[m
+ src/components/TranscriptionUpload.tsx  | 110 [32m++[m[31m---[m
+ 3 files changed, 437 insertions(+), 524 deletions(-)

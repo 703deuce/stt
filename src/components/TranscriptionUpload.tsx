@@ -74,7 +74,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
   // Trial & upgrade modal state
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [upgradeReason, setUpgradeReason] = useState('');
-
+  
   // Cleanup audio extraction service on unmount
   useEffect(() => {
     return () => {
@@ -379,12 +379,12 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 handledCompletionIdsRef.current.add(change.doc.id);
                 
                 // Always show completion notification and update UI
-                updateNotification({ progress: 100, status: 'completed' });
-                
-                setTimeout(() => {
-                  console.log('🕐 [TranscriptionUpload] Hiding notification after completion');
-                  hideNotification();
-                }, 5000);
+                  updateNotification({ progress: 100, status: 'completed' });
+                  
+                  setTimeout(() => {
+                    console.log('🕐 [TranscriptionUpload] Hiding notification after completion');
+                    hideNotification();
+                  }, 5000);
                 
                 // Reset processing state
                 setIsProcessing(false);
@@ -404,8 +404,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 }
               } else if (changeData.status === 'failed') {
                 console.log('❌ [TranscriptionUpload] Transcription failed for job:', currentRunpodJobId || currentFileName);
-                updateNotification({ progress: 0, status: 'failed' });
-                setTimeout(() => hideNotification(), 3000);
+                  updateNotification({ progress: 0, status: 'failed' });
+                  setTimeout(() => hideNotification(), 3000);
                 setIsProcessing(false);
                 setUploadProgress(0);
                 setCurrentRunpodJobId(null);
@@ -688,8 +688,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           });
           
           const jobId = await startJob(
-            fileToProcess,
-            selectedFile.name,
+            fileToProcess, 
+            selectedFile.name, 
             settings,
             (progress, status, details) => {
               if (status === 'runpod_job_mapped' && details?.runpodJobId) {
@@ -703,7 +703,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 progress,
                 status: status as 'uploading' | 'processing' | 'completed' | 'failed'
               });
-
+              
               if (status === 'completed') {
                 console.log('✅ Transcription completed, hiding notification in 5 seconds');
                 setTimeout(() => {
@@ -1121,48 +1121,48 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         // Synchronous path: Save immediately (fallback for non-webhook jobs)
         setCurrentFileName(processedFile.name);
         console.log('🎯 Synchronous transcription complete, saving immediately');
-        
-        setProcessingPhase('saving');
-        setChunkProgress(90);
-        
-        // Step 4: Save to database
-        console.log('💾 Saving transcription to database...');
-        const { databaseService } = await import('@/services/databaseService');
-        const { auth } = await import('@/config/firebase');
-        const dbResult = await databaseService.createSTTRecord({
-          user_id: auth.currentUser?.uid || 'unknown',
-          audio_id: uploadResult.url,
-          name: processedFile.name,
-          transcript: result.transcript || '',
-          audio_file_url: uploadResult.url, // Use Firebase URL for audio player
-          duration: result.metadata?.duration || 0,
-          language: 'en',
-          status: 'completed',
-          metadata: {
-            word_count: result.timestamps?.length || 0,
-            speaker_count: result.diarized_transcript?.length || 0,
-            processing_method: result.metadata?.processing_method || 'OPTIMIZED_FULL_PYANNOTE_SEPARATE_PARAKET_WITH_SPEAKER_COMBINATION',
-            chunks_processed: result.metadata?.chunks_processed || 1
-          }
-        }, result); // Pass full transcription data as second parameter
-        
-        console.log('✅ Transcription saved to database:', dbResult);
-        
-        setProcessingPhase('complete');
-        setChunkProgress(100);
-        
-        // Update the transcription state for UI display
-        setResult(result);
-        
-        // ✅ DEDUCT TRIAL MINUTES
-        try {
-          const actualDuration = result.metadata?.duration || result.duration || estimatedMinutes;
-          const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
-          console.log(`📊 Deducting ${actualMinutes} minutes from trial`);
-          await trialService.deductMinutes(actualMinutes);
-        } catch (error) {
-          console.error('⚠️ Error deducting trial minutes:', error);
-          // Don't fail the transcription if minute deduction fails
+      
+      setProcessingPhase('saving');
+      setChunkProgress(90);
+      
+      // Step 4: Save to database
+      console.log('💾 Saving transcription to database...');
+      const { databaseService } = await import('@/services/databaseService');
+      const { auth } = await import('@/config/firebase');
+      const dbResult = await databaseService.createSTTRecord({
+        user_id: auth.currentUser?.uid || 'unknown',
+        audio_id: uploadResult.url,
+        name: processedFile.name,
+        transcript: result.transcript || '',
+        audio_file_url: uploadResult.url, // Use Firebase URL for audio player
+        duration: result.metadata?.duration || 0,
+        language: 'en',
+        status: 'completed',
+        metadata: {
+          word_count: result.timestamps?.length || 0,
+          speaker_count: result.diarized_transcript?.length || 0,
+          processing_method: result.metadata?.processing_method || 'OPTIMIZED_FULL_PYANNOTE_SEPARATE_PARAKET_WITH_SPEAKER_COMBINATION',
+          chunks_processed: result.metadata?.chunks_processed || 1
+        }
+      }, result); // Pass full transcription data as second parameter
+      
+      console.log('✅ Transcription saved to database:', dbResult);
+      
+      setProcessingPhase('complete');
+      setChunkProgress(100);
+      
+      // Update the transcription state for UI display
+      setResult(result);
+      
+      // ✅ DEDUCT TRIAL MINUTES
+      try {
+        const actualDuration = result.metadata?.duration || result.duration || estimatedMinutes;
+        const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
+        console.log(`📊 Deducting ${actualMinutes} minutes from trial`);
+        await trialService.deductMinutes(actualMinutes);
+      } catch (error) {
+        console.error('⚠️ Error deducting trial minutes:', error);
+        // Don't fail the transcription if minute deduction fails
         }
       } else {
         // Fallback: track by filename if no job ID or transcript
@@ -1262,7 +1262,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       // Step 0: Upload the complete original audio file for playback
       console.log('📤 Uploading complete original audio file for playback...');
       setUploadProgress(0);
-          const originalAudioUpload = await clientTranscriptionService.uploadFileToFirebase(fileToUpload, (progress) => {
+      const originalAudioUpload = await clientTranscriptionService.uploadFileToFirebase(fileToUpload, (progress) => {
         setUploadProgress(progress);
           }, auth.currentUser?.uid || undefined);
       console.log('✅ Original audio uploaded for playback:', originalAudioUpload.url);

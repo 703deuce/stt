@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { databaseService, STTRecord } from '@/services/databaseService';
 import { backgroundContentService } from '@/services/backgroundContentService';
 import { contentLimitService } from '@/services/contentLimitService';
+import { useTranscriptionPagination } from '@/hooks/useTranscriptionPagination';
 import { 
   FileText, 
   Share2, 
@@ -315,8 +316,19 @@ export default function ContentRepurposingPage() {
   const { user } = useAuth();
   const router = useRouter();
   
-  const [transcriptions, setTranscriptions] = useState<STTRecord[]>([]);
-  const [loading, setLoading] = useState(true);
+  const {
+    items: transcriptionItems,
+    loadingInitial: loadingTranscriptions,
+    loadingMore: loadingMoreTranscriptions,
+    hasMore: hasMoreTranscriptions,
+    loadMore: loadMoreTranscriptions,
+    refresh: refreshTranscriptions,
+    error: transcriptionsError,
+  } = useTranscriptionPagination(user?.uid, {
+    pageSize: 25,
+    status: 'completed',
+    enableRealtime: true,
+  });
   const [selectedTranscription, setSelectedTranscription] = useState<STTRecord | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   
@@ -325,7 +337,6 @@ export default function ContentRepurposingPage() {
   const [generatedContent, setGeneratedContent] = useState<string>('');
   const [generating, setGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [loadError, setLoadError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
   const [customInstructions, setCustomInstructions] = useState('');
   const [showCustomInstructions, setShowCustomInstructions] = useState(false);
@@ -340,7 +351,6 @@ export default function ContentRepurposingPage() {
 
   useEffect(() => {
     if (user) {
-      loadTranscriptions();
       loadWordLimits();
     }
   }, [user]);
@@ -475,38 +485,51 @@ export default function ContentRepurposingPage() {
     return '';
   };
 
-  const loadTranscriptions = async () => {
-    if (!user) return;
-    
-    try {
-      setLoading(true);
-      setLoadError(null);
-      console.log('📋 Loading transcriptions for content repurposing...');
-      const records = await databaseService.getSTTRecords(1000); // Load up to 1000 records
-      console.log('📊 Loaded records:', records.length);
-      
-      // Only show completed transcriptions with transcript text
-      const completedRecords = records.filter(r => {
-        const isCompleted = r.status === 'completed';
-        const hasTranscript = r.transcript && r.transcript.length > 0;
-        console.log(`Record ${r.id}: status=${r.status}, hasTranscript=${hasTranscript}`);
-        return isCompleted && hasTranscript;
-      });
-      
-      console.log('✅ Filtered to completed records:', completedRecords.length);
-      setTranscriptions(completedRecords);
-    } catch (err) {
-      console.error('❌ Error loading transcriptions:', err);
-      setLoadError('Failed to load transcriptions. Please refresh the page.');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const filteredTranscriptions = transcriptions.filter(t => 
-    t.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    t.audio_id?.toLowerCase().includes(searchQuery.toLowerCase())
+  const completedTranscriptions = useMemo(
+    () =>
+      transcriptionItems.filter(
+        (record) =>
+          record.status === 'completed' &&
+          typeof record.transcript === 'string' &&
+          record.transcript.trim().length > 0,
+      ),
+    [transcriptionItems],
   );
+
+  const filteredTranscriptions = useMemo(
+    () =>
+      completedTranscriptions.filter((t) => {
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return true;
+        return (
+          t.name?.toLowerCase().includes(query) ||
+          t.audio_id?.toLowerCase().includes(query)
+        );
+      }),
+    [completedTranscriptions, searchQuery],
+  );
+
+  const listRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+
+    const handleScroll = () => {
+      if (!hasMoreTranscriptions || loadingMoreTranscriptions) {
+        return;
+      }
+
+      if (el.scrollTop + el.clientHeight >= el.scrollHeight - 200) {
+        loadMoreTranscriptions();
+      }
+    };
+
+    el.addEventListener('scroll', handleScroll);
+    return () => {
+      el.removeEventListener('scroll', handleScroll);
+    };
+  }, [hasMoreTranscriptions, loadingMoreTranscriptions, loadMoreTranscriptions]);
 
   const filteredContentTypes = selectedCategory
     ? CONTENT_TYPES.filter(ct => ct.category === selectedCategory)
@@ -675,7 +698,7 @@ export default function ContentRepurposingPage() {
     setError(null);
   };
 
-  if (loading) {
+  if (loadingTranscriptions && completedTranscriptions.length === 0) {
     return (
       <ProtectedRoute>
         <Layout>
@@ -751,13 +774,13 @@ export default function ContentRepurposingPage() {
                 </div>
 
                 {/* Transcription List */}
-                <div className="max-h-[60vh] lg:max-h-[600px] overflow-y-auto">
-                  {loadError ? (
+                <div ref={listRef} className="max-h-[60vh] lg:max-h-[600px] overflow-y-auto">
+                  {transcriptionsError && completedTranscriptions.length === 0 ? (
                     <div className="p-6 text-center">
                       <AlertCircle className="w-12 h-12 mx-auto mb-3 text-red-400" />
-                      <p className="text-sm text-red-600 mb-3">{loadError}</p>
+                      <p className="text-sm text-red-600 mb-3">{transcriptionsError}</p>
                       <button
-                        onClick={loadTranscriptions}
+                        onClick={refreshTranscriptions}
                         className="text-sm text-purple-600 hover:text-purple-700 font-medium"
                       >
                         Try Again
@@ -769,7 +792,7 @@ export default function ContentRepurposingPage() {
                       <p className="text-sm">
                         {searchQuery ? 'No transcriptions found' : 'No completed transcriptions yet'}
                       </p>
-                      {!searchQuery && transcriptions.length === 0 && (
+                      {!searchQuery && completedTranscriptions.length === 0 && (
                         <p className="text-xs text-gray-400 mt-2">
                           Create a transcription first to use content repurposing
                         </p>
@@ -777,7 +800,7 @@ export default function ContentRepurposingPage() {
                     </div>
                   ) : (
                     <div className="divide-y divide-gray-200">
-                      {filteredTranscriptions.map(transcription => (
+                      {filteredTranscriptions.map((transcription) => (
                         <button
                           key={transcription.id}
                           onClick={() => {
@@ -791,7 +814,9 @@ export default function ContentRepurposingPage() {
                           }`}
                         >
                           <h3 className="font-medium text-gray-900 mb-1 truncate">
-                            {transcription.name || transcription.audio_id?.split('/').pop()?.split('?')[0] || 'Untitled'}
+                            {transcription.name ||
+                              transcription.audio_id?.split('/').pop()?.split('?')[0] ||
+                              'Untitled'}
                           </h3>
                           <div className="flex items-center space-x-3 text-xs text-gray-500">
                             <div className="flex items-center space-x-1">
@@ -805,6 +830,24 @@ export default function ContentRepurposingPage() {
                           </div>
                         </button>
                       ))}
+                      {transcriptionsError && completedTranscriptions.length > 0 && (
+                        <div className="p-4 text-xs text-red-500">{transcriptionsError}</div>
+                      )}
+                      {loadingMoreTranscriptions && (
+                        <div className="p-4 text-center text-sm text-gray-500">
+                          Loading more…
+                        </div>
+                      )}
+                      {hasMoreTranscriptions && !loadingMoreTranscriptions && (
+                        <div className="p-4 text-center">
+                          <button
+                            onClick={loadMoreTranscriptions}
+                            className="text-sm text-purple-600 hover:text-purple-700 font-medium"
+                          >
+                            Load more
+                          </button>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
