@@ -9,7 +9,6 @@ import RecentTranscriptions from '@/components/RecentTranscriptions';
 import RecentContent from '@/components/RecentContent';
 import UserStats from '@/components/UserStats';
 import TrialStatusBanner from '@/components/TrialStatusBanner';
-import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { 
   Upload,
   ArrowRight,
@@ -22,39 +21,6 @@ export default function DashboardPage() {
   const router = useRouter();
   
   // Onboarding for dashboard
-  const { OnboardingComponent } = usePageOnboarding({
-    pageId: 'dashboard',
-    steps: [
-      {
-        id: 'quick-actions',
-        targetId: 'dashboard-quick-actions',
-        title: 'Quick Actions',
-        description: 'Start here to create new transcriptions or process multiple files at once. These are the fastest ways to get started.',
-        position: 'bottom'
-      },
-      {
-        id: 'content-repurposing',
-        targetId: 'dashboard-content-repurposing-link',
-        title: 'Transform Your Transcriptions',
-        description: 'Use Content Repurposing to turn your transcriptions into 30+ content types like blog posts, social media posts, newsletters, and more. Perfect for content creators!',
-        position: 'bottom'
-      },
-      {
-        id: 'stats',
-        targetId: 'dashboard-stats',
-        title: 'Track Your Usage',
-        description: 'Monitor your transcription minutes and content generation word usage here. Keep an eye on your trial status and limits.',
-        position: 'top'
-      },
-      {
-        id: 'recent-transcriptions',
-        targetId: 'dashboard-recent-transcriptions',
-        title: 'Recent Transcriptions',
-        description: 'View your latest completed transcriptions here. Click any transcription to view details, play audio, and use AI features.',
-        position: 'top'
-      }
-    ]
-  });
 
   // Redirect to landing page if not logged in
   useEffect(() => {
@@ -81,7 +47,6 @@ export default function DashboardPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <OnboardingComponent />
         <div className="p-6 max-w-6xl mx-auto">
           {/* Welcome Header */}
           <div className="mb-8">

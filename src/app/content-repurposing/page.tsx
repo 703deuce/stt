@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
-import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { databaseService, STTRecord } from '@/services/databaseService';
 import { backgroundContentService } from '@/services/backgroundContentService';
 import { contentLimitService } from '@/services/contentLimitService';
@@ -331,40 +330,6 @@ export default function ContentRepurposingPage() {
   const [customInstructions, setCustomInstructions] = useState('');
   const [showCustomInstructions, setShowCustomInstructions] = useState(false);
   
-  // Onboarding for content repurposing page
-  const { OnboardingComponent } = usePageOnboarding({
-    pageId: 'content-repurposing',
-    steps: [
-      {
-        id: 'select-transcription',
-        targetId: 'transcription-selector',
-        title: 'Select a Transcription',
-        description: 'Choose a completed transcription from the list on the left. Only transcriptions with completed status are available for content generation.',
-        position: 'right'
-      },
-      {
-        id: 'select-category',
-        targetId: 'content-category-selector',
-        title: 'Choose Content Category',
-        description: 'Select a category (Social Media, Long-Form Written, etc.) to see available content types. Each category offers different formats like blog posts, social media posts, and more.',
-        position: 'bottom'
-      },
-      {
-        id: 'select-type',
-        targetId: 'content-type-selector',
-        title: 'Pick a Content Type',
-        description: 'Choose the specific format you want to create. Each type uses a proven framework (AIDA, BAB, etc.) to structure your content professionally.',
-        position: 'bottom'
-      },
-      {
-        id: 'custom-instructions',
-        targetId: 'custom-instructions-toggle',
-        title: 'Add Custom Instructions (Optional)',
-        description: 'Guide what the content should focus on. For example, "Focus on the marketing strategy" or "Emphasize customer benefits". This helps tailor the generated content to your specific needs.',
-        position: 'top'
-      }
-    ]
-  });
   
   const [wordLimitStatus, setWordLimitStatus] = useState<{
     totalAvailable: number;
@@ -728,7 +693,6 @@ export default function ContentRepurposingPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <OnboardingComponent />
         <div className="p-4 sm:p-6">
           {/* Header */}
           <div className="mb-8">

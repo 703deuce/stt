@@ -6,7 +6,6 @@ import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 import { useSpeakerMapping } from '@/context/SpeakerMappingContext';
-import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { databaseService } from '@/services/databaseService';
 import { STTRecord } from '@/services/databaseService';
 import AISummaryPanel from '@/components/AISummaryPanel';
@@ -48,40 +47,6 @@ export default function TranscriptionViewPage() {
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  // Onboarding for transcription detail page
-  const { OnboardingComponent } = usePageOnboarding({
-    pageId: 'transcription-detail',
-    steps: [
-      {
-        id: 'audio-player',
-        targetId: 'transcription-audio-player',
-        title: 'Play Audio with Word Highlighting',
-        description: 'Click play to hear the audio. Words in the transcript will highlight in real-time as the audio plays, making it easy to follow along.',
-        position: 'top'
-      },
-      {
-        id: 'speaker-segments',
-        targetId: 'speaker-segments-view',
-        title: 'Speaker Segments with Timestamps',
-        description: 'See who said what and when. Click on any segment or word to jump to that point in the audio. Each speaker can be renamed for easier identification.',
-        position: 'top'
-      },
-      {
-        id: 'ai-panels',
-        targetId: 'ai-features-panel',
-        title: 'AI-Powered Features',
-        description: 'Use AI Summary to get quick insights, AI Chat to ask questions about the transcript, and Content Repurposing to transform your transcript into blogs, social posts, and more.',
-        position: 'left'
-      },
-      {
-        id: 'actions',
-        targetId: 'transcription-actions',
-        title: 'Export & Share Options',
-        description: 'Copy, download in multiple formats, or share your transcriptions. Download supports formatted text, plain text, or speaker-only versions.',
-        position: 'bottom'
-      }
-    ]
-  });
 
   // Get unique speakers from diarized transcript
   const uniqueSpeakers = React.useMemo(() => {
@@ -520,7 +485,6 @@ export default function TranscriptionViewPage() {
   return (
     <ProtectedRoute>
       <Layout>
-        <OnboardingComponent />
         <div className="p-4 sm:p-6">
 
           {/* Header */}
