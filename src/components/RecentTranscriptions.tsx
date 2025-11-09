@@ -344,7 +344,14 @@ export default function RecentTranscriptions({ pendingTranscriptions = [] }: Rec
     }
   };
 
-  if (loading) {
+  const pendingIds = new Set(pendingTranscriptions.map(t => t.id));
+  const combinedTranscriptions = [
+    ...pendingTranscriptions,
+    ...recentTranscriptions.filter(record => !pendingIds.has(record.id))
+  ];
+  const displayedTranscriptions = combinedTranscriptions.slice(0, 5);
+
+  if (loading && displayedTranscriptions.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 p-6">
         <h2 className="text-xl font-semibold text-gray-900 mb-4">Recent Transcriptions</h2>
@@ -376,13 +383,6 @@ export default function RecentTranscriptions({ pendingTranscriptions = [] }: Rec
       </div>
     );
   }
-
-  const pendingIds = new Set(pendingTranscriptions.map(t => t.id));
-  const combinedTranscriptions = [
-    ...pendingTranscriptions,
-    ...recentTranscriptions.filter(record => !pendingIds.has(record.id))
-  ];
-  const displayedTranscriptions = combinedTranscriptions.slice(0, 5);
 
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
