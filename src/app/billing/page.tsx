@@ -206,7 +206,7 @@ export default function BillingPage() {
                          subscriptionInfo.subscriptionPlan || 'Unknown'}
                       </div>
                     </div>
-
+                    
                     {subscriptionInfo.subscription && (
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
                         <div>
@@ -282,39 +282,39 @@ export default function BillingPage() {
                       <div className="text-xl font-bold text-gray-900">Free Trial</div>
                     </div>
                     
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
-                      <div>
-                        <div className="text-sm text-gray-500 mb-1">Minutes Used</div>
-                        <div className="text-lg font-semibold text-gray-900">
-                          {trialStatus.minutesUsed || 0} / {trialStatus.totalMinutes || 0}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-4 border-t border-gray-200">
+                          <div>
+                            <div className="text-sm text-gray-500 mb-1">Minutes Used</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {trialStatus.minutesUsed || 0} / {trialStatus.totalMinutes || 0}
+                            </div>
+                          </div>
+                          <div>
+                            <div className="text-sm text-gray-500 mb-1">Expires On</div>
+                            <div className="text-lg font-semibold text-gray-900">
+                              {trialStatus.expiresAt 
+                                ? new Date(trialStatus.expiresAt).toLocaleDateString()
+                                : 'N/A'}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div>
-                        <div className="text-sm text-gray-500 mb-1">Expires On</div>
-                        <div className="text-lg font-semibold text-gray-900">
-                          {trialStatus.expiresAt 
-                            ? new Date(trialStatus.expiresAt).toLocaleDateString()
-                            : 'N/A'}
-                        </div>
-                      </div>
-                    </div>
 
-                    <div className="pt-4 border-t border-gray-200">
+                        <div className="pt-4 border-t border-gray-200">
                       <div className="font-medium text-gray-900 mb-2">Upgrade to unlock unlimited features</div>
                       <p className="text-sm text-gray-500 mb-4">
                         Get unlimited transcription and content repurposing with our paid plans
                       </p>
-                    </div>
-                  </div>
+                              </div>
+                            </div>
                 ) : (
                   <div className="space-y-4">
                     <div>
                       <div className="text-sm text-gray-500 mb-1">Plan Type</div>
                       <div className="text-xl font-bold text-gray-900">No Active Plan</div>
-                    </div>
-                    <div className="pt-4">
+                        </div>
+                      <div className="pt-4">
                       <p className="text-sm text-gray-600 mb-4">Choose a plan to get started</p>
-                    </div>
+                  </div>
                   </div>
                 )}
               </div>
@@ -452,9 +452,9 @@ export default function BillingPage() {
                         Get Started
                       </CheckoutButton>
                     )}
-                  </div>
                 </div>
               </div>
+            </div>
             </div>
 
             {/* Cancel Confirmation Modal */}

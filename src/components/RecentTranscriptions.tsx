@@ -117,7 +117,7 @@ export default function RecentTranscriptions() {
       const allTranscriptions = await databaseService.getSTTRecords(100); // Get enough to find valid records
       
       // Filter out records with broken timestamps (serverTimestamp sentinel values)
-      // AND only show completed transcriptions
+      // Show both processing and completed transcriptions
       // These are old records where webhook updates failed
       const validTranscriptions = allTranscriptions.filter(record => {
         // Check for valid timestamp (not a sentinel value)
@@ -125,18 +125,18 @@ export default function RecentTranscriptions() {
           typeof record.timestamp === 'object' && 
           (record.timestamp as any)._methodName !== 'serverTimestamp';
         
-        // Only show completed transcriptions
-        const isCompleted = record.status === 'completed';
+        // Show processing and completed transcriptions
+        const isValidStatus = record.status === 'completed' || record.status === 'processing';
         
         if (!hasValidTimestamp) {
           console.warn('⏭️ [RecentTranscriptions] Skipping record with broken timestamp:', record.id, record.name);
         }
         
-        if (!isCompleted) {
-          console.log('⏭️ [RecentTranscriptions] Skipping non-completed record:', record.id, record.status);
+        if (!isValidStatus) {
+          console.log('⏭️ [RecentTranscriptions] Skipping invalid status record:', record.id, record.status);
         }
         
-        return hasValidTimestamp && isCompleted;
+        return hasValidTimestamp && isValidStatus;
       }).slice(0, 5); // Take top 5 valid records
 
       console.log('✅ [RecentTranscriptions] Loaded:', validTranscriptions.length, 'valid records (filtered', allTranscriptions.length - validTranscriptions.length, 'broken/incomplete)');
