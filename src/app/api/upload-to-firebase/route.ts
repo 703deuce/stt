@@ -5,12 +5,16 @@ export async function POST(request: NextRequest) {
   try {
     const formData = await request.formData();
     const file = formData.get('file') as File;
+    const userId = formData.get('userId') as string | null;
     
     if (!file) {
       return NextResponse.json({ error: 'No file provided' }, { status: 400 });
     }
+    if (!userId) {
+      return NextResponse.json({ error: 'User ID is required for upload' }, { status: 401 });
+    }
 
-    const uploadResult = await transcriptionService.uploadFileToFirebase(file);
+    const uploadResult = await transcriptionService.uploadFileToFirebase(file, undefined, userId);
     
     return NextResponse.json({
       success: true,

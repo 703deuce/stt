@@ -22,10 +22,14 @@ export interface TranscriptionResult {
 class ClientTranscriptionService {
   async uploadFileToFirebase(
     file: File, 
-    onProgress?: (progress: number) => void
+    onProgress?: (progress: number) => void,
+    userId?: string
   ): Promise<UploadResult> {
     const formData = new FormData();
     formData.append('file', file);
+    if (userId) {
+      formData.append('userId', userId);
+    }
 
     const response = await fetch('/api/upload-to-firebase', {
       method: 'POST',

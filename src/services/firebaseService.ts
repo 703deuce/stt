@@ -43,7 +43,7 @@ class FirebaseService {
    * Upload audio file to Firebase Storage only (no database record)
    * Used when we want to wait for transcription to complete before saving to database
    */
-  async uploadAudioFileToStorageOnly(file: File, onProgress?: (progress: number) => void): Promise<{ success: boolean; url?: string; filename?: string; userId?: string; error?: string }> {
+  async uploadAudioFileToStorageOnly(file: File, onProgress?: (progress: number) => void, userIdOverride?: string): Promise<{ success: boolean; url?: string; filename?: string; userId?: string; error?: string }> {
     try {
       console.log('📤 Uploading audio file to Firebase Storage only...');
       
@@ -54,7 +54,7 @@ class FirebaseService {
       }
 
       // Get current user
-      const userId = this.getCurrentUserId();
+      const userId = userIdOverride || this.getCurrentUserId();
       if (!userId) {
         return { success: false, error: 'User not authenticated' };
       }

@@ -404,7 +404,7 @@ export default function BatchTranscriptionUpload() {
         setFiles(prev => prev.map(f => 
           f.id === batchFile.id ? { ...f, progress: 20 + (progress * 0.2) } : f
         ));
-      });
+      }, user?.uid || undefined);
       
       console.log(`✅ ${originalName} uploaded to Firebase:`, uploadResult.url);
       

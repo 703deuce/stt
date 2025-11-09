@@ -444,11 +444,11 @@ class TranscriptionService {
    * Upload file to Firebase and get URL (replaces base64 method)
    * This is now the preferred method as per the Firebase Pipeline Guide
    */
-  async uploadFileToFirebase(file: File, onProgress?: (progress: number) => void): Promise<{ url: string; filename: string; recordId: string }> {
+  async uploadFileToFirebase(file: File, onProgress?: (progress: number) => void, userId?: string): Promise<{ url: string; filename: string; recordId: string }> {
     console.log('🔄 Using Firebase upload method as required by API...');
     
     // Only upload to Storage, don't create database record yet
-    const result = await firebaseService.uploadAudioFileToStorageOnly(file, onProgress);
+    const result = await firebaseService.uploadAudioFileToStorageOnly(file, onProgress, userId);
     
     if (!result.success || !result.url) {
       throw new Error(`Firebase upload failed: ${result.error}`);

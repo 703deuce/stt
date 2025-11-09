@@ -217,7 +217,7 @@ class BackgroundProcessingService {
         const uploadProgress = 10 + (progress * 0.2); // 10-30%
         this.updateJobStatus(jobId, 'uploading', uploadProgress);
         onProgress?.(uploadProgress, 'uploading');
-      });
+      }, job.userId);
 
       console.log(`✅ ${job.fileName} uploaded successfully`);
       this.updateJobStatus(jobId, 'processing', 30);

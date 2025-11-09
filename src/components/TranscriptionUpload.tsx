@@ -789,7 +789,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           console.log('📤 Calling transcriptionService.uploadFileToFirebase...');
           console.log('📁 File to upload for transcription:', fileToUpload.name);
           
-          const uploadResult = await clientTranscriptionService.uploadFileToFirebase(fileToUpload);
+          const uploadResult = await clientTranscriptionService.uploadFileToFirebase(fileToUpload, undefined, auth.currentUser?.uid || undefined);
           console.log('✅ Firebase upload successful at:', new Date().toLocaleTimeString());
           console.log('🔗 Firebase URL:', uploadResult.url);
           console.log('📝 Database record will be created after transcription completes');
@@ -874,7 +874,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       console.log('📤 Uploading MP3 to Firebase Storage...');
       const uploadResult = await clientTranscriptionService.uploadFileToFirebase(processedFile, (progress) => {
         setUploadProgress(progress);
-      });
+      }, auth.currentUser?.uid || undefined);
       console.log('✅ MP3 uploaded to Firebase:', uploadResult.url);
       setUploadProgress(100);
       
@@ -1262,9 +1262,9 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       // Step 0: Upload the complete original audio file for playback
       console.log('📤 Uploading complete original audio file for playback...');
       setUploadProgress(0);
-      const originalAudioUpload = await clientTranscriptionService.uploadFileToFirebase(fileToUpload, (progress) => {
+          const originalAudioUpload = await clientTranscriptionService.uploadFileToFirebase(fileToUpload, (progress) => {
         setUploadProgress(progress);
-      });
+          }, auth.currentUser?.uid || undefined);
       console.log('✅ Original audio uploaded for playback:', originalAudioUpload.url);
       setUploadProgress(100);
       
@@ -1336,7 +1336,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
         const chunkFile = new File([chunkBlob], `transcript_chunk_${i + 1}.wav`, { type: 'audio/wav' });
         
         // Upload chunk to Firebase and transcribe - same pattern as regular transcription
-        const chunkUploadResult = await clientTranscriptionService.uploadFileToFirebase(chunkFile);
+        const chunkUploadResult = await clientTranscriptionService.uploadFileToFirebase(chunkFile, undefined, auth.currentUser?.uid || undefined);
         
         const chunkResult = await clientTranscriptionService.transcribeAudio(
           {
