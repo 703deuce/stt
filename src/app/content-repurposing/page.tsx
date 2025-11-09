@@ -485,23 +485,37 @@ export default function ContentRepurposingPage() {
         try {
           console.log('📥 Fetching full transcription text for content generation...');
           const fullData = await databaseService.getFullTranscriptionData(selectedTranscription.transcription_data_url);
-          if (fullData.transcript) {
-            fullTranscriptionText = fullData.transcript;
+          const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
+          if (fullTranscript && fullTranscript.trim().length > 0) {
+            fullTranscriptionText = fullTranscript;
             console.log('✅ Using full transcription text:', {
               length: fullTranscriptionText.length,
               preview: fullTranscriptionText.substring(0, 100) + '...'
             });
+          } else {
+            console.warn('⚠️ Full transcription data missing transcript field, using preview text instead');
           }
         } catch (error) {
           console.warn('⚠️ Failed to fetch full transcription text, using preview:', error);
         }
       }
 
+      const transcriptSource = fullTranscriptionText && fullTranscriptionText.trim().length > 0
+        ? fullTranscriptionText.replace(/\r\n/g, '\n')
+        : selectedTranscription.transcript?.replace(/\r\n/g, '\n') || '';
+
+      if (!transcriptSource || transcriptSource.trim().length === 0) {
+        console.error('❌ Transcript content is empty. Aborting generation.');
+        setError('Transcript content is not available yet. Please wait for the transcription to finish processing and try again.');
+        setGenerating(false);
+        return;
+      }
+
       // Start background generation using the new DeepSeek system
       const contentId = await backgroundContentService.startContentGenerationNew({
         transcriptionId: selectedTranscription.id!,
         transcriptionName: selectedTranscription.name || 'Untitled',
-        transcriptionText: fullTranscriptionText, // Use full text instead of truncated preview
+        transcriptionText: transcriptSource, // Use full text instead of truncated preview
         contentTypeId: contentType.id,
         contentTypeName: contentType.name,
         contentCategory: contentType.category,

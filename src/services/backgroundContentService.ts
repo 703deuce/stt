@@ -154,6 +154,14 @@ class BackgroundContentService {
       console.log('⚙️ Processing content generation job:', jobId);
       job.status = 'generating';
 
+      const transcriptSourceRaw = job.transcriptionText || '';
+      if (!transcriptSourceRaw || transcriptSourceRaw.trim().length === 0) {
+        console.error('❌ Transcript for content generation job is empty. Aborting job:', jobId);
+        throw new Error('Transcript content is empty');
+      }
+
+      const transcriptSource = transcriptSourceRaw.replace(/\r\n/g, '\n');
+
       // Build the prompt with optional custom instructions and word limit
       let finalPrompt = job.prompt;
       
@@ -196,7 +204,7 @@ Return ONLY the formatted content without any preamble, explanations, or remarks
           },
           {
             role: 'user',
-            content: `${finalPrompt}\n\n=== TRANSCRIPT (YOUR ONLY SOURCE OF INFORMATION) ===\n${job.transcriptionText}\n=== END OF TRANSCRIPT ===\n\nCRITICAL REQUIREMENTS:\n1. Use ONLY information from the transcript above - NOTHING ELSE\n2. Do NOT add any information, facts, examples, or advice not in the transcript\n3. Do NOT make up content or use generic filler text\n4. If custom instructions are provided, they only guide which parts of the transcript to emphasize - they do NOT allow adding new information\n5. Return ONLY the final content without any preamble or meta-commentary\n6. Start with the actual content immediately${job.maxWords ? `\n7. MAXIMUM ${job.maxWords} WORDS` : ''}\n\nNow reformat the transcript above into the requested format, using ONLY the information provided in the transcript:`
+            content: `${finalPrompt}\n\n=== TRANSCRIPT (YOUR ONLY SOURCE OF INFORMATION) ===\n${transcriptSource}\n=== END OF TRANSCRIPT ===\n\nCRITICAL REQUIREMENTS:\n1. Use ONLY information from the transcript above - NOTHING ELSE\n2. Do NOT add any information, facts, examples, or advice not in the transcript\n3. Do NOT make up content or use generic filler text\n4. If custom instructions are provided, they only guide which parts of the transcript to emphasize - they do NOT allow adding new information\n5. Return ONLY the final content without any preamble or meta-commentary\n6. Start with the actual content immediately${job.maxWords ? `\n7. MAXIMUM ${job.maxWords} WORDS` : ''}\n\nNow reformat the transcript above into the requested format, using ONLY the information provided in the transcript:`
           }
         ],
         temperature: 0.3,

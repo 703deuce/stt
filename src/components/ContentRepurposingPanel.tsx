@@ -316,14 +316,16 @@ export default function ContentRepurposingPanel({
           console.log('📥 [ContentRepurposingPanel] Found transcription_data_url, fetching full text...');
           const fullData = await databaseService.getFullTranscriptionData(transcriptionRecord.transcription_data_url);
           
-          if (fullData.transcript) {
+          const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
+          
+          if (fullTranscript && fullTranscript.trim().length > 0) {
             console.log('✅ [ContentRepurposingPanel] Full transcription text loaded:', {
-              length: fullData.transcript.length,
-              preview: fullData.transcript.substring(0, 100) + '...'
+              length: fullTranscript.length,
+              preview: fullTranscript.substring(0, 100) + '...'
             });
-            setFullTranscriptionText(fullData.transcript);
+            setFullTranscriptionText(fullTranscript);
           } else {
-            console.warn('⚠️ [ContentRepurposingPanel] No transcript found in full data, using provided text');
+            console.warn('⚠️ [ContentRepurposingPanel] Full transcription data missing transcript field, falling back to preview text');
             setFullTranscriptionText(transcriptionText);
           }
         } else {
@@ -376,6 +378,19 @@ export default function ContentRepurposingPanel({
       console.log(`✅ Word limit check passed. Requested: ${estimatedWords} words, Available: ${availableWords} words, Generating: ${actualWordLimit} words`);
       console.log('🤖 Generating content with DeepSeek...');
       
+      const transcriptSourceRaw = fullTranscriptionText && fullTranscriptionText.trim().length > 0
+        ? fullTranscriptionText
+        : transcriptionText;
+
+      if (!transcriptSourceRaw || transcriptSourceRaw.trim().length === 0) {
+        console.error('❌ [ContentRepurposing] Transcript unavailable or empty – aborting generation');
+        setError('Transcript content is not available yet. Please wait for transcription to finish and try again.');
+        setLoading(false);
+        return;
+      }
+
+      const transcriptSource = transcriptSourceRaw.replace(/\r\n/g, '\n');
+
       // Build the prompt with optional custom instructions and word limit
       let finalPrompt = contentType.prompt;
       
@@ -395,11 +410,11 @@ export default function ContentRepurposingPanel({
       
       console.log('🎯 [ContentRepurposing] Generating content:', {
         contentType: contentType.name,
-        fullTranscriptionTextLength: fullTranscriptionText.length,
+        fullTranscriptionTextLength: transcriptSource.length,
         transcriptionTextLength: transcriptionText.length,
-        textToUseLength: (fullTranscriptionText || transcriptionText).length,
-        usingFullText: !!fullTranscriptionText,
-        textPreview: (fullTranscriptionText || transcriptionText).substring(0, 200) + '...',
+        textToUseLength: transcriptSource.length,
+        usingFullText: fullTranscriptionText.trim().length > 0,
+        textPreview: transcriptSource.substring(0, 200) + '...',
         finalPromptPreview: finalPrompt.substring(0, 300) + '...'
       });
       
@@ -430,7 +445,7 @@ Return ONLY the formatted content without any preamble, explanations, or remarks
           },
           {
             role: 'user',
-            content: `${finalPrompt}\n\n=== TRANSCRIPT (YOUR ONLY SOURCE OF INFORMATION) ===\n${fullTranscriptionText || transcriptionText}\n=== END OF TRANSCRIPT ===\n\nCRITICAL REQUIREMENTS:\n1. Use ONLY information from the transcript above - NOTHING ELSE\n2. Do NOT add any information, facts, examples, or advice not in the transcript\n3. Do NOT make up content or use generic filler text\n4. If custom instructions are provided, they only guide which parts of the transcript to emphasize - they do NOT allow adding new information\n5. Return ONLY the final content without any preamble or meta-commentary\n6. Start with the actual content immediately\n7. MAXIMUM ${actualWordLimit} WORDS\n\nNow reformat the transcript above into the requested format, using ONLY the information provided in the transcript:`
+            content: `${finalPrompt}\n\n=== TRANSCRIPT (YOUR ONLY SOURCE OF INFORMATION) ===\n${transcriptSource}\n=== END OF TRANSCRIPT ===\n\nCRITICAL REQUIREMENTS:\n1. Use ONLY information from the transcript above - NOTHING ELSE\n2. Do NOT add any information, facts, examples, or advice not in the transcript\n3. Do NOT make up content or use generic filler text\n4. If custom instructions are provided, they only guide which parts of the transcript to emphasize - they do NOT allow adding new information\n5. Return ONLY the final content without any preamble or meta-commentary\n6. Start with the actual content immediately\n7. MAXIMUM ${actualWordLimit} WORDS\n\nNow reformat the transcript above into the requested format, using ONLY the information provided in the transcript:`
           }
         ],
         temperature: 0.3,
