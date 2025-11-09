@@ -124,6 +124,24 @@ class DatabaseService {
     return user.uid;
   }
 
+  // Helper function to remove undefined values from objects (Firestore doesn't allow undefined)
+  private removeUndefined(obj: any): any {
+    if (obj === null || obj === undefined) return obj;
+    if (Array.isArray(obj)) {
+      return obj.map(item => this.removeUndefined(item));
+    }
+    if (typeof obj === 'object') {
+      const cleaned: any = {};
+      for (const [key, value] of Object.entries(obj)) {
+        if (value !== undefined) {
+          cleaned[key] = this.removeUndefined(value);
+        }
+      }
+      return cleaned;
+    }
+    return obj;
+  }
+
   // Save full transcription data to Firebase Storage
   async saveTranscriptionDataToStorage(transcriptionData: any, userId: string, audioId: string): Promise<string> {
     try {
@@ -168,26 +186,8 @@ class DatabaseService {
         ? data.transcript.substring(0, 500) + '...' 
         : data.transcript;
       
-      // Helper function to remove undefined values from objects (Firestore doesn't allow undefined)
-      const removeUndefined = (obj: any): any => {
-        if (obj === null || obj === undefined) return obj;
-        if (Array.isArray(obj)) {
-          return obj.map(removeUndefined);
-        }
-        if (typeof obj === 'object') {
-          const cleaned: any = {};
-          for (const [key, value] of Object.entries(obj)) {
-            if (value !== undefined) {
-              cleaned[key] = removeUndefined(value);
-            }
-          }
-          return cleaned;
-        }
-        return obj;
-      };
-
       // Clean metadata to remove undefined values
-      const cleanedMetadata = data.metadata ? removeUndefined(data.metadata) : undefined;
+      const cleanedMetadata = data.metadata ? this.removeUndefined(data.metadata) : undefined;
       
       // CRITICAL: Log metadata before and after cleaning to debug jobId issues
       if (data.metadata?.runpod_job_id) {
@@ -225,7 +225,7 @@ class DatabaseService {
       };
 
       // Clean the entire sttData object to remove any remaining undefined values
-      const cleanedSttData = removeUndefined(sttData);
+      const cleanedSttData = this.removeUndefined(sttData);
 
       console.log('💾 Creating STT record in Firestore (metadata only)...');
       console.log('📊 Data size check:', {
@@ -472,7 +472,7 @@ class DatabaseService {
       const docRef = doc(db, 'users', currentUserId, 'stt', recordId);
       
       // Filter out undefined values to avoid Firestore errors
-      const cleanUpdates = removeUndefined(updates);
+      const cleanUpdates = this.removeUndefined(updates);
       
       await updateDoc(docRef, cleanUpdates);
       console.log('✅ STT record updated:', recordId);
