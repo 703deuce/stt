@@ -307,6 +307,8 @@ export default function ContentRepurposingPanel({
     const normalize = (value: string) =>
       value.replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n');
 
+    const hasContent = (value: string) => value.replace(/\s+/g, '').length > 0;
+
     const candidateSources = [
       { key: 'transcript', value: data?.transcript },
       { key: 'merged_text', value: data?.merged_text },
@@ -335,13 +337,83 @@ export default function ContentRepurposingPanel({
           normalizedLength: normalized.length,
           firstChars: normalized.substring(0, 80),
         });
-        if (normalized.trim().length > 0) {
+        if (hasContent(normalized)) {
           console.log(`✅ [ContentRepurposingPanel] Using transcript source "${candidate.key}" with length ${normalized.length}`);
           return normalized;
         }
       }
     }
 
+    const joinFromArray = (
+      items: any[] | undefined,
+      valueKeys: Array<string | ((item: any) => string | undefined)>,
+      separator: string
+    ): string => {
+      if (!Array.isArray(items)) return '';
+      const parts: string[] = [];
+
+      for (const item of items) {
+        let value: string | undefined;
+
+        for (const key of valueKeys) {
+          if (typeof key === 'function') {
+            const result = key(item);
+            if (typeof result === 'string' && result.trim().length > 0) {
+              value = result;
+              break;
+            }
+          } else if (item && typeof item === 'object' && typeof item[key] === 'string') {
+            const result = item[key];
+            if (result.trim().length > 0) {
+              value = result;
+              break;
+            }
+          }
+        }
+
+        if (typeof value === 'string' && value.trim().length > 0) {
+          parts.push(value.trim());
+        }
+      }
+
+      if (parts.length === 0) return '';
+
+      const joined = parts.join(separator);
+      const normalized = normalize(joined).replace(/\s+/g, ' ').trim();
+      return hasContent(normalized) ? normalized : '';
+    };
+
+    const segmentTranscript = joinFromArray(
+      data?.runpod_output?.segment_timestamps || data?.segment_timestamps,
+      ['segment'],
+      '\n'
+    );
+    if (segmentTranscript) {
+      console.log('✅ [ContentRepurposingPanel] Using transcript from segment_timestamps');
+      return segmentTranscript;
+    }
+
+    const timestampTranscript = joinFromArray(
+      data?.timestamps,
+      ['text', 'word'],
+      ' '
+    );
+    if (timestampTranscript) {
+      console.log('✅ [ContentRepurposingPanel] Using transcript from timestamps array');
+      return timestampTranscript;
+    }
+
+    const wordTranscript = joinFromArray(
+      data?.runpod_output?.word_timestamps || data?.word_timestamps,
+      ['word', 'text'],
+      ' '
+    );
+    if (wordTranscript) {
+      console.log('✅ [ContentRepurposingPanel] Using transcript from word_timestamps array');
+      return wordTranscript;
+    }
+
+    console.warn('⚠️ [ContentRepurposingPanel] No usable transcript found in data.');
     return '';
   };
 
