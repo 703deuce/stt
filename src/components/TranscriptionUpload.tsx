@@ -10,6 +10,7 @@ import TranscriptionResults from './TranscriptionResults';
 import UpgradeModal from './UpgradeModal';
 import { useProgressNotification } from '@/context/ProgressNotificationContext';
 import { auth } from '@/config/firebase';
+import type { STTRecord } from '@/services/databaseService';
 import { 
   Upload, 
   FileAudio, 
@@ -955,6 +956,37 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             jobId: result.jobId,
             fileName: processedFile.name
           });
+
+          if (onTranscriptionComplete) {
+            const pendingRecord: STTRecord = {
+              id: processingRecordId,
+              user_id: auth.currentUser?.uid || 'unknown',
+              audio_id: uploadResult.url,
+              name: uniqueName,
+              audio_file_url: uploadResult.url,
+              transcript: '',
+              timestamp: now,
+              createdAt: now,
+              startedAt: now,
+              duration: 0,
+              language: 'en',
+              status: 'processing',
+              type: 'stt',
+              priority,
+              retryCount: 0,
+              maxRetries: 3,
+              metadata: {
+                processing_method: 'webhook_processing',
+                ...(result.jobId ? { runpod_job_id: result.jobId } : {})
+              }
+            };
+
+            onTranscriptionComplete({
+              jobId: processingRecordId,
+              status: 'processing',
+              record: pendingRecord
+            });
+          }
           
           // CRITICAL: Verify the record was created with the job ID
           if (!result.jobId) {

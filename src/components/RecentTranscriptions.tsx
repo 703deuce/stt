@@ -21,7 +21,11 @@ import {
   X
 } from 'lucide-react';
 
-export default function RecentTranscriptions() {
+interface RecentTranscriptionsProps {
+  pendingTranscriptions?: STTRecord[];
+}
+
+export default function RecentTranscriptions({ pendingTranscriptions = [] }: RecentTranscriptionsProps) {
   const { user } = useAuth();
   const { updateNotification, hideNotification } = useProgressNotification();
   const [recentTranscriptions, setRecentTranscriptions] = useState<STTRecord[]>([]);
@@ -373,12 +377,19 @@ export default function RecentTranscriptions() {
     );
   }
 
+  const pendingIds = new Set(pendingTranscriptions.map(t => t.id));
+  const combinedTranscriptions = [
+    ...pendingTranscriptions,
+    ...recentTranscriptions.filter(record => !pendingIds.has(record.id))
+  ];
+  const displayedTranscriptions = combinedTranscriptions.slice(0, 5);
+
   return (
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold text-gray-900">Recent Transcriptions</h2>
         <div className="flex items-center space-x-4">
-          <span className="text-sm text-gray-500">{recentTranscriptions.length} documents</span>
+          <span className="text-sm text-gray-500">{displayedTranscriptions.length} documents</span>
           <a 
             href="/transcriptions" 
             className="inline-flex items-center text-orange-600 hover:text-orange-700 font-medium text-sm transition-colors"
@@ -389,7 +400,7 @@ export default function RecentTranscriptions() {
         </div>
       </div>
 
-      {recentTranscriptions.length === 0 ? (
+      {displayedTranscriptions.length === 0 ? (
         <div className="text-center py-12">
           <FileText className="w-16 h-16 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No transcriptions yet</h3>
@@ -404,7 +415,7 @@ export default function RecentTranscriptions() {
         </div>
       ) : (
         <div className="space-y-0">
-          {recentTranscriptions.map((transcription) => (
+          {displayedTranscriptions.map((transcription) => (
             <div 
               key={transcription.id} 
               className="flex items-center space-x-4 p-4 border-b border-gray-100 hover:bg-gray-50 transition-colors group last:border-b-0"

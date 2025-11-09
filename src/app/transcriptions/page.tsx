@@ -6,11 +6,28 @@ import Layout from '@/components/Layout';
 import TranscriptionUpload from '@/components/TranscriptionUpload';
 import RecentTranscriptions from '@/components/RecentTranscriptions';
 import { Mic, Upload, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-react';
+import { STTRecord } from '@/services/databaseService';
 
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
+
+  const handleTranscriptionEvent = (event: { status: string; jobId?: string; record?: STTRecord }) => {
+    if (event.status === 'processing' && event.record) {
+      setPendingTranscriptions(prev => {
+        const filtered = prev.filter(item => item.id !== event.record!.id);
+        return [event.record!, ...filtered];
+      });
+      setActiveTab('recent');
+      setRefreshKey(prev => prev + 1);
+    } else if (event.status === 'completed' && event.jobId) {
+      setPendingTranscriptions(prev => prev.filter(item => item.id !== event.jobId));
+      setActiveTab('recent');
+      setRefreshKey(prev => prev + 1);
+    }
+  };
 
   if (loading) {
     return (
@@ -121,17 +138,14 @@ export default function TranscriptionsPage() {
 
             {/* Upload Component */}
             <div id="transcription-upload-area">
-              <TranscriptionUpload onTranscriptionComplete={() => {
-                setActiveTab('recent');
-                setRefreshKey(prev => prev + 1); // Force RecentTranscriptions to reload
-              }} />
+              <TranscriptionUpload onTranscriptionComplete={handleTranscriptionEvent} />
             </div>
           </div>
         )}
 
         {activeTab === 'recent' && (
           <div>
-            <RecentTranscriptions key={refreshKey} />
+            <RecentTranscriptions key={refreshKey} pendingTranscriptions={pendingTranscriptions} />
           </div>
         )}
       </div>
