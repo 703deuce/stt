@@ -336,12 +336,12 @@ export default function BatchTranscriptionUpload() {
     };
   }, [user?.uid, hideNotification, updateNotification]);
 
-    // Process single file - upload only
-  const uploadFile = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string; uploadResult: any }> => {
-    // Update status to uploading
+  // Extract audio for video files so we can submit a pure audio file
+  const extractAudioIfNeeded = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string }> => {
+    // Update status to show processing has started
     setFiles(prev => prev.map(f => 
       f.id === batchFile.id 
-        ? { ...f, status: 'uploading', progress: 0 }
+        ? { ...f, status: 'uploading', progress: batchFile.isVideo ? 5 : 0 }
         : f
     ));
 
@@ -366,29 +366,26 @@ export default function BatchTranscriptionUpload() {
         type: 'audio/wav'
       });
       originalName = batchFile.name;
+
+      // Update progress to show extraction complete
+      setFiles(prev => prev.map(f => 
+        f.id === batchFile.id 
+          ? { ...f, progress: 20 }
+          : f
+      ));
     } else {
       audioFile = batchFile.file;
       originalName = batchFile.name;
     }
 
-    // Update progress
+    // Reset status back to pending before upload
     setFiles(prev => prev.map(f => 
       f.id === batchFile.id 
-        ? { ...f, progress: 30 }
+        ? { ...f, status: 'pending' }
         : f
     ));
 
-    // Upload to Firebase first (same as regular transcription)
-    const uploadResult = await clientTranscriptionService.uploadFileToFirebase(audioFile);
-    
-    // Update progress
-    setFiles(prev => prev.map(f => 
-      f.id === batchFile.id 
-        ? { ...f, progress: 60, status: 'pending' }
-        : f
-    ));
-
-    return { audioFile, originalName, uploadResult };
+    return { audioFile, originalName };
   };
 
   // Submit file to the scalable queue system
