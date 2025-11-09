@@ -3,6 +3,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
+import { useProgressNotification } from '@/context/ProgressNotificationContext';
 import { clientTranscriptionService } from '../services/clientTranscriptionService';
 import { audioExtractionService } from '../services/audioExtractionService';
 import { trialService } from '../services/trialService';
@@ -38,6 +39,7 @@ interface BatchFile {
 export default function BatchTranscriptionUpload() {
   const { user } = useAuth();
   const router = useRouter();
+  const { showNotification, updateNotification, hideNotification } = useProgressNotification();
   const [files, setFiles] = useState<BatchFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -242,7 +244,19 @@ export default function BatchTranscriptionUpload() {
                   return updated;
                 });
                 
-                // Note: Batch component has its own UI for showing completion status
+                // Show completion notification
+                updateNotification({ 
+                  isVisible: true,
+                  progress: 100, 
+                  status: 'completed',
+                  fileName: changeData.name
+                });
+                
+                // Hide notification after delay
+                setTimeout(() => {
+                  console.log('🕐 [BatchTranscriptionUpload] Hiding notification after completion');
+                  hideNotification();
+                }, 5000);
                 
                 // Remove from processed set after a delay to allow for cleanup
                 // Find and remove the actual tracked name (case-insensitive)
@@ -275,7 +289,16 @@ export default function BatchTranscriptionUpload() {
                   });
                 });
                 
-                // Note: Batch component has its own UI for showing failure status
+                // Show failure notification
+                updateNotification({ 
+                  isVisible: true,
+                  progress: 0, 
+                  status: 'failed',
+                  fileName: changeData.name,
+                  error: 'Transcription failed'
+                });
+                
+                setTimeout(() => hideNotification(), 3000);
                 
                 // Remove from processed set (find actual tracked name)
                 const trackedName = Array.from(processedFileNamesRef.current).find(
@@ -311,36 +334,61 @@ export default function BatchTranscriptionUpload() {
         unsubscribe();
       }
     };
-  }, [user?.uid]);
+  }, [user?.uid, hideNotification, updateNotification]);
 
-  const extractAudioIfNeeded = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string }> => {
-    let audioFile: File = batchFile.file;
-    let originalName: string = batchFile.name;
+    // Process single file - upload only
+  const uploadFile = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string; uploadResult: any }> => {
+    // Update status to uploading
+    setFiles(prev => prev.map(f => 
+      f.id === batchFile.id 
+        ? { ...f, status: 'uploading', progress: 0 }
+        : f
+    ));
 
-    const supportedFormats = ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.webm'];
-    const fileExtension = batchFile.name.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
-    const isVideo = batchFile.isVideo || audioExtractionService.isVideoFile(batchFile.file);
+    let audioFile: File;
+    let originalName: string;
 
-    if (isVideo) {
-      console.log(`🎬 [BatchTranscriptionUpload] Extracting audio from video: ${batchFile.name}`);
+    // Handle video files - extract audio first
+    if (batchFile.isVideo) {
+      setFiles(prev => prev.map(f => 
+        f.id === batchFile.id 
+          ? { ...f, progress: 10 }
+          : f
+      ));
+
       const extractionResult = await audioExtractionService.extractAudioFromVideo(batchFile.file);
-
       if (!extractionResult.success || !extractionResult.audioBlob) {
-        throw new Error(`Audio extraction failed: ${extractionResult.error || 'Unknown error'}`);
+        throw new Error(`Audio extraction failed: ${extractionResult.error}`);
       }
 
-      audioFile = new File(
-        [extractionResult.audioBlob],
-        batchFile.name.replace(/\.[^/.]+$/, '.mp3'),
-        { type: 'audio/mpeg', lastModified: Date.now() }
-      );
-      originalName = audioFile.name;
-      console.log(`✅ [BatchTranscriptionUpload] Audio extracted: ${originalName}`);
-    } else if (!supportedFormats.includes(fileExtension)) {
-      console.log(`⚠️ [BatchTranscriptionUpload] Unsupported audio format for ${batchFile.name}, using original file`);
+      // Create a new file from the extracted audio
+      audioFile = new File([extractionResult.audioBlob], `${batchFile.name}_audio.wav`, {
+        type: 'audio/wav'
+      });
+      originalName = batchFile.name;
+    } else {
+      audioFile = batchFile.file;
+      originalName = batchFile.name;
     }
 
-    return { audioFile, originalName };
+    // Update progress
+    setFiles(prev => prev.map(f => 
+      f.id === batchFile.id 
+        ? { ...f, progress: 30 }
+        : f
+    ));
+
+    // Upload to Firebase first (same as regular transcription)
+    const uploadResult = await clientTranscriptionService.uploadFileToFirebase(audioFile);
+    
+    // Update progress
+    setFiles(prev => prev.map(f => 
+      f.id === batchFile.id 
+        ? { ...f, progress: 60, status: 'pending' }
+        : f
+    ));
+
+    return { audioFile, originalName, uploadResult };
   };
 
   // Submit file to the scalable queue system
