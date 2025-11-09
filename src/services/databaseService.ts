@@ -199,11 +199,15 @@ class DatabaseService {
       // Set createdAt explicitly if not provided (for timeout queries)
       const createdAt = data.createdAt || serverTimestamp();
       
+      // Use provided timestamp if available, otherwise use serverTimestamp
+      // This allows immediate UI visibility for new processing records
+      const timestamp = data.timestamp || serverTimestamp();
+      
       const sttData: Omit<STTRecord, 'id'> = {
         ...data,
         transcript: shortTranscript, // Store shortened version
         user_id: currentUserId,
-        timestamp: serverTimestamp() as Timestamp,
+        timestamp: timestamp as Timestamp,
         createdAt: createdAt as Timestamp, // Explicit creation timestamp
         type: 'stt',
         // Set defaults for job tracking fields

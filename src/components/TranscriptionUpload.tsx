@@ -926,6 +926,9 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             minute: '2-digit' 
           })})${processedFile.name.match(/\.[^/.]+$/)?.[0] || ''}`;
 
+          // Use current timestamp for immediate UI visibility (not serverTimestamp sentinel)
+          const now = Timestamp.now();
+          
           const processingRecordId = await databaseService.createSTTRecord({
             user_id: auth.currentUser?.uid || 'unknown',
             audio_id: uploadResult.url,
@@ -935,7 +938,9 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             duration: 0, // Will be updated by webhook
             language: 'en',
             status: 'processing', // RunPod starts processing immediately
-            startedAt: Timestamp.now(), // Use Timestamp.now() for immediate visibility in UI
+            timestamp: now, // CRITICAL: Set timestamp for filter to work
+            startedAt: now, // Track when processing started
+            createdAt: now, // Track when record was created
             priority: priority, // Set priority for queue management
             retryCount: 0, // Initialize retry count
             maxRetries: 3, // Maximum retry attempts
