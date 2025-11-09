@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { contentService, ContentRecord } from '../services/contentService';
+import { Timestamp } from 'firebase/firestore';
 import { 
   FileText,
   Sparkles,
