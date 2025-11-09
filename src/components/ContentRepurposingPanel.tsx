@@ -307,24 +307,36 @@ export default function ContentRepurposingPanel({
     const normalize = (value: string) =>
       value.replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n');
 
-    const candidates = [
-      data?.transcript,
-      data?.merged_text,
-      data?.text,
-      data?.runpod_output?.transcript,
-      data?.runpod_output?.merged_text,
-      data?.runpod_output?.text,
-      data?.runpod_output?.formatted_transcript,
-      data?.runpod_output?.final_transcript,
-      data?.runpod_output?.metadata?.full_transcript,
-      data?.runpod_output?.metadata?.formatted_transcript,
-      data?.fullText,
+    const candidateSources = [
+      { key: 'transcript', value: data?.transcript },
+      { key: 'merged_text', value: data?.merged_text },
+      { key: 'text', value: data?.text },
+      { key: 'runpod_output.transcript', value: data?.runpod_output?.transcript },
+      { key: 'runpod_output.merged_text', value: data?.runpod_output?.merged_text },
+      { key: 'runpod_output.text', value: data?.runpod_output?.text },
+      { key: 'runpod_output.formatted_transcript', value: data?.runpod_output?.formatted_transcript },
+      { key: 'runpod_output.final_transcript', value: data?.runpod_output?.final_transcript },
+      { key: 'runpod_output.metadata.full_transcript', value: data?.runpod_output?.metadata?.full_transcript },
+      { key: 'runpod_output.metadata.formatted_transcript', value: data?.runpod_output?.metadata?.formatted_transcript },
+      { key: 'fullText', value: data?.fullText },
     ];
 
-    for (const candidate of candidates) {
-      if (typeof candidate === 'string') {
-        const normalized = normalize(candidate);
+    console.log('🧾 [ContentRepurposingPanel] Candidate transcript fields:', candidateSources.map(source => ({
+      key: source.key,
+      type: typeof source.value,
+      length: typeof source.value === 'string' ? source.value.length : undefined,
+      preview: typeof source.value === 'string' ? source.value.substring(0, 80) : undefined,
+    })));
+
+    for (const candidate of candidateSources) {
+      if (typeof candidate.value === 'string') {
+        const normalized = normalize(candidate.value);
+        console.log(`🧾 [ContentRepurposingPanel] Checking candidate "${candidate.key}":`, {
+          normalizedLength: normalized.length,
+          firstChars: normalized.substring(0, 80),
+        });
         if (normalized.trim().length > 0) {
+          console.log(`✅ [ContentRepurposingPanel] Using transcript source "${candidate.key}" with length ${normalized.length}`);
           return normalized;
         }
       }
@@ -350,7 +362,15 @@ export default function ContentRepurposingPanel({
           console.log('🧾 [ContentRepurposingPanel] Full transcription data keys:', Object.keys(fullData || {}));
           if (fullData?.runpod_output) {
             console.log('🧾 [ContentRepurposingPanel] runpod_output keys:', Object.keys(fullData.runpod_output));
+            console.log('🧾 [ContentRepurposingPanel] runpod_output metadata keys:', typeof fullData.runpod_output.metadata === 'object' ? Object.keys(fullData.runpod_output.metadata) : fullData.runpod_output.metadata);
             console.log('🧾 [ContentRepurposingPanel] runpod_output.transcript preview:', typeof fullData.runpod_output.transcript === 'string' ? fullData.runpod_output.transcript.substring(0, 100) : fullData.runpod_output.transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.formatted_transcript preview:', typeof fullData.runpod_output.formatted_transcript === 'string' ? fullData.runpod_output.formatted_transcript.substring(0, 100) : fullData.runpod_output.formatted_transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.final_transcript preview:', typeof fullData.runpod_output.final_transcript === 'string' ? fullData.runpod_output.final_transcript.substring(0, 100) : fullData.runpod_output.final_transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.metadata.full_transcript preview:', typeof fullData.runpod_output.metadata?.full_transcript === 'string' ? fullData.runpod_output.metadata.full_transcript.substring(0, 100) : fullData.runpod_output.metadata?.full_transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.transcript charCodes:', typeof fullData.runpod_output.transcript === 'string' ? Array.from(fullData.runpod_output.transcript.substring(0, 40)).map(ch => ch.charCodeAt(0)) : fullData.runpod_output.transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.formatted_transcript charCodes:', typeof fullData.runpod_output.formatted_transcript === 'string' ? Array.from(fullData.runpod_output.formatted_transcript.substring(0, 40)).map(ch => ch.charCodeAt(0)) : fullData.runpod_output.formatted_transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.final_transcript charCodes:', typeof fullData.runpod_output.final_transcript === 'string' ? Array.from(fullData.runpod_output.final_transcript.substring(0, 40)).map(ch => ch.charCodeAt(0)) : fullData.runpod_output.final_transcript);
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.metadata.full_transcript charCodes:', typeof fullData.runpod_output.metadata?.full_transcript === 'string' ? Array.from(fullData.runpod_output.metadata.full_transcript.substring(0, 40)).map(ch => ch.charCodeAt(0)) : fullData.runpod_output.metadata?.full_transcript);
           }
 
           const fullTranscript = extractTranscriptFromData(fullData);
