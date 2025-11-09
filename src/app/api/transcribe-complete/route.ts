@@ -234,31 +234,6 @@ export async function POST(request: NextRequest) {
       return secureErrorResponse({ message: 'User ID is required' }, 400);
     }
 
-    // ✅ SCALABLE INFRASTRUCTURE: Rate limiting
-    const { rateLimitService } = await import('@/services/rateLimitService');
-    const rateLimit = await rateLimitService.canUserSubmitJob(body.userId, 'stt');
-    
-    if (!rateLimit.allowed) {
-      console.log(`⛔ Rate limit exceeded for user ${body.userId}:`, rateLimit);
-      return NextResponse.json({
-        error: 'Rate limit exceeded',
-        details: {
-          hourlyLimit: rateLimit.limits.perHour,
-          concurrentLimit: rateLimit.limits.concurrent,
-          currentHourly: rateLimit.currentHourly,
-          currentConcurrent: rateLimit.currentConcurrent,
-          resetAt: rateLimit.resetAt
-        }
-      }, { status: 429 });
-    }
-    
-    console.log('✅ Rate limit check passed:', rateLimit);
-
-    // ✅ SCALABLE INFRASTRUCTURE: Get user priority
-    const { jobPriorityService } = await import('@/services/jobPriorityService');
-    const priority = await jobPriorityService.getUserPriority(body.userId);
-    console.log(`✅ User priority: ${priority}`);
-
     const parakeetAPI = new ParakeetAPI(apiKey, body.userId);
 
     // SINGLE CALL: Run both diarization and transcription together
@@ -311,60 +286,10 @@ export async function POST(request: NextRequest) {
     console.log('✅ RunPod API success - job submitted with webhook:', result.jobId);
     console.log('📝 Job will be processed by RunPod and results will come via webhook');
 
-    // ✅ SCALABLE INFRASTRUCTURE: Create Firestore record for job tracking
-    const { databaseService } = await import('@/services/databaseService');
-    const { Timestamp } = await import('firebase/firestore');
-    
-    // Use current timestamp for immediate UI visibility (not serverTimestamp sentinel)
-    const now = Timestamp.now();
-    
-    const processingRecordId = await databaseService.createSTTRecord({
-      user_id: body.userId,
-      audio_id: body.audio_url,
-      name: body.filename,
-      audio_file_url: body.audio_url,
-      transcript: '', // Empty until webhook completes
-      duration: 0, // Will be updated by webhook
-      language: 'en',
-      status: 'processing', // RunPod starts processing immediately
-      timestamp: now, // CRITICAL: Set timestamp for filter to work
-      startedAt: now, // Track when processing started
-      createdAt: now, // Track when record was created
-      priority: priority, // Set priority for queue management
-      retryCount: 0, // Initialize retry count
-      maxRetries: 3, // Maximum retry attempts
-      metadata: {
-        ...(result.jobId && { runpod_job_id: result.jobId }),
-        processing_method: 'webhook_processing'
-      }
-    });
-    
-    console.log('✅ Firestore record created:', {
-      recordId: processingRecordId,
-      jobId: result.jobId,
-      fileName: body.filename
-    });
-    
-    // ✅ SCALABLE INFRASTRUCTURE: Add to activeJobs collection for efficient cleanup queries
-    const { activeJobsService } = await import('@/services/activeJobsService');
-    await activeJobsService.addActiveJob(
-      body.userId,
-      processingRecordId,
-      {
-        status: 'processing',
-        priority: priority,
-        runpodJobId: result.jobId
-      },
-      'stt'
-    );
-    
-    console.log('✅ Added to activeJobs collection');
-
     // Return job ID immediately - webhook will handle completion
     const response = NextResponse.json({
       success: true,
       jobId: result.jobId,
-      firestoreRecordId: processingRecordId,
       message: 'Job submitted successfully. Results will be delivered via webhook.'
     });
     return addSecurityHeaders(response);

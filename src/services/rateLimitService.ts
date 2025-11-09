@@ -31,9 +31,9 @@ class RateLimitService {
   // Rate limits per feature type and tier
   private readonly LIMITS = {
     trial: {
-      stt: { perHour: 5, concurrent: 2 },
-      'ai-summary': { perHour: 10, concurrent: 3 },
-      'content-repurpose': { perHour: 5, concurrent: 2 }
+      stt: { perHour: 20, concurrent: 5 },
+      'ai-summary': { perHour: 50, concurrent: 10 },
+      'content-repurpose': { perHour: 20, concurrent: 5 }
     },
     'transcription-only': {
       stt: { perHour: 20, concurrent: 5 },
@@ -46,9 +46,9 @@ class RateLimitService {
       'content-repurpose': { perHour: 100, concurrent: 20 }
     },
     default: {
-      stt: { perHour: 5, concurrent: 2 },
-      'ai-summary': { perHour: 10, concurrent: 3 },
-      'content-repurpose': { perHour: 5, concurrent: 2 }
+      stt: { perHour: 20, concurrent: 5 },
+      'ai-summary': { perHour: 50, concurrent: 10 },
+      'content-repurpose': { perHour: 20, concurrent: 5 }
     }
   };
 
