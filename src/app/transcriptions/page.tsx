@@ -12,6 +12,7 @@ export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
+  const [refreshKey, setRefreshKey] = useState(0);
 
   const handleTranscriptionEvent = (event: TranscriptionEvent) => {
     const { status, jobId, record, clientId, runpodJobId } = event;
@@ -20,6 +21,7 @@ export default function TranscriptionsPage() {
       if (clientId) {
         setPendingTranscriptions(prev => prev.filter(item => item.metadata?.client_pending_id !== clientId));
       }
+      setRefreshKey(prev => prev + 1);
       return;
     }
 
@@ -36,6 +38,7 @@ export default function TranscriptionsPage() {
       });
       if (clientId || removedPending) {
         setActiveTab('recent');
+        setRefreshKey(prev => prev + 1);
       }
       return;
     }
@@ -56,6 +59,7 @@ export default function TranscriptionsPage() {
 
     if ((status === 'started' || status === 'processing') && clientId) {
       setActiveTab('recent');
+      setRefreshKey(prev => prev + 1);
     }
   };
 
@@ -175,7 +179,7 @@ export default function TranscriptionsPage() {
 
         {activeTab === 'recent' && (
           <div>
-            <RecentTranscriptions pendingTranscriptions={pendingTranscriptions} />
+            <RecentTranscriptions key={refreshKey} pendingTranscriptions={pendingTranscriptions} />
           </div>
         )}
       </div>
