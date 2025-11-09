@@ -55,7 +55,7 @@ export default function RecentTranscriptions() {
       const queryRef = firestore.query(
         sttCollection,
         orderBy('timestamp', 'desc'),
-        limit(20) // Increased from 5 to catch more updates
+        limit(100) // Increased to match loadRecentTranscriptions fetch limit
       );
       
       unsubscribe = onSnapshot(queryRef, (snapshot) => {
@@ -113,7 +113,8 @@ export default function RecentTranscriptions() {
       console.log('📝 Loading recent transcriptions...');
       
       // Get the 5 most recent transcriptions
-      const allTranscriptions = await databaseService.getSTTRecords(20); // Get more to filter
+      // Fetch more records to filter out broken ones (same as All Transcriptions page)
+      const allTranscriptions = await databaseService.getSTTRecords(100); // Get enough to find valid records
       
       // Filter out records with broken timestamps (serverTimestamp sentinel values)
       // AND only show completed transcriptions
