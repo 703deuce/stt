@@ -487,7 +487,16 @@ export default function ContentRepurposingPage() {
           const fullData = await databaseService.getFullTranscriptionData(selectedTranscription.transcription_data_url);
           console.log('🧾 [ContentRepurposingPage] Full transcription data keys:', Object.keys(fullData || {}));
           const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
-          console.log('🧾 [ContentRepurposingPage] fullTranscript type:', typeof fullTranscript, 'length:', fullTranscript ? fullTranscript.length : 0);
+          console.log(
+            '🧾 [ContentRepurposingPage] fullTranscript type:',
+            typeof fullTranscript,
+            'length:',
+            fullTranscript ? fullTranscript.length : 0,
+            'firstChars:',
+            fullTranscript ? fullTranscript.substring(0, 100) : '',
+            'charCodes:',
+            fullTranscript ? Array.from(fullTranscript.substring(0, 20)).map(ch => ch.charCodeAt(0)) : []
+          );
           if (fullTranscript && fullTranscript.trim().length > 0) {
             fullTranscriptionText = fullTranscript;
             console.log('✅ Using full transcription text:', {

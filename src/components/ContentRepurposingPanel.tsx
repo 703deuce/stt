@@ -318,7 +318,16 @@ export default function ContentRepurposingPanel({
           console.log('🧾 [ContentRepurposingPanel] Full transcription data keys:', Object.keys(fullData || {}));
           
           const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
-          console.log('🧾 [ContentRepurposingPanel] fullTranscript type:', typeof fullTranscript, 'length:', fullTranscript ? fullTranscript.length : 0);
+          console.log(
+            '🧾 [ContentRepurposingPanel] fullTranscript type:',
+            typeof fullTranscript,
+            'length:',
+            fullTranscript ? fullTranscript.length : 0,
+            'firstChars:',
+            fullTranscript ? fullTranscript.substring(0, 100) : '',
+            'charCodes:',
+            fullTranscript ? Array.from(fullTranscript.substring(0, 20)).map(ch => ch.charCodeAt(0)) : []
+          );
           
           if (fullTranscript && fullTranscript.trim().length > 0) {
             console.log('✅ [ContentRepurposingPanel] Full transcription text loaded:', {
