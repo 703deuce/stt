@@ -13,13 +13,31 @@ export default function TranscriptionsPage() {
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
   const [refreshKey, setRefreshKey] = useState(0);
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
+  const [userInitiatedJob, setUserInitiatedJob] = useState(false);
 
   const handleTranscriptionEvent = (event: { status: string; jobId?: string; record?: STTRecord }) => {
+    if (event.status === 'processing' || event.status === 'started') {
+      setUserInitiatedJob(true);
+    }
+
     if (event.status === 'completed' && event.jobId) {
-      setPendingTranscriptions(prev => prev.filter(item => item.id !== event.jobId));
+      setPendingTranscriptions(prev => {
+        const updated = prev.filter(item => item.id !== event.jobId);
+        if (updated.length === 0) {
+          setUserInitiatedJob(false);
+        }
+        return updated;
+      });
+      if (userInitiatedJob) {
+        setActiveTab('recent');
+        setRefreshKey(prev => prev + 1);
+      }
+      return;
+    }
+
+    if (event.status === 'started') {
       setActiveTab('recent');
       setRefreshKey(prev => prev + 1);
-      return;
     }
 
     if (event.record) {
@@ -29,7 +47,7 @@ export default function TranscriptionsPage() {
       });
     }
 
-    if (event.status === 'processing' || event.status === 'started') {
+    if (event.status === 'processing' && event.record) {
       setActiveTab('recent');
       setRefreshKey(prev => prev + 1);
     }
