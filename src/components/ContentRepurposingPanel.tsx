@@ -318,6 +318,7 @@ export default function ContentRepurposingPanel({
           console.log('🧾 [ContentRepurposingPanel] Full transcription data keys:', Object.keys(fullData || {}));
           
           const fullTranscript = fullData?.transcript || fullData?.merged_text || fullData?.text || '';
+          console.log('🧾 [ContentRepurposingPanel] fullTranscript type:', typeof fullTranscript, 'length:', fullTranscript ? fullTranscript.length : 0);
           
           if (fullTranscript && fullTranscript.trim().length > 0) {
             console.log('✅ [ContentRepurposingPanel] Full transcription text loaded:', {
@@ -326,7 +327,7 @@ export default function ContentRepurposingPanel({
             });
             setFullTranscriptionText(fullTranscript);
           } else {
-            console.warn('⚠️ [ContentRepurposingPanel] Full transcription data missing transcript field, falling back to preview text');
+            console.warn('⚠️ [ContentRepurposingPanel] Full transcription data missing transcript field, falling back to preview text. Transcript value:', fullTranscript);
             setFullTranscriptionText(transcriptionText);
           }
         } else {
