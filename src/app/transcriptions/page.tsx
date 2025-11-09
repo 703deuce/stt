@@ -42,6 +42,9 @@ export default function TranscriptionsPage() {
           item.id !== record.id &&
           item.metadata?.client_pending_id !== clientId
         );
+        if (record.status === 'completed') {
+          return filtered;
+        }
         return [record, ...filtered];
       });
     }
