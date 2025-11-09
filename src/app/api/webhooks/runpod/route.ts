@@ -296,8 +296,8 @@ export async function POST(request: NextRequest) {
                 completedAt: serverTimestamp(),
                 processingTime,
                 metadata: {
-                  ...existingRecord.metadata,
-                  word_count: transcriptText.split(/\s+/).length,
+                  // DO NOT spread existingRecord.metadata - it contains huge arrays!
+                  word_count: transcriptText.split(/\s+/).filter(w => w.length > 0).length,
                   speaker_count: speakerCount, // Actual unique speakers (e.g., 2-5)
                   segment_count: mergedSegments.length, // Total segments (e.g., 487)
                   timestamp_count: timestamps.length, // Store count, not full data
@@ -333,20 +333,32 @@ export async function POST(request: NextRequest) {
                 console.warn('⚠️ Could not get job mapping:', error);
               }
               
+              // Calculate unique speakers for fallback path too
+              const uniqueSpeakersForNew = new Set(mergedSegments.map(seg => seg.speaker));
+              const speakerCountForNew = uniqueSpeakersForNew.size;
+              
+              // Store preview transcript (first 500 chars)
+              const previewTranscriptForNew = transcriptText.length > 500 
+                ? transcriptText.substring(0, 500) + '...' 
+                : transcriptText;
+              
               recordId = await databaseService.createSTTRecord({
                 user_id: userId,
                 audio_id: payload.id,
                 name: fileName,
                 audio_file_url: output.audio_url || '',
-                transcript: transcriptText,
+                transcript: previewTranscriptForNew, // Only preview, not full
                 duration: output.audio_duration_seconds || output.duration || 0,
                 language: 'en',
                 status: 'completed',
-                timestamps: timestamps,
-                diarized_transcript: mergedSegments,
+                // DO NOT pass full arrays - they're already in Storage via transformedData
+                // timestamps: timestamps,  // ❌ Would exceed 1MB
+                // diarized_transcript: mergedSegments,  // ❌ Would exceed 1MB
                 metadata: {
-                  word_count: transcriptText.split(/\s+/).length,
-                  speaker_count: output.segment_timestamps?.length || output.diarized_transcript?.length || 0,
+                  word_count: transcriptText.split(/\s+/).filter(w => w.length > 0).length,
+                  speaker_count: speakerCountForNew, // Unique speakers, not segments
+                  segment_count: mergedSegments.length,
+                  timestamp_count: timestamps.length,
                   processing_method: 'webhook_processing',
                   chunks_processed: 1,
                   runpod_job_id: payload.id,
