@@ -146,8 +146,102 @@ export async function POST(request: NextRequest) {
               }
             }
             
-            // Extract the actual transcription text from the correct field
-            const transcriptText = output.text || output.transcript || output.merged_text || '';
+            // Extract the actual transcription text from the correct field, falling back to arrays if needed
+            const normalizeTranscript = (value: string) =>
+              value.replace(/\u00a0/g, ' ').replace(/\r\n/g, '\n');
+
+            const hasContent = (value?: string) =>
+              typeof value === 'string' && normalizeTranscript(value).replace(/\s+/g, '').length > 0;
+
+            const joinFromArray = (
+              items: any[] | undefined,
+              valueSelectors: Array<string | ((item: any) => string | undefined)>,
+              separator: string
+            ): string => {
+              if (!Array.isArray(items)) return '';
+              const parts: string[] = [];
+
+              for (const item of items) {
+                let value: string | undefined;
+
+                for (const selector of valueSelectors) {
+                  if (typeof selector === 'function') {
+                    const result = selector(item);
+                    if (hasContent(result)) {
+                      value = result!;
+                      break;
+                    }
+                  } else if (item && typeof item === 'object' && hasContent(item[selector])) {
+                    value = item[selector];
+                    break;
+                  }
+                }
+
+                if (hasContent(value)) {
+                  parts.push(normalizeTranscript(value!.trim()));
+                }
+              }
+
+              if (parts.length === 0) {
+                return '';
+              }
+
+              const joined = parts.join(separator);
+              const normalized = normalizeTranscript(joined).trim();
+              return hasContent(normalized) ? normalized : '';
+            };
+
+            let transcriptText =
+              (output.text && normalizeTranscript(output.text)) ||
+              (output.transcript && normalizeTranscript(output.transcript)) ||
+              (output.merged_text && normalizeTranscript(output.merged_text)) ||
+              '';
+
+            if (!hasContent(transcriptText)) {
+              const segmentTranscript = joinFromArray(
+                output.segment_timestamps,
+                ['segment'],
+                '\n'
+              );
+              if (hasContent(segmentTranscript)) {
+                transcriptText = segmentTranscript;
+              }
+            }
+
+            if (!hasContent(transcriptText)) {
+              const timestampTranscript = joinFromArray(
+                output.timestamps,
+                ['text', 'word'],
+                ' '
+              );
+              if (hasContent(timestampTranscript)) {
+                transcriptText = timestampTranscript;
+              }
+            }
+
+            if (!hasContent(transcriptText)) {
+              const wordTranscript = joinFromArray(
+                output.word_timestamps,
+                ['word', 'text'],
+                ' '
+              );
+              if (hasContent(wordTranscript)) {
+                transcriptText = wordTranscript;
+              }
+            }
+
+            if (!hasContent(transcriptText)) {
+              const diarizedTranscript = joinFromArray(
+                output.diarized_transcript,
+                ['text'],
+                '\n'
+              );
+              if (hasContent(diarizedTranscript)) {
+                transcriptText = diarizedTranscript;
+              }
+            }
+
+            transcriptText = normalizeTranscript(transcriptText).trim();
             
             // Get the best available timestamp data
             const wordTimestamps = output.word_timestamps || [];
