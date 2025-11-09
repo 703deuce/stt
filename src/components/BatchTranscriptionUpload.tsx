@@ -242,19 +242,7 @@ export default function BatchTranscriptionUpload() {
                   return updated;
                 });
                 
-                // Show completion notification
-                updateNotification({ 
-                  isVisible: true,
-                  progress: 100, 
-                  status: 'completed',
-                  fileName: changeData.name
-                });
-                
-                // Hide notification after delay
-                setTimeout(() => {
-                  console.log('🕐 [BatchTranscriptionUpload] Hiding notification after completion');
-                  hideNotification();
-                }, 5000);
+                // Note: Batch component has its own UI for showing completion status
                 
                 // Remove from processed set after a delay to allow for cleanup
                 // Find and remove the actual tracked name (case-insensitive)
@@ -287,16 +275,7 @@ export default function BatchTranscriptionUpload() {
                   });
                 });
                 
-                // Show failure notification
-                updateNotification({ 
-                  isVisible: true,
-                  progress: 0, 
-                  status: 'failed',
-                  fileName: changeData.name,
-                  error: 'Transcription failed'
-                });
-                
-                setTimeout(() => hideNotification(), 3000);
+                // Note: Batch component has its own UI for showing failure status
                 
                 // Remove from processed set (find actual tracked name)
                 const trackedName = Array.from(processedFileNamesRef.current).find(
@@ -332,7 +311,7 @@ export default function BatchTranscriptionUpload() {
         unsubscribe();
       }
     };
-  }, [user?.uid, hideNotification, updateNotification]);
+  }, [user?.uid]);
 
     // Process single file - upload only
   const uploadFile = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string; uploadResult: any }> => {
