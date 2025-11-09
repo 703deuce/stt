@@ -10,7 +10,6 @@ import { usePageOnboarding } from '@/hooks/usePageOnboarding';
 import { databaseService } from '@/services/databaseService';
 import { STTRecord } from '@/services/databaseService';
 import AISummaryPanel from '@/components/AISummaryPanel';
-import AIChatPanel from '@/components/AIChatPanel';
 import ContentRepurposingPanel from '@/components/ContentRepurposingPanel';
 import SpeakerMappingModal from '@/components/SpeakerMappingModal';
 import DownloadModal from '@/components/DownloadModal';
@@ -814,11 +813,6 @@ export default function TranscriptionViewPage() {
             {/* AI Panels Sidebar - 1 column */}
             <div id="ai-features-panel" className="lg:col-span-1 space-y-6">
               <AISummaryPanel 
-                transcriptionText={transcription.transcript || ''} 
-                transcriptionId={transcriptionId}
-                className="sticky top-6"
-              />
-              <AIChatPanel 
                 transcriptionText={transcription.transcript || ''} 
                 transcriptionId={transcriptionId}
                 className="sticky top-6"
