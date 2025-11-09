@@ -12,6 +12,7 @@ interface TranscriptionRequest {
   audio_url: string;
   filename: string;
   userId: string;
+  clientPendingId?: string; // Client-side placeholder ID for matching
   settings: {
     use_diarization: boolean;
     pyannote_version?: string; // "2.1" (faster) or "3.1" (more accurate)
@@ -266,7 +267,8 @@ export async function POST(request: NextRequest) {
           processing_method: 'queued_for_capacity',
           use_diarization: body.settings.use_diarization,
           pyannote_version: body.settings.use_diarization ? '3.1' : undefined,
-          queue_reason: rateLimitCheck.reason
+          queue_reason: rateLimitCheck.reason,
+          client_pending_id: body.clientPendingId // Store client pending ID for placeholder matching
         }
       }, undefined, body.userId); // Pass userId as 3rd parameter for server-side auth
       
@@ -308,7 +310,8 @@ export async function POST(request: NextRequest) {
       metadata: {
         processing_method: 'webhook_processing',
         use_diarization: body.settings.use_diarization,
-        pyannote_version: body.settings.use_diarization ? '3.1' : undefined
+        pyannote_version: body.settings.use_diarization ? '3.1' : undefined,
+        client_pending_id: body.clientPendingId // Store client pending ID for placeholder matching
       }
     }, undefined, body.userId); // Pass userId as 3rd parameter for server-side auth
     console.log(`✅ Created Firestore processing record: ${processingRecordId}`);

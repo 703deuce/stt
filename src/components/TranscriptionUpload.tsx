@@ -918,6 +918,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
           audio_url: uploadResult.url,
           filename: processedFile.name,
           userId: (await import('@/config/firebase')).auth.currentUser?.uid || 'unknown',
+          clientPendingId: clientPendingIdRef.current, // Send client pending ID for placeholder matching
           settings: {
             use_diarization: settings.use_diarization,
             pyannote_version: settings.use_diarization ? '3.1' : undefined,
