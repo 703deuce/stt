@@ -12,6 +12,7 @@ import { STTRecord } from '@/services/databaseService';
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const router = useRouter();
+  // Redirect user to All Transcriptions after webhook completion for a clear UX
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
