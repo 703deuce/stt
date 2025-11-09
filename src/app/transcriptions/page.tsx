@@ -17,21 +17,33 @@ export default function TranscriptionsPage() {
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
   const initiatedRunpodIdsRef = useRef(new Set<string>());
+  const runpodToClientIdRef = useRef(new Map<string, string>());
 
   const handleTranscriptionEvent = (event: TranscriptionEvent) => {
     const { status, jobId, record, clientId, runpodJobId } = event;
 
-    if (status === 'started' || status === 'processing') {
-      if (runpodJobId) {
-        initiatedRunpodIdsRef.current.add(runpodJobId);
+    if ((status === 'started' || status === 'processing') && runpodJobId) {
+      initiatedRunpodIdsRef.current.add(runpodJobId);
+      if (clientId) {
+        runpodToClientIdRef.current.set(runpodJobId, clientId);
       }
     }
 
+    if (record?.metadata?.client_pending_id && runpodJobId) {
+      runpodToClientIdRef.current.set(runpodJobId, record.metadata.client_pending_id as string);
+    }
+
+    const effectiveClientId = clientId || (runpodJobId ? runpodToClientIdRef.current.get(runpodJobId) : undefined);
+
     if (status === 'failed') {
-      if (clientId) {
-        setPendingTranscriptions(prev => prev.filter(item => item.metadata?.client_pending_id !== clientId));
+      if (effectiveClientId) {
+        setPendingTranscriptions(prev => prev.filter(item => item.metadata?.client_pending_id !== effectiveClientId));
       }
       setRefreshKey(prev => prev + 1);
+      if (runpodJobId) {
+        runpodToClientIdRef.current.delete(runpodJobId);
+        initiatedRunpodIdsRef.current.delete(runpodJobId);
+      }
       return;
     }
 
@@ -40,7 +52,7 @@ export default function TranscriptionsPage() {
       setPendingTranscriptions(prev => {
         const filtered = prev.filter(item =>
           item.id !== jobId &&
-          item.metadata?.client_pending_id !== clientId &&
+          item.metadata?.client_pending_id !== effectiveClientId &&
           item.metadata?.runpod_job_id !== runpodJobId
         );
         removedPending = filtered.length !== prev.length;
@@ -49,6 +61,7 @@ export default function TranscriptionsPage() {
 
       if (runpodJobId && initiatedRunpodIdsRef.current.has(runpodJobId)) {
         initiatedRunpodIdsRef.current.delete(runpodJobId);
+        runpodToClientIdRef.current.delete(runpodJobId);
         setRefreshKey(prev => prev + 1);
         router.push('/all-transcriptions');
       }
@@ -59,7 +72,7 @@ export default function TranscriptionsPage() {
       setPendingTranscriptions(prev => {
         const filtered = prev.filter(item =>
           item.id !== record.id &&
-          item.metadata?.client_pending_id !== clientId &&
+          item.metadata?.client_pending_id !== effectiveClientId &&
           item.metadata?.runpod_job_id !== runpodJobId
         );
         if (record.status === 'completed') {
@@ -69,7 +82,7 @@ export default function TranscriptionsPage() {
       });
     }
 
-    if ((status === 'started' || status === 'processing') && clientId) {
+    if ((status === 'started' || status === 'processing') && effectiveClientId) {
       setActiveTab('recent');
       setRefreshKey(prev => prev + 1);
     }
