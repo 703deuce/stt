@@ -344,6 +344,10 @@ export default function ContentRepurposingPanel({
           console.log('📥 [ContentRepurposingPanel] Found transcription_data_url, fetching full text...');
           const fullData = await databaseService.getFullTranscriptionData(transcriptionRecord.transcription_data_url);
           console.log('🧾 [ContentRepurposingPanel] Full transcription data keys:', Object.keys(fullData || {}));
+          if (fullData?.runpod_output) {
+            console.log('🧾 [ContentRepurposingPanel] runpod_output keys:', Object.keys(fullData.runpod_output));
+            console.log('🧾 [ContentRepurposingPanel] runpod_output.transcript preview:', typeof fullData.runpod_output.transcript === 'string' ? fullData.runpod_output.transcript.substring(0, 100) : fullData.runpod_output.transcript);
+          }
 
           const fullTranscript = extractTranscriptFromData(fullData);
 

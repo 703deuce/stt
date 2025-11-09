@@ -514,6 +514,10 @@ export default function ContentRepurposingPage() {
           console.log('📥 Fetching full transcription text for content generation...');
           const fullData = await databaseService.getFullTranscriptionData(selectedTranscription.transcription_data_url);
           console.log('🧾 [ContentRepurposingPage] Full transcription data keys:', Object.keys(fullData || {}));
+          if (fullData?.runpod_output) {
+            console.log('🧾 [ContentRepurposingPage] runpod_output keys:', Object.keys(fullData.runpod_output));
+            console.log('🧾 [ContentRepurposingPage] runpod_output.transcript preview:', typeof fullData.runpod_output.transcript === 'string' ? fullData.runpod_output.transcript.substring(0, 100) : fullData.runpod_output.transcript);
+          }
 
           const fullTranscript = extractTranscriptFromData(fullData);
 
