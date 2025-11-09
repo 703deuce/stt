@@ -128,6 +128,21 @@ export default function RecentTranscriptions() {
         // Show processing and completed transcriptions
         const isValidStatus = record.status === 'completed' || record.status === 'processing';
         
+        // Debug logging for each record
+        console.log(`🔍 [RecentTranscriptions] Checking record:`, {
+          id: record.id,
+          name: record.name,
+          status: record.status,
+          hasTimestamp: !!record.timestamp,
+          timestampType: typeof record.timestamp,
+          isTimestampObject: typeof record.timestamp === 'object',
+          hasMethodName: record.timestamp && typeof record.timestamp === 'object' && '_methodName' in record.timestamp,
+          methodName: record.timestamp && typeof record.timestamp === 'object' ? (record.timestamp as any)._methodName : 'N/A',
+          hasValidTimestamp,
+          isValidStatus,
+          willShow: hasValidTimestamp && isValidStatus
+        });
+        
         if (!hasValidTimestamp) {
           console.warn('⏭️ [RecentTranscriptions] Skipping record with broken timestamp:', record.id, record.name);
         }
