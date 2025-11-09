@@ -268,7 +268,7 @@ export async function POST(request: NextRequest) {
           pyannote_version: body.settings.use_diarization ? '3.1' : undefined,
           queue_reason: rateLimitCheck.reason
         }
-      });
+      }, undefined, body.userId); // Pass userId as 3rd parameter for server-side auth
       
       console.log(`✅ Job queued with ID: ${queuedRecordId}`);
       
@@ -310,7 +310,7 @@ export async function POST(request: NextRequest) {
         use_diarization: body.settings.use_diarization,
         pyannote_version: body.settings.use_diarization ? '3.1' : undefined
       }
-    });
+    }, undefined, body.userId); // Pass userId as 3rd parameter for server-side auth
     console.log(`✅ Created Firestore processing record: ${processingRecordId}`);
 
     const parakeetAPI = new ParakeetAPI(apiKey, body.userId);
