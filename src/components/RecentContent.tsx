@@ -8,6 +8,7 @@ import {
   FileText,
   Sparkles,
   Calendar,
+  Clock,
   ArrowRight,
   Eye,
   Copy,
@@ -107,10 +108,8 @@ export default function RecentContent() {
     return null;
   };
 
-  const formatDate = (record: GeneratedContentRecord) => {
-    const date = normalizeDate(record.completedAt)
-      || normalizeDate(record.timestamp)
-      || normalizeDate(record.created_at);
+  const formatDate = (record: ContentRecord) => {
+    const date = normalizeDate(record.timestamp);
 
     if (!date) return 'Unknown';
 
