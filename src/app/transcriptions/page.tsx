@@ -10,6 +10,7 @@ import { Mic, Upload, FileText, Clock, CheckCircle, AlertCircle } from 'lucide-r
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
+  const [refreshKey, setRefreshKey] = useState(0);
 
   if (loading) {
     return (
@@ -120,14 +121,17 @@ export default function TranscriptionsPage() {
 
             {/* Upload Component */}
             <div id="transcription-upload-area">
-              <TranscriptionUpload onTranscriptionComplete={() => setActiveTab('recent')} />
+              <TranscriptionUpload onTranscriptionComplete={() => {
+                setActiveTab('recent');
+                setRefreshKey(prev => prev + 1); // Force RecentTranscriptions to reload
+              }} />
             </div>
           </div>
         )}
 
         {activeTab === 'recent' && (
           <div>
-            <RecentTranscriptions />
+            <RecentTranscriptions key={refreshKey} />
           </div>
         )}
       </div>
