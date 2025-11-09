@@ -1,11 +1,12 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useSpeakerMapping } from '@/context/SpeakerMappingContext';
 import { databaseService } from '@/services/databaseService';
 import { STTRecord } from '@/services/databaseService';
 import { useBackgroundProcessing } from '@/hooks/useBackgroundProcessing';
+import { useTranscriptionPagination } from '@/hooks/useTranscriptionPagination';
 import { Timestamp } from 'firebase/firestore';
 import Layout from '@/components/Layout';
 import ProtectedRoute from '@/components/ProtectedRoute';
@@ -35,19 +36,22 @@ export default function AllTranscriptionsPage() {
   const { user } = useAuth();
   const { getSpeakerDisplayName } = useSpeakerMapping();
   const { getActiveJobs, getCompletedJobs, getFailedJobs } = useBackgroundProcessing();
-  const [transcriptions, setTranscriptions] = useState<STTRecord[]>([]);
+  const {
+    items: transcriptions,
+    loadingInitial,
+    loadingMore,
+    hasMore,
+    loadMore,
+    refresh,
+    error: paginationError,
+  } = useTranscriptionPagination(user?.uid, {
+    pageSize: 25,
+    enableRealtime: true,
+  });
   const [filteredTranscriptions, setFilteredTranscriptions] = useState<STTRecord[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'date' | 'name' | 'duration'>('date');
   const [filterStatus, setFilterStatus] = useState<'all' | 'completed' | 'failed' | 'processing'>('all');
-
-  useEffect(() => {
-    if (user) {
-      loadAllTranscriptions();
-    }
-  }, [user]);
 
   // Filter and sort transcriptions when search/filters change
   useEffect(() => {
@@ -192,44 +196,6 @@ export default function AllTranscriptionsPage() {
     setFilteredTranscriptions(filtered);
   }, [transcriptions, searchQuery, sortBy, filterStatus, getActiveJobs, getCompletedJobs, getFailedJobs]);
 
-  const loadAllTranscriptions = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      console.log('📝 Loading ALL transcriptions for user:', user?.uid);
-      
-      if (!user) {
-        console.log('⚠️ No user found, skipping load');
-        return;
-      }
-      
-      // Get ALL transcriptions (no limit)
-      const allRecords = await databaseService.getSTTRecords(1000); // High limit to get all
-      
-      // Filter out records with broken timestamps (serverTimestamp sentinel values)
-      // These are old records where webhook updates failed
-      const validTranscriptions = allRecords.filter(record => {
-        const hasValidTimestamp = record.timestamp && 
-          typeof record.timestamp === 'object' && 
-          (record.timestamp as any)._methodName !== 'serverTimestamp';
-        
-        if (!hasValidTimestamp) {
-          console.warn('⏭️ Skipping record with broken timestamp:', record.id, record.name);
-        }
-        
-        return hasValidTimestamp;
-      });
-      
-      console.log('✅ All transcriptions loaded:', validTranscriptions.length, '(filtered', allRecords.length - validTranscriptions.length, 'broken records)');
-      setTranscriptions(validTranscriptions);
-    } catch (err) {
-      console.error('❌ Error loading transcriptions:', err);
-      setError(err instanceof Error ? err.message : 'Failed to load transcriptions');
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const normalizeDate = (value: any): Date | null => {
     if (!value) return null;
     if (value instanceof Date) return value;
@@ -291,12 +257,7 @@ export default function AllTranscriptionsPage() {
     try {
       const newArchivedStatus = !transcription.archived;
       await databaseService.toggleArchiveSTTRecord(transcription.id!, newArchivedStatus);
-      
-      // Update local state
-      setTranscriptions(prev => prev.map(t => 
-        t.id === transcription.id ? { ...t, archived: newArchivedStatus } : t
-      ));
-      
+      await refresh();
       console.log(`✅ Transcription ${newArchivedStatus ? 'archived' : 'unarchived'}`);
     } catch (error) {
       console.error('❌ Error toggling archive:', error);
@@ -307,12 +268,7 @@ export default function AllTranscriptionsPage() {
     try {
       const newFavoritedStatus = !transcription.favorited;
       await databaseService.toggleFavoriteSTTRecord(transcription.id!, newFavoritedStatus);
-      
-      // Update local state
-      setTranscriptions(prev => prev.map(t => 
-        t.id === transcription.id ? { ...t, favorited: newFavoritedStatus } : t
-      ));
-      
+      await refresh();
       console.log(`✅ Transcription ${newFavoritedStatus ? 'favorited' : 'unfavorited'}`);
     } catch (error) {
       console.error('❌ Error toggling favorite:', error);
@@ -367,7 +323,7 @@ export default function AllTranscriptionsPage() {
               </div>
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={loadAllTranscriptions}
+                  onClick={refresh}
                   className="px-4 py-2 text-sm bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Refresh
@@ -471,33 +427,25 @@ export default function AllTranscriptionsPage() {
           </div>
 
           {/* Loading State */}
-          {loading && (
+          {loadingInitial && (
             <div className="flex items-center justify-center py-12">
               <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-orange-500"></div>
             </div>
           )}
 
-          {/* Error State */}
-          {error && (
-            <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-              <div className="flex items-start space-x-3">
-                <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />
+          {paginationError && (
+            <div className="bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded-lg mb-4">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 mr-2 mt-0.5 flex-shrink-0" />
                 <div>
-                  <div className="font-medium text-red-900">Error Loading Transcriptions</div>
-                  <div className="text-sm text-red-700 mt-1">{error}</div>
-                  <button
-                    onClick={loadAllTranscriptions}
-                    className="mt-3 px-4 py-2 bg-red-100 text-red-800 rounded-lg hover:bg-red-200 text-sm font-medium"
-                  >
-                    Try Again
-                  </button>
+                  <p className="font-medium">Failed to load transcriptions</p>
+                  <div className="text-sm text-red-700 mt-1">{paginationError}</div>
                 </div>
               </div>
             </div>
           )}
 
-          {/* Transcriptions List */}
-          {!loading && !error && (
+          {!loadingInitial && !paginationError && (
             <div className="space-y-4">
               {/* Results Count */}
               <div className="flex items-center justify-between">
@@ -620,61 +568,98 @@ export default function AllTranscriptionsPage() {
                           </div>
 
                           {/* Right Side - Actions */}
-                          <div className="flex items-center space-x-2 ml-4">
-                            {/* Favorite Button */}
-                            <button
-                              onClick={() => toggleFavorite(transcription)}
-                              className={`p-2 rounded-lg transition-colors ${
-                                transcription.favorited 
-                                  ? 'text-yellow-500 hover:text-yellow-600 bg-yellow-50' 
-                                  : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
-                              }`}
-                              title={transcription.favorited ? 'Remove from favorites' : 'Add to favorites'}
-                            >
-                              <Star className={`w-4 h-4 ${transcription.favorited ? 'fill-current' : ''}`} />
-                            </button>
-
-                            {/* Archive Button */}
-                            <button
-                              onClick={() => toggleArchive(transcription)}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Archive transcription"
-                            >
-                              <Archive className="w-4 h-4" />
-                            </button>
-                            
-                            <button
-                              onClick={() => copyToClipboard(transcription.transcript || '')}
-                              className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                              title="Copy transcript"
-                            >
-                              <Copy className="w-4 h-4" />
-                            </button>
-                            
-                            {transcription.audio_file_url && (
-                              <a
-                                href={transcription.audio_file_url}
-                                target="_blank"
-                                rel="noopener noreferrer"
+                          <div className="ml-4 flex flex-col items-end space-y-3">
+                            <div className="flex items-center space-x-2">
+                              <button
+                                onClick={() => copyToClipboard(transcription.transcript || '')}
                                 className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                title="Play audio"
+                                title="Copy transcript"
                               >
-                                <Play className="w-4 h-4" />
+                                <Copy className="w-4 h-4" />
+                              </button>
+                              {transcription.audio_file_url && (
+                                <a
+                                  href={transcription.audio_file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                                  title="Play audio"
+                                >
+                                  <Play className="w-4 h-4" />
+                                </a>
+                              )}
+                              <button
+                                onClick={() => toggleFavorite(transcription)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  transcription.favorited
+                                    ? 'text-yellow-500 hover:text-yellow-600 hover:bg-yellow-50'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                }`}
+                                title={transcription.favorited ? 'Remove favorite' : 'Mark as favorite'}
+                              >
+                                <Star className="w-4 h-4" />
+                              </button>
+                              <button
+                                onClick={() => toggleArchive(transcription)}
+                                className={`p-2 rounded-lg transition-colors ${
+                                  transcription.archived
+                                    ? 'text-purple-500 hover:text-purple-600 hover:bg-purple-50'
+                                    : 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                                }`}
+                                title={transcription.archived ? 'Unarchive transcription' : 'Archive transcription'}
+                              >
+                                {transcription.archived ? (
+                                  <ArchiveRestore className="w-4 h-4" />
+                                ) : (
+                                  <Archive className="w-4 h-4" />
+                                )}
+                              </button>
+                              <a
+                                href={`/transcriptions/${transcription.id}`}
+                                className="inline-flex items-center px-3 py-1.5 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors text-sm"
+                              >
+                                View Details
+                                <ArrowRight className="w-4 h-4 ml-1" />
                               </a>
+                            </div>
+
+                            {/* Speaker Mapping Summary */}
+                            {!((transcription as any).isVirtual) && transcription.diarized_transcript && transcription.diarized_transcript.length > 0 && (
+                              <div className="w-full text-xs text-gray-500">
+                                <div className="font-medium text-gray-700 mb-1">Speakers:</div>
+                                <div className="flex flex-wrap gap-2">
+                                  {Array.from(new Set(transcription.diarized_transcript
+                                    .map(segment => segment.speaker)
+                                    .filter(Boolean)
+                                  )).map((speakerId) => (
+                                    <span
+                                      key={speakerId}
+                                      className="inline-flex items-center px-2 py-1 bg-gray-100 rounded-full"
+                                    >
+                                      <User className="w-3 h-3 mr-1 text-gray-500" />
+                                      {getSpeakerDisplayName(speakerId)}
+                                    </span>
+                                  ))}
+                                </div>
+                              </div>
                             )}
-                            
-                            <a
-                              href={`/transcriptions/${transcription.id}`}
-                              className="inline-flex items-center px-4 py-2 bg-orange-500 text-white rounded-lg hover:bg-orange-600 transition-colors"
-                            >
-                              <span className="mr-2">View Details</span>
-                              <ArrowRight className="w-4 h-4" />
-                            </a>
                           </div>
                         </div>
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+
+              {hasMore && (
+                <div className="flex justify-center">
+                  <button
+                    onClick={loadMore}
+                    disabled={loadingMore}
+                    className="px-4 py-2 text-sm font-medium rounded-lg border border-gray-300 text-gray-700 hover:bg-gray-50 disabled:opacity-60 disabled:cursor-not-allowed"
+                  >
+                    {loadingMore ? 'Loading…' : 'Load more'}
+                  </button>
                 </div>
               )}
             </div>
