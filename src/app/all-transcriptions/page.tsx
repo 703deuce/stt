@@ -204,9 +204,24 @@ export default function AllTranscriptionsPage() {
       }
       
       // Get ALL transcriptions (no limit)
-      const allTranscriptions = await databaseService.getSTTRecords(1000); // High limit to get all
-      console.log('✅ All transcriptions loaded:', allTranscriptions.length);
-      setTranscriptions(allTranscriptions);
+      const allRecords = await databaseService.getSTTRecords(1000); // High limit to get all
+      
+      // Filter out records with broken timestamps (serverTimestamp sentinel values)
+      // These are old records where webhook updates failed
+      const validTranscriptions = allRecords.filter(record => {
+        const hasValidTimestamp = record.timestamp && 
+          typeof record.timestamp === 'object' && 
+          (record.timestamp as any)._methodName !== 'serverTimestamp';
+        
+        if (!hasValidTimestamp) {
+          console.warn('⏭️ Skipping record with broken timestamp:', record.id, record.name);
+        }
+        
+        return hasValidTimestamp;
+      });
+      
+      console.log('✅ All transcriptions loaded:', validTranscriptions.length, '(filtered', allRecords.length - validTranscriptions.length, 'broken records)');
+      setTranscriptions(validTranscriptions);
     } catch (err) {
       console.error('❌ Error loading transcriptions:', err);
       setError(err instanceof Error ? err.message : 'Failed to load transcriptions');

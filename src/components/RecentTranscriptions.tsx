@@ -113,9 +113,24 @@ export default function RecentTranscriptions() {
       console.log('📝 Loading recent transcriptions...');
       
       // Get the 5 most recent transcriptions
-      const transcriptions = await databaseService.getSTTRecords(5);
-      console.log('✅ Recent transcriptions loaded:', transcriptions.length);
-      setRecentTranscriptions(transcriptions);
+      const allTranscriptions = await databaseService.getSTTRecords(20); // Get more to filter
+      
+      // Filter out records with broken timestamps (serverTimestamp sentinel values)
+      // These are old records where webhook updates failed
+      const validTranscriptions = allTranscriptions.filter(record => {
+        const hasValidTimestamp = record.timestamp && 
+          typeof record.timestamp === 'object' && 
+          (record.timestamp as any)._methodName !== 'serverTimestamp';
+        
+        if (!hasValidTimestamp) {
+          console.warn('⏭️ Skipping record with broken timestamp:', record.id, record.name);
+        }
+        
+        return hasValidTimestamp;
+      }).slice(0, 5); // Take top 5 valid records
+
+      console.log('✅ Recent transcriptions loaded:', validTranscriptions.length, '(filtered', allTranscriptions.length - validTranscriptions.length, 'broken records)');
+      setRecentTranscriptions(validTranscriptions);
     } catch (err) {
       console.error('❌ Error loading recent transcriptions:', err);
       
