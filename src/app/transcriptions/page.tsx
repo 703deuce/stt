@@ -15,15 +15,21 @@ export default function TranscriptionsPage() {
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
 
   const handleTranscriptionEvent = (event: { status: string; jobId?: string; record?: STTRecord }) => {
-    if (event.status === 'processing' && event.record) {
+    if (event.status === 'completed' && event.jobId) {
+      setPendingTranscriptions(prev => prev.filter(item => item.id !== event.jobId));
+      setActiveTab('recent');
+      setRefreshKey(prev => prev + 1);
+      return;
+    }
+
+    if (event.record) {
       setPendingTranscriptions(prev => {
         const filtered = prev.filter(item => item.id !== event.record!.id);
         return [event.record!, ...filtered];
       });
-      setActiveTab('recent');
-      setRefreshKey(prev => prev + 1);
-    } else if (event.status === 'completed' && event.jobId) {
-      setPendingTranscriptions(prev => prev.filter(item => item.id !== event.jobId));
+    }
+
+    if (event.status === 'processing' || event.status === 'started') {
       setActiveTab('recent');
       setRefreshKey(prev => prev + 1);
     }
