@@ -935,7 +935,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             duration: 0, // Will be updated by webhook
             language: 'en',
             status: 'processing', // RunPod starts processing immediately
-            startedAt: serverTimestamp() as Timestamp, // Set startedAt when RunPod begins
+            startedAt: Timestamp.now(), // Use Timestamp.now() for immediate visibility in UI
             priority: priority, // Set priority for queue management
             retryCount: 0, // Initialize retry count
             maxRetries: 3, // Maximum retry attempts
