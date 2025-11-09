@@ -407,6 +407,9 @@ export default function ContentRepurposingPage() {
       data?.runpod_output?.transcript,
       data?.runpod_output?.merged_text,
       data?.runpod_output?.text,
+      data?.runpod_output?.formatted_transcript,
+      data?.runpod_output?.metadata?.full_transcript,
+      data?.runpod_output?.metadata?.formatted_transcript,
       data?.fullText,
     ];
 
