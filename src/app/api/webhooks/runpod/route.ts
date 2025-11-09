@@ -283,29 +283,32 @@ export async function POST(request: NextRequest) {
               const uniqueSpeakers = new Set(mergedSegments.map(seg => seg.speaker));
               const speakerCount = uniqueSpeakers.size;
 
+              const updateMetadata: any = {
+                // DO NOT spread existingRecord.metadata - it contains huge arrays!
+                word_count: transcriptText.split(/\s+/).filter(w => w.length > 0).length,
+                speaker_count: speakerCount,
+                segment_count: mergedSegments.length,
+                timestamp_count: timestamps.length,
+                processing_method: 'webhook_processing',
+                chunks_processed: 1,
+                runpod_job_id: payload.id,
+                execution_time: payload.executionTime
+              };
+
+              if (existingRecord.metadata && 'client_pending_id' in existingRecord.metadata) {
+                updateMetadata.client_pending_id = (existingRecord.metadata as any).client_pending_id;
+              }
+
               const updatePayload: any = {
                 status: 'completed',
-                transcript: previewTranscript, // Only store preview (500 chars)
+                transcript: previewTranscript,
                 duration: output.audio_duration_seconds || output.duration || 0,
-                timestamp: serverTimestamp(), // CRITICAL: Update timestamp so frontend listeners detect the change
-                // ❌ DO NOT store full arrays - causes document size limit & console freeze
-                // timestamps: timestamps,  // Stored in Firebase Storage instead
-                // diarized_transcript: mergedSegments,  // Stored in Firebase Storage instead
+                timestamp: serverTimestamp(),
                 retryCount: 0,
                 error: null,
                 completedAt: serverTimestamp(),
                 processingTime,
-                metadata: {
-                  // DO NOT spread existingRecord.metadata - it contains huge arrays!
-                  word_count: transcriptText.split(/\s+/).filter(w => w.length > 0).length,
-                  speaker_count: speakerCount, // Actual unique speakers (e.g., 2-5)
-                  segment_count: mergedSegments.length, // Total segments (e.g., 487)
-                  timestamp_count: timestamps.length, // Store count, not full data
-                  processing_method: 'webhook_processing',
-                  chunks_processed: 1,
-                  runpod_job_id: payload.id,
-                  execution_time: payload.executionTime
-                }
+                metadata: updateMetadata
               };
 
               if (transcriptionDataUrl) {
