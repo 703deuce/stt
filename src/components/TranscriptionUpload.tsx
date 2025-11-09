@@ -1066,36 +1066,15 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             fileName: processedFile.name
           });
 
+          // Notify parent component about the new transcription
+          // NOTE: Don't create a client-side placeholder - the API already created the real Firestore record
+          // Just notify that a job was started so the parent can refresh if needed
           if (onTranscriptionComplete) {
-            const pendingRecord: STTRecord = {
-              id: processingRecordId,
-              user_id: auth.currentUser?.uid || 'unknown',
-              audio_id: uploadResult.url,
-              name: uniqueName,
-              audio_file_url: uploadResult.url,
-              transcript: '',
-              timestamp: now,
-              createdAt: now,
-              startedAt: now,
-              duration: 0,
-              language: 'en',
-              status: 'processing',
-              type: 'stt',
-              priority,
-              retryCount: 0,
-              maxRetries: 3,
-              metadata: {
-                processing_method: 'webhook_processing',
-                ...(result.jobId ? { runpod_job_id: result.jobId } : {}),
-                ...(clientPendingIdRef.current ? { client_pending_id: clientPendingIdRef.current } : {})
-              }
-            };
-
             onTranscriptionComplete({
               jobId: processingRecordId,
               runpodJobId: result.jobId,
               status: 'processing',
-              record: pendingRecord,
+              record: undefined, // No placeholder needed - API created real record
               clientId: clientPendingIdRef.current || undefined
             });
           }
