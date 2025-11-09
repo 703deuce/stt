@@ -31,6 +31,7 @@ import {
 export interface TranscriptionEvent {
   status: 'started' | 'processing' | 'completed' | 'failed';
   jobId?: string;
+  runpodJobId?: string;
   record?: STTRecord;
   clientId?: string;
 }
@@ -204,6 +205,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             if ((hasTrackedJob || isWebhookCompletion || isRecentCompletion) && onTranscriptionComplete) {
               onTranscriptionComplete({
                 jobId: change.doc.id,
+                runpodJobId: data.metadata?.runpod_job_id,
                 status: 'completed',
                 clientId: data.metadata?.client_pending_id
               });
@@ -223,6 +225,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             if (onTranscriptionComplete) {
               onTranscriptionComplete({
                 jobId: change.doc.id,
+                runpodJobId: data.metadata?.runpod_job_id,
                 status: 'failed',
                 clientId: data.metadata?.client_pending_id
               });
@@ -344,7 +347,8 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 // Call completion callback
                 if (hasTrackedJob && onTranscriptionComplete) {
                   onTranscriptionComplete({
-                    jobId: doc.id,
+                    jobId: change.doc.id,
+                    runpodJobId: data.metadata?.runpod_job_id,
                     status: 'completed',
                     clientId: data.metadata?.client_pending_id
                   });
@@ -393,6 +397,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 if (hasTrackedJob && onTranscriptionComplete) {
                   onTranscriptionComplete({
                     jobId: change.doc.id,
+                    runpodJobId: data.metadata?.runpod_job_id,
                     status: 'completed',
                     clientId: data.metadata?.client_pending_id
                   });
@@ -408,6 +413,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
                 if (onTranscriptionComplete) {
                   onTranscriptionComplete({
                     jobId: change.doc.id,
+                    runpodJobId: changeData.metadata?.runpod_job_id,
                     status: 'failed',
                     clientId: changeData.metadata?.client_pending_id
                   });
@@ -477,6 +483,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
             if (onTranscriptionComplete) {
               onTranscriptionComplete({
                 jobId: completedRecord.id,
+                runpodJobId: completedRecord.metadata?.runpod_job_id,
                 status: 'completed',
                 clientId: completedRecord.metadata?.client_pending_id
               });
@@ -745,14 +752,16 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
               maxRetries: 3,
               metadata: {
                 processing_method: 'client_upload',
-                client_pending_id: clientPendingId
+                client_pending_id: clientPendingId,
+                runpod_job_id: jobId
               }
             };
 
             onTranscriptionComplete({
               jobId,
+              runpodJobId: jobId,
               status: 'started',
-              clientId: clientPendingIdRef.current || undefined,
+              clientId: clientPendingId,
               record: placeholderRecord
             });
           }
@@ -1044,6 +1053,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
 
             onTranscriptionComplete({
               jobId: processingRecordId,
+              runpodJobId: result.jobId,
               status: 'processing',
               record: pendingRecord,
               clientId: clientPendingIdRef.current || undefined
@@ -1190,6 +1200,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
 
         onTranscriptionComplete({
           jobId: dbResult,
+          runpodJobId: undefined,
           status: 'completed',
           record: completedRecord
         });
@@ -1422,6 +1433,7 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
 
         onTranscriptionComplete({
           jobId: savedTranscriptionId,
+          runpodJobId: undefined,
           status: 'completed',
           record: completedRecord
         });

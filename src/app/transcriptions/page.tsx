@@ -14,7 +14,7 @@ export default function TranscriptionsPage() {
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
 
   const handleTranscriptionEvent = (event: TranscriptionEvent) => {
-    const { status, jobId, record, clientId } = event;
+    const { status, jobId, record, clientId, runpodJobId } = event;
 
     if (status === 'failed') {
       if (clientId) {
@@ -26,7 +26,11 @@ export default function TranscriptionsPage() {
     if (status === 'completed' && jobId) {
       let removedPending = false;
       setPendingTranscriptions(prev => {
-        const filtered = prev.filter(item => item.id !== jobId && item.metadata?.client_pending_id !== clientId);
+        const filtered = prev.filter(item =>
+          item.id !== jobId &&
+          item.metadata?.client_pending_id !== clientId &&
+          item.metadata?.runpod_job_id !== runpodJobId
+        );
         removedPending = filtered.length !== prev.length;
         return filtered;
       });
@@ -40,7 +44,8 @@ export default function TranscriptionsPage() {
       setPendingTranscriptions(prev => {
         const filtered = prev.filter(item =>
           item.id !== record.id &&
-          item.metadata?.client_pending_id !== clientId
+          item.metadata?.client_pending_id !== clientId &&
+          item.metadata?.runpod_job_id !== runpodJobId
         );
         if (record.status === 'completed') {
           return filtered;
