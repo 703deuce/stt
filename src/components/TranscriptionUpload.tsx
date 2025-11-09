@@ -938,6 +938,45 @@ export default function TranscriptionUpload({ onTranscriptionComplete }: Transcr
       console.log('🔍 Job ID check:', { jobId: result.jobId, hasJobId: !!result.jobId, type: typeof result.jobId });
       console.log('📋 Full API response:', JSON.stringify(result, null, 2));
       
+      // Check if job was queued due to rate limits
+      if (result.queued) {
+        console.log(`⏳ Job queued at position ${result.queuePosition}`);
+        setProcessingPhase('queued');
+        setChunkProgress(30);
+        
+        // Create a Firestore record with status "queued"
+        try {
+          const { databaseService } = await import('@/services/databaseService');
+          const { auth } = await import('@/config/firebase');
+          
+          console.log('💾 [TranscriptionUpload] Job is queued, recordId:', result.recordId);
+          
+          // Notify parent about queued job
+          if (onTranscriptionComplete) {
+            onTranscriptionComplete({
+              status: 'queued',
+              jobId: result.recordId,
+              record: undefined,
+              clientId: clientPendingIdRef.current || undefined,
+              runpodJobId: undefined,
+              userInitiated: true
+            });
+          }
+          
+          // Show notification
+          showNotification(
+            processedFile.name,
+            'processing',
+            30,
+            `Queued (position ${result.queuePosition})`
+          );
+        } catch (error) {
+          console.error('❌ Error handling queued job:', error);
+        }
+        
+        return;
+      }
+      
       // Check if this is a webhook-based job (jobId returned) or synchronous (transcript returned)
       if (result.jobId) {
         // Webhook path: Create a "queued" record in Firestore (queue worker will submit to RunPod)

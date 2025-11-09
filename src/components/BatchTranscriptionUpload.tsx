@@ -5,13 +5,8 @@ import { useRouter } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import { clientTranscriptionService } from '../services/clientTranscriptionService';
 import { audioExtractionService } from '../services/audioExtractionService';
-import { firebaseService } from '../services/firebaseService';
-import { databaseService } from '../services/databaseService';
-import { useTranscription } from '../hooks/useTranscription';
 import { trialService } from '../services/trialService';
-import { useBackgroundProcessing } from '../hooks/useBackgroundProcessing';
 import UpgradeModal from './UpgradeModal';
-import { useProgressNotification } from '../context/ProgressNotificationContext';
 import { 
   Upload, 
   FileAudio, 
@@ -22,9 +17,7 @@ import {
   Trash2,
   AlertTriangle,
   Info,
-  FileText,
-  Scissors,
-  Layers
+  FileText
 } from 'lucide-react';
 
 interface BatchFile {
@@ -34,23 +27,17 @@ interface BatchFile {
   size: number;
   type: string;
   isVideo: boolean;
-  status: 'pending' | 'uploading' | 'transcribing' | 'completed' | 'failed' | 'splitting' | 'stitching';
+  status: 'pending' | 'uploading' | 'queued' | 'transcribing' | 'completed' | 'failed';
   progress: number;
   transcriptionId?: string;
-  transcriptionText?: string;
   error?: string;
   audioUrl?: string;
-  // Enhanced chunking properties
-  isLongAudio?: boolean;
-  chunks?: any[];
-  processingPhase?: 'idle' | 'splitting' | 'diarizing' | 'transcribing' | 'stitching' | 'complete';
+  queuePosition?: number; // Position in queue
 }
 
 export default function BatchTranscriptionUpload() {
   const { user } = useAuth();
   const router = useRouter();
-  const { startJob } = useBackgroundProcessing();
-  const { showNotification, updateNotification, hideNotification } = useProgressNotification();
   const [files, setFiles] = useState<BatchFile[]>([]);
   const [isUploading, setIsUploading] = useState(false);
   const [dragActive, setDragActive] = useState(false);
@@ -402,401 +389,89 @@ export default function BatchTranscriptionUpload() {
     return { audioFile, originalName, uploadResult };
   };
 
-  // Check if file needs enhanced chunking
-  const checkAudioDuration = async (audioFile: File): Promise<number> => {
-    return new Promise((resolve) => {
-      const audio = new Audio();
-      audio.src = URL.createObjectURL(audioFile);
-      audio.addEventListener('loadedmetadata', () => {
-        const duration = audio.duration;
-        URL.revokeObjectURL(audio.src);
-        resolve(duration);
-      }, { once: true });
-    });
-  };
-
-  // Optimized transcription for ALL files (no more chunking)
-  const startEnhancedTranscription = async (batchFile: BatchFile, audioFile: File, originalName: string): Promise<void> => {
+  // Submit file to the scalable queue system
+  const submitFileToQueue = async (batchFile: BatchFile, audioFile: File, originalName: string): Promise<void> => {
     try {
-      console.log(`🎯 Starting optimized transcription workflow for ${originalName}...`);
-      
-      // Use the same optimized workflow for ALL files (no duration check needed)
-      await handleOptimizedTranscription(batchFile, audioFile, originalName);
-      
-    } catch (error) {
-      console.error(`Failed to transcribe file ${batchFile.name}:`, error);
-      
-      // Clean up tracking
-      processedFileNamesRef.current.delete(batchFile.name);
-      
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { 
-              ...f, 
-              status: 'failed', 
-              error: error instanceof Error ? error.message : 'Transcription failed'
-            }
-          : f
-      ));
-    }
-  };
-
-  // Optimized transcription for ALL files (same as regular transcription)
-  const handleOptimizedTranscription = async (batchFile: BatchFile, audioFile: File, originalName: string): Promise<void> => {
-    try {
-      console.log(`🎯 Starting optimized transcription for ${originalName}...`);
-      
-      // Track this file for Firestore listener
+      // Track for Firestore listener
       processedFileNamesRef.current.add(originalName);
       console.log(`📝 [BatchTranscriptionUpload] Tracking file: ${originalName}`);
       
-      // Step 1: Upload to Firebase
-      console.log(`📤 Uploading ${originalName} to Firebase Storage...`);
+      // Upload to Firebase
       setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { ...f, status: 'uploading', progress: 10 }
-          : f
+        f.id === batchFile.id ? { ...f, status: 'uploading', progress: 20 } : f
       ));
       
       const uploadResult = await clientTranscriptionService.uploadFileToFirebase(audioFile, (progress) => {
         setFiles(prev => prev.map(f => 
-          f.id === batchFile.id 
-            ? { ...f, progress: 10 + (progress * 0.2) } // 10-30% for upload
-            : f
+          f.id === batchFile.id ? { ...f, progress: 20 + (progress * 0.2) } : f
         ));
       });
       
       console.log(`✅ ${originalName} uploaded to Firebase:`, uploadResult.url);
       
-      // Step 2: Call optimized transcription API (same as regular transcription)
-      console.log(`🎤 Calling optimized transcription API for ${originalName}...`);
-    setFiles(prev => prev.map(f => 
-      f.id === batchFile.id 
-          ? { ...f, status: 'transcribing', progress: 30 }
-        : f
-    ));
-
+      // Submit to queue (fire-and-forget)
+      setFiles(prev => prev.map(f => 
+        f.id === batchFile.id ? { ...f, status: 'transcribing', progress: 40 } : f
+      ));
+      
       const response = await fetch('/api/transcribe-complete', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-        audio_url: uploadResult.url,
+          audio_url: uploadResult.url,
           filename: originalName,
+          userId: user?.uid,
           settings: {
             use_diarization: useDiarization,
             pyannote_version: useDiarization ? '3.1' : undefined,
-            max_speakers: null,
-        include_timestamps: true,
-            speaker_threshold: 0.35,
-            single_speaker_mode: false
-          }
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Transcription API failed: ${response.statusText}`);
-      }
-      
-      const result = await response.json();
-      console.log(`✅ Optimized transcription complete for ${originalName}:`, {
-        words: result.word_count,
-        speakers: result.speaker_count,
-        segments: result.diarized_transcript?.length
-      });
-      
-      // Step 3: Save to database
-      console.log(`💾 Saving ${originalName} to database...`);
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { ...f, progress: 90 }
-          : f
-      ));
-      
-      const recordId = await databaseService.createSTTRecord({
-        user_id: user?.uid || 'unknown',
-        audio_id: uploadResult.url.split('/').pop() || 'unknown',
-        name: originalName,
-        audio_file_url: uploadResult.url, // ✅ Use audio_file_url to match interface
-        transcript: result.transcript || '',
-        duration: result.duration || 0,
-        language: 'en',
-        status: 'completed',
-        timestamps: result.timestamps || [],
-        diarized_transcript: result.diarized_transcript || [],
-        metadata: {
-          word_count: (result.transcript || '').split(/\s+/).length,
-          speaker_count: result.diarized_transcript?.length || 0,
-          processing_method: 'optimized_pyannote_parakeet',
-          chunks_processed: 1
-        }
-      }, result); // Pass full result to save to Storage
-      
-      console.log(`✅ ${originalName} saved to database with ID: ${recordId}`);
-
-      // ✅ DEDUCT TRIAL MINUTES
-      try {
-        const actualDuration = result.metadata?.duration || result.duration || 0;
-        const actualMinutes = Math.ceil(actualDuration / 60); // Convert seconds to minutes
-        console.log(`📊 Deducting ${actualMinutes} minutes from trial for ${originalName}`);
-        await trialService.deductMinutes(actualMinutes);
-      } catch (error) {
-        console.error('⚠️ Error deducting trial minutes:', error);
-        // Don't fail the transcription if minute deduction fails
-      }
-
-    // Update with success
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { 
-              ...f, 
-              status: 'completed', 
-              progress: 100,
-              transcriptionId: recordId,
-              transcriptionText: `Completed: ${result.word_count || 0} words, ${result.speaker_count || 0} speakers`,
-              audioUrl: uploadResult.url
-            }
-          : f
-      ));
-      
-    } catch (error) {
-      console.error(`❌ Optimized transcription failed for ${originalName}:`, error);
-      // Clean up tracking on error
-      processedFileNamesRef.current.delete(originalName);
-      throw error;
-    }
-  };
-
-  // Enhanced long audio transcription with chunking
-  const handleLongAudioTranscription = async (batchFile: BatchFile, audioFile: File, originalName: string): Promise<void> => {
-    try {
-      // Track this file for Firestore listener
-      processedFileNamesRef.current.add(originalName);
-      console.log(`📝 [BatchTranscriptionUpload] Tracking file: ${originalName}`);
-      
-      // Step 0: Upload full audio file for diarization
-      console.log(`📤 Uploading ${originalName} for full-audio diarization...`);
-      const fullAudioUpload = await clientTranscriptionService.uploadFileToFirebase(audioFile);
-      
-      // Step 0.5: Run speaker diarization on FULL audio FIRST (if enabled)
-      let fullAudioDiarizationSegments: any[] = [];
-      if (useDiarization) {
-        console.log(`🎤 Running speaker diarization on FULL audio for ${originalName}...`);
-        setFiles(prev => prev.map(f => 
-          f.id === batchFile.id 
-            ? { ...f, progress: 5, processingPhase: 'diarizing' }
-            : f
-        ));
-        
-        try {
-          const diarizationResponse = await fetch('/api/transcribe-complete', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              audio_url: fullAudioUpload.url,
-              filename: originalName,
-              settings: {
-                use_diarization: true,
-                pyannote_version: '3.1', // Always use 3.1 when diarization is enabled
-                max_speakers: null,
-                include_timestamps: false, // Only need speaker segments
-                speaker_threshold: 0.35,
-                single_speaker_mode: false
-              }
-            })
-          });
-          
-          if (diarizationResponse.ok) {
-            const diarizationResult = await diarizationResponse.json();
-            fullAudioDiarizationSegments = diarizationResult.diarized_transcript || [];
-            console.log(`✅ Full audio diarization complete for ${originalName}: ${fullAudioDiarizationSegments.length} speaker segments`);
-          } else {
-            console.warn(`⚠️ Full audio diarization failed for ${originalName}, continuing without diarization`);
-          }
-        } catch (diarizationError) {
-          console.warn(`⚠️ Full audio diarization error for ${originalName}:`, diarizationError);
-        }
-      }
-      
-      // Step 1: Split audio into chunks
-      console.log(`🔪 Splitting ${originalName} into intelligent 15-minute chunks...`);
-      const chunks = await splitTranscriptAudioIntoChunks(audioFile);
-      
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { ...f, chunks, progress: 10, processingPhase: 'transcribing' }
-          : f
-      ));
-
-      console.log(`✅ Split ${originalName} into ${chunks.length} chunks`);
-
-      // Step 2: Transcribe each chunk
-      const transcribedChunks = [];
-      for (let i = 0; i < chunks.length; i++) {
-        const chunk = chunks[i];
-        console.log(`🎤 Transcribing ${originalName} chunk ${i + 1}/${chunks.length}`);
-        
-        // Update progress
-        const chunkProgress = 10 + (i / chunks.length) * 70; // 10-80% for transcription
-        setFiles(prev => prev.map(f => 
-          f.id === batchFile.id 
-            ? { ...f, progress: chunkProgress }
-            : f
-        ));
-
-        // Get chunk audio file
-        const chunkResponse = await fetch(`/api/get-chunk-file?path=${encodeURIComponent(chunk.file_path)}`);
-        if (!chunkResponse.ok) {
-          throw new Error(`Failed to get chunk file ${i + 1} for ${originalName}`);
-        }
-        
-        const chunkBlob = await chunkResponse.blob();
-        const chunkFile = new File([chunkBlob], `${originalName}_chunk_${i + 1}.wav`, { type: 'audio/wav' });
-        
-        // Upload chunk to Firebase and transcribe - same pattern as regular transcription
-        const chunkUploadResult = await clientTranscriptionService.uploadFileToFirebase(chunkFile);
-        
-        const chunkResult = await clientTranscriptionService.transcribeAudio(
-          {
-            audio_url: chunkUploadResult.url,
-            filename: `${originalName}_chunk_${i + 1}`
-          },
-          {
-            use_diarization: false,
             max_speakers: null,
             include_timestamps: true,
             speaker_threshold: 0.35,
             single_speaker_mode: false
           }
-        );
-        
-        transcribedChunks.push({
-          ...chunk,
-          transcription_result: chunkResult
-        });
-      }
-
-      // Step 3: Stitch transcripts together
-      console.log(`🧩 Stitching ${originalName} transcripts with enhanced metadata...`);
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { ...f, status: 'stitching', progress: 85, processingPhase: 'stitching' }
-          : f
-      ));
-
-      const finalResult = await stitchTranscriptsWithMetadata(transcribedChunks, fullAudioDiarizationSegments);
-      
-      console.log(`✅ Enhanced transcription completed for ${originalName}`);
-      console.log(`📊 Final result: ${finalResult.word_count} words, ${finalResult.speaker_count} speakers`);
-
-      // Save the final result to database
-      console.log(`💾 Saving final result to database for ${originalName}...`);
-      try {
-        const recordId = await databaseService.createSTTRecord({
-          user_id: user?.uid || 'unknown',
-          audio_id: fullAudioUpload.url.split('/').pop() || 'unknown',
-          name: originalName,
-          audio_file_url: fullAudioUpload.url,
-          transcript: finalResult.merged_text || finalResult.text || '',
-          duration: finalResult.duration || 0,
-          language: 'en',
-          status: 'completed',
-          timestamps: finalResult.timestamps || [],
-          diarized_transcript: finalResult.diarized_transcript || [],
-          metadata: {
-            word_count: (finalResult.merged_text || finalResult.text || '').split(/\s+/).length,
-            speaker_count: finalResult.diarized_transcript?.length || 0,
-            processing_method: 'batch_enhanced_stitching',
-            chunks_processed: finalResult.chunks?.length || 0
-          }
-        }, finalResult); // Pass full result to save to Storage
-        
-        console.log(`✅ Database record created for ${originalName}, ID: ${recordId}`);
-        
-        // Update with success including record ID
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { 
-              ...f, 
-              status: 'completed', 
-              progress: 100,
-              processingPhase: 'complete',
-                transcriptionId: recordId,
-              transcriptionText: `Enhanced transcription: ${finalResult.word_count} words, ${finalResult.speaker_count} speakers`
-            }
-          : f
-      ));
-      } catch (dbError) {
-        console.error(`❌ Failed to save ${originalName} to database:`, dbError);
-        // Still update UI but mark as failed
-        setFiles(prev => prev.map(f => 
-          f.id === batchFile.id 
-            ? { 
-                ...f, 
-                status: 'failed', 
-                error: 'Failed to save to database'
-              }
-            : f
-        ));
-      }
-
-    } catch (error) {
-      console.error(`❌ Enhanced transcription failed for ${originalName}:`, error);
-      // Clean up tracking on error
-      processedFileNamesRef.current.delete(originalName);
-      throw error;
-    }
-  };
-
-  // Helper functions for chunking (same as TranscriptionUpload)
-  const splitTranscriptAudioIntoChunks = async (inputFile: File): Promise<any[]> => {
-    try {
-      const formData = new FormData();
-      formData.append('inputFile', inputFile);
-      formData.append('useSmartSplitting', 'true'); // Always use smart splitting for batch
-      
-      const response = await fetch('/api/split-transcript-audio', {
-        method: 'POST',
-        body: formData
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to split audio for transcription');
-      }
-      
-      const result = await response.json();
-      return result.chunks;
-    } catch (error) {
-      throw new Error(`Failed to split audio: ${error}`);
-    }
-  };
-
-  const stitchTranscriptsWithMetadata = async (transcribedChunks: any[], fullAudioDiarizationSegments?: any[]): Promise<any> => {
-    try {
-      const response = await fetch('/api/stitch-transcript-advanced', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          chunks: transcribedChunks,
-          use_voice_embeddings: true,
-          similarity_threshold: 0.75,
-          full_audio_diarization_segments: fullAudioDiarizationSegments || [] // ✅ Pass full diarization segments
         })
       });
       
       if (!response.ok) {
-        throw new Error('Failed to stitch transcripts');
+        const errorData = await response.json();
+        throw new Error(errorData.error || response.statusText);
       }
       
       const result = await response.json();
-      return result;
+      
+      if (result.queued) {
+        // Job is queued, not processing yet
+        console.log(`⏳ ${originalName} queued at position ${result.queuePosition}`);
+        setFiles(prev => prev.map(f => 
+          f.id === batchFile.id 
+            ? { 
+                ...f, 
+                status: 'queued', 
+                progress: 30,
+                transcriptionId: result.recordId,
+                queuePosition: result.queuePosition
+              }
+            : f
+        ));
+      } else {
+        // Job is processing immediately
+        console.log(`✅ Submitted ${originalName} to queue, jobId: ${result.jobId}, recordId: ${result.recordId}`);
+        setFiles(prev => prev.map(f => 
+          f.id === batchFile.id 
+            ? { ...f, status: 'transcribing', progress: 50, transcriptionId: result.recordId }
+            : f
+        ));
+      }
+      
     } catch (error) {
-      throw new Error(`Failed to stitch transcripts: ${error}`);
+      console.error(`❌ Failed to submit ${originalName}:`, error);
+      processedFileNamesRef.current.delete(originalName);
+      setFiles(prev => prev.map(f => 
+        f.id === batchFile.id 
+          ? { ...f, status: 'failed', error: error instanceof Error ? error.message : 'Failed' }
+          : f
+      ));
+      throw error;
     }
   };
 
@@ -842,89 +517,30 @@ export default function BatchTranscriptionUpload() {
       return;
     }
     
-    console.log('✅ User can transcribe batch, starting background processing...');
+    console.log('✅ User can transcribe batch, starting scalable queue processing...');
 
     // Mark the start of this batch session (to ignore old completed records)
     batchSessionStartTimeRef.current = Date.now();
     console.log(`📅 [BatchTranscriptionUpload] Batch session started at: ${new Date(batchSessionStartTimeRef.current).toISOString()}`);
 
-    // Start background processing for each file
-    const jobIds: string[] = [];
+    setIsUploading(true);
     
-    for (let i = 0; i < pendingFiles.length; i++) {
-      const batchFile = pendingFiles[i];
-      
-      // Track this file BEFORE starting transcription so Firestore listener can match it
-      processedFileNamesRef.current.add(batchFile.name);
-      console.log(`📝 [BatchTranscriptionUpload] Tracking file for background processing: ${batchFile.name}`);
+    // Submit files sequentially (don't wait for completion - webhook handles that)
+    for (const batchFile of pendingFiles) {
       try {
-        // Show progress for current file
-        showNotification(batchFile.name, 'uploading', 0);
+        const { audioFile, originalName } = await extractAudioIfNeeded(batchFile);
+        await submitFileToQueue(batchFile, audioFile, originalName);
         
-        const jobId = await startJob(
-          batchFile.file,
-          batchFile.name,
-          { use_diarization: useDiarization },
-          (progress, status) => {
-            updateNotification({
-              progress,
-              status: status as 'uploading' | 'processing' | 'completed' | 'failed'
-            });
-            
-            // Auto-hide notification when completed
-            if (status === 'completed') {
-              setTimeout(() => {
-                hideNotification();
-              }, 2000);
-            }
-          }
-        );
-        jobIds.push(jobId);
-        console.log(`🚀 Background job started for ${batchFile.name}: ${jobId}`);
-        
-        // Small delay between files to show progress
-        if (i < pendingFiles.length - 1) {
-          await new Promise(resolve => setTimeout(resolve, 1000));
-        }
+        // Small delay between submissions to avoid rate limit bursts
+        await new Promise(resolve => setTimeout(resolve, 500));
       } catch (error) {
-        console.error(`❌ Failed to start job for ${batchFile.name}:`, error);
-        
-        // Clean up tracking for failed files
-        processedFileNamesRef.current.delete(batchFile.name);
-        
-        // Update file status to failed
-        setFiles(prev => prev.map(f => 
-          f.id === batchFile.id 
-            ? { ...f, status: 'failed', error: error instanceof Error ? error.message : 'Failed to start transcription' }
-            : f
-        ));
-        
-        updateNotification({
-          status: 'failed',
-          error: error instanceof Error ? error.message : 'Failed to start transcription',
-          progress: 0
-        });
-        
-        // Auto-hide notification after 5 seconds for errors
-        setTimeout(() => {
-          hideNotification();
-        }, 5000);
+        console.error(`Failed to process ${batchFile.name}:`, error);
+        // Continue with next file even if one fails
       }
     }
     
-    // Show success message
-    alert(`Batch transcription started! ${jobIds.length} files are being processed in the background. You can navigate away and check back later.`);
-    
-    // DON'T clear files - keep them so Firestore listener can update them when they complete
-    // Update file statuses to 'transcribing' instead
-    setFiles(prev => prev.map(f => {
-      if (f.status === 'pending') {
-        return { ...f, status: 'transcribing', progress: 50 };
-      }
-      return f;
-    }));
-    
     setIsUploading(false);
+    console.log('✅ All files submitted to queue - webhook will update when complete');
   };
 
 
@@ -936,12 +552,10 @@ export default function BatchTranscriptionUpload() {
         return { icon: Clock, color: 'text-gray-500', bg: 'bg-gray-100' };
       case 'uploading':
         return { icon: Upload, color: 'text-blue-500', bg: 'bg-blue-100' };
-      case 'splitting':
-        return { icon: Scissors, color: 'text-purple-500', bg: 'bg-purple-100' };
+      case 'queued':
+        return { icon: Clock, color: 'text-orange-500', bg: 'bg-orange-100' };
       case 'transcribing':
         return { icon: Clock, color: 'text-yellow-500', bg: 'bg-yellow-100' };
-      case 'stitching':
-        return { icon: Layers, color: 'text-purple-500', bg: 'bg-purple-100' };
       case 'completed':
         return { icon: CheckCircle, color: 'text-green-500', bg: 'bg-green-100' };
       case 'failed':
@@ -952,13 +566,12 @@ export default function BatchTranscriptionUpload() {
   };
 
   // Get status text
-  const getStatusText = (status: string) => {
+  const getStatusText = (status: string, queuePosition?: number) => {
     switch (status) {
       case 'pending': return 'Pending';
       case 'uploading': return 'Uploading';
-      case 'splitting': return 'Smart Splitting';
+      case 'queued': return queuePosition ? `Queued (position ${queuePosition})` : 'Queued';
       case 'transcribing': return 'Transcribing';
-      case 'stitching': return 'Stitching Results';
       case 'completed': return 'Completed';
       case 'failed': return 'Failed';
       default: return 'Unknown';
@@ -1104,9 +717,9 @@ export default function BatchTranscriptionUpload() {
                       <span>•</span>
                       <div className="flex items-center space-x-1">
                         <StatusIcon className="w-4 h-4" />
-                        <span>{getStatusText(file.status)}</span>
+                        <span>{getStatusText(file.status, file.queuePosition)}</span>
                       </div>
-                      {file.status === 'uploading' || file.status === 'transcribing' ? (
+                      {file.status === 'uploading' || file.status === 'queued' || file.status === 'transcribing' ? (
                         <span>{file.progress}%</span>
                       ) : null}
                     </div>

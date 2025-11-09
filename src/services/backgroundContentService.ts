@@ -179,14 +179,27 @@ class BackgroundContentService {
         messages: [
           {
             role: 'system',
-            content: `You are an expert content creator and marketer. Create high-quality, engaging content that is ready to publish. ${job.maxWords ? `STRICT REQUIREMENT: Your response must be MAXIMUM ${job.maxWords} words. Count carefully and stop at exactly ${job.maxWords} words or less.` : ''} IMPORTANT: Return ONLY the final content without any preamble, explanations, or remarks like "Here is..." or "Of course...". Start directly with the content itself.`
+            content: `You are a content formatter who ONLY reformats existing content. You are NOT allowed to create new content, add information, or make up anything.
+
+ABSOLUTE RULES:
+1. You MUST use ONLY the exact information, topics, facts, and details from the provided transcript
+2. You are FORBIDDEN from adding ANY information not explicitly stated in the transcript
+3. You are FORBIDDEN from making up examples, stories, scenarios, or advice
+4. You are FORBIDDEN from adding generic content, motivational quotes, or filler text
+5. If the transcript is about "testing voice samples", your content MUST be about "testing voice samples"
+6. If the transcript mentions specific names, dates, or facts, use ONLY those exact details
+7. Your ONLY job is to reformat the transcript content into the requested format - nothing more
+
+${job.maxWords ? `WORD LIMIT: Your response must be MAXIMUM ${job.maxWords} words. Count carefully and stop at exactly ${job.maxWords} words or less.` : ''}
+
+Return ONLY the formatted content without any preamble, explanations, or remarks. Start directly with the content itself.`
           },
           {
             role: 'user',
-            content: `${finalPrompt}\n${job.transcriptionText}\n\nCRITICAL REQUIREMENTS:\n1. ALL content, information, facts, and details MUST come from the transcript above - DO NOT add anything that is not in the transcript.\n2. If custom instructions are provided, they only guide which parts of the transcript to emphasize or focus on - they do NOT allow adding new information.\n3. Return ONLY the final content without any preamble, explanations, or meta-commentary.\n4. Start with the actual content immediately.${job.maxWords ? `\n5. MAXIMUM ${job.maxWords} WORDS.` : ''}`
+            content: `${finalPrompt}\n\n=== TRANSCRIPT (YOUR ONLY SOURCE OF INFORMATION) ===\n${job.transcriptionText}\n=== END OF TRANSCRIPT ===\n\nCRITICAL REQUIREMENTS:\n1. Use ONLY information from the transcript above - NOTHING ELSE\n2. Do NOT add any information, facts, examples, or advice not in the transcript\n3. Do NOT make up content or use generic filler text\n4. If custom instructions are provided, they only guide which parts of the transcript to emphasize - they do NOT allow adding new information\n5. Return ONLY the final content without any preamble or meta-commentary\n6. Start with the actual content immediately${job.maxWords ? `\n7. MAXIMUM ${job.maxWords} WORDS` : ''}\n\nNow reformat the transcript above into the requested format, using ONLY the information provided in the transcript:`
           }
         ],
-        temperature: 0.7,
+        temperature: 0.3,
         max_tokens: 4000
       }, {
         headers: {

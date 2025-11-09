@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { runpodFallbackService } from '@/services/runpodFallbackService';
 import { jobMappingService } from '@/services/jobMappingService';
 import { ValidationUtils, addSecurityHeaders, secureErrorResponse } from '@/middleware/security';
+import { rateLimitService } from '@/services/rateLimitService';
+import { jobPriorityService } from '@/services/jobPriorityService';
+import { activeJobsService } from '@/services/activeJobsService';
+import { databaseService } from '@/services/databaseService';
+import { Timestamp } from 'firebase/firestore';
 
 interface TranscriptionRequest {
   audio_url: string;
@@ -234,6 +239,80 @@ export async function POST(request: NextRequest) {
       return secureErrorResponse({ message: 'User ID is required' }, 400);
     }
 
+    // ✅ 1. RATE LIMITING: Check if user can submit job
+    console.log(`🔍 Checking rate limit for user ${body.userId}...`);
+    const rateLimitCheck = await rateLimitService.canUserSubmitJob(body.userId, 'stt');
+    if (!rateLimitCheck.allowed) {
+      console.log(`⏳ Rate limit exceeded for user ${body.userId}, queueing job instead of rejecting`);
+      
+      // Don't reject - queue it instead
+      const now = Timestamp.now();
+      const queuedRecordId = await databaseService.createSTTRecord({
+        user_id: body.userId,
+        audio_id: body.audio_url.split('/').pop() || 'unknown',
+        name: body.filename,
+        audio_file_url: body.audio_url,
+        transcript: '',
+        duration: 0,
+        language: 'en',
+        status: 'queued', // Waiting for capacity
+        timestamp: now,
+        queuedAt: now,
+        createdAt: now,
+        priority: await jobPriorityService.getUserPriority(body.userId),
+        retryCount: 0,
+        maxRetries: 3,
+        metadata: {
+          processing_method: 'queued_for_capacity',
+          use_diarization: body.settings.use_diarization,
+          pyannote_version: body.settings.use_diarization ? '3.1' : undefined,
+          queue_reason: rateLimitCheck.reason
+        }
+      });
+      
+      console.log(`✅ Job queued with ID: ${queuedRecordId}`);
+      
+      const response = NextResponse.json({
+        success: true,
+        queued: true,
+        recordId: queuedRecordId,
+        message: 'Job queued - will process when capacity available',
+        queuePosition: rateLimitCheck.current.concurrent + 1
+      });
+      return addSecurityHeaders(response);
+    }
+    console.log(`✅ Rate limit check passed for user ${body.userId}`);
+
+    // ✅ 2. JOB PRIORITY: Get user's priority based on subscription
+    const priority = await jobPriorityService.getUserPriority(body.userId);
+    console.log(`📊 User priority: ${priority} (1=highest, 3=lowest)`);
+
+    // ✅ 3. CREATE FIRESTORE RECORD: Track job before calling RunPod
+    console.log(`💾 Creating Firestore processing record for ${body.filename}...`);
+    const now = Timestamp.now();
+    const processingRecordId = await databaseService.createSTTRecord({
+      user_id: body.userId,
+      audio_id: body.audio_url.split('/').pop() || 'unknown',
+      name: body.filename,
+      audio_file_url: body.audio_url,
+      transcript: '',
+      duration: 0,
+      language: 'en',
+      status: 'processing', // Start as processing (webhook will update to completed)
+      timestamp: now,
+      startedAt: now,
+      createdAt: now,
+      priority: priority,
+      retryCount: 0,
+      maxRetries: 3,
+      metadata: {
+        processing_method: 'webhook_processing',
+        use_diarization: body.settings.use_diarization,
+        pyannote_version: body.settings.use_diarization ? '3.1' : undefined
+      }
+    });
+    console.log(`✅ Created Firestore processing record: ${processingRecordId}`);
+
     const parakeetAPI = new ParakeetAPI(apiKey, body.userId);
 
     // SINGLE CALL: Run both diarization and transcription together
@@ -286,10 +365,38 @@ export async function POST(request: NextRequest) {
     console.log('✅ RunPod API success - job submitted with webhook:', result.jobId);
     console.log('📝 Job will be processed by RunPod and results will come via webhook');
 
-    // Return job ID immediately - webhook will handle completion
+    // ✅ 4. UPDATE FIRESTORE WITH RUNPOD JOB ID
+    console.log(`📝 Updating record ${processingRecordId} with RunPod job ID: ${result.jobId}...`);
+    await databaseService.updateSTTRecord(processingRecordId, {
+      metadata: {
+        runpod_job_id: result.jobId,
+        processing_method: 'webhook_processing',
+        use_diarization: body.settings.use_diarization,
+        pyannote_version: body.settings.use_diarization ? '3.1' : undefined
+      }
+    }, body.userId);
+    console.log(`✅ Updated record ${processingRecordId} with RunPod job ID: ${result.jobId}`);
+
+    // ✅ 5. ADD TO ACTIVE JOBS: Track for cleanup cron
+    console.log(`📋 Adding to activeJobs for monitoring...`);
+    await activeJobsService.addActiveJob(
+      body.userId,
+      processingRecordId,
+      {
+        status: 'processing',
+        priority: priority,
+        runpodJobId: result.jobId,
+        filename: body.filename
+      },
+      'stt'
+    );
+    console.log(`✅ Added to activeJobs for monitoring`);
+
+    // Return job ID and record ID immediately - webhook will handle completion
     const response = NextResponse.json({
       success: true,
       jobId: result.jobId,
+      recordId: processingRecordId, // Return Firestore record ID for client tracking
       message: 'Job submitted successfully. Results will be delivered via webhook.'
     });
     return addSecurityHeaders(response);

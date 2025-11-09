@@ -1,172 +1,202 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/config/firebase';
-import { 
-  collectionGroup,
-  collection,
-  query, 
-  where, 
-  getDocs, 
-  updateDoc,
-  doc,
-  orderBy,
-  limit,
-  serverTimestamp
-} from 'firebase/firestore';
+import { collection, query, where, getDocs, orderBy, limit, collectionGroup, Timestamp } from 'firebase/firestore';
+import { rateLimitService } from '@/services/rateLimitService';
+import { databaseService } from '@/services/databaseService';
 import { activeJobsService } from '@/services/activeJobsService';
 
 /**
- * Queue worker that processes queued jobs and submits them to RunPod
- * Should run every 1-2 minutes
+ * Queue Processor Cron Job
+ * 
+ * Runs every 1 minute to process queued STT jobs.
  * 
  * Flow:
- * 1. Check RunPod capacity
- * 2. Get highest priority queued jobs
- * 3. Submit to RunPod
- * 4. Update status to 'processing' (RunPod starts immediately)
- * 5. Webhook will update to 'completed' when done
+ * 1. Find all jobs with status='queued' (ordered by priority, then queuedAt)
+ * 2. For each job, check if user now has capacity
+ * 3. If yes: submit to RunPod and update to 'processing'
+ * 4. If no: leave in queue for next run
+ * 
+ * Security:
+ * - Requires CRON_SECRET in Authorization header or query param
+ * 
+ * Setup:
+ * - Add to Hetzner/Coolify cron: * * * * * curl -H "Authorization: Bearer SECRET" https://transovo.ai/api/cron/process-queue
  */
-export async function GET(request: NextRequest) {
+
+// Support both GET and POST methods for flexibility
+export async function GET(req: NextRequest) {
+  return handleQueueProcessing(req);
+}
+
+export async function POST(req: NextRequest) {
+  return handleQueueProcessing(req);
+}
+
+async function handleQueueProcessing(req: NextRequest) {
   try {
-    // Verify cron secret
-    const authHeader = request.headers.get('authorization');
+    // ✅ SECURITY: Check authorization
+    const authHeader = req.headers.get('authorization');
     const cronSecret = process.env.CRON_SECRET;
-    
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      const querySecret = request.nextUrl.searchParams.get('secret');
-      if (querySecret !== cronSecret) {
-        return NextResponse.json(
-          { error: 'Unauthorized' },
-          { status: 401 }
-        );
-      }
+    const expectedSecret = `Bearer ${cronSecret}`;
+    const url = new URL(req.url);
+    const tokenFromQuery = url.searchParams.get('token');
+
+    if (authHeader !== expectedSecret && tokenFromQuery !== cronSecret) {
+      console.error('❌ Unauthorized queue processor access attempt');
+      console.error('   Expected:', expectedSecret);
+      console.error('   Received:', authHeader || 'none');
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    console.log('🔄 Queue worker: Processing queued jobs...');
-    
-    // TODO: Check RunPod capacity (call RunPod API to get available workers)
-    // For now, we'll process a reasonable number of jobs
-    const maxJobsToProcess = 50; // Adjust based on your RunPod capacity
-    
-    // Get queued STT jobs ordered by priority (lower = higher priority) then by createdAt (FIFO)
-    // Note: AI features (ai-summary, content-repurpose) are synchronous and don't need queue worker
-    // Note: This requires a composite index in Firestore
+    console.log('🔄 ===== QUEUE PROCESSOR CRON STARTED =====');
+    console.log('⏰ Timestamp:', new Date().toISOString());
+
+    // Find all queued STT jobs across all users (ordered by priority, then queuedAt)
     const queuedJobsQuery = query(
-      collectionGroup(db, 'activeJobs'),
-      where('featureType', '==', 'stt'), // Only STT jobs (AI features are fast/synchronous)
+      collectionGroup(db, 'stt'),
       where('status', '==', 'queued'),
-      orderBy('priority', 'asc'),
-      orderBy('createdAt', 'asc'),
-      limit(maxJobsToProcess)
+      orderBy('priority', 'asc'), // Lower number = higher priority (1=premium, 2=paid, 3=trial)
+      orderBy('queuedAt', 'asc'), // Older jobs first
+      limit(100) // Process up to 100 jobs per run
     );
 
     const queuedJobsSnapshot = await getDocs(queuedJobsQuery);
     
-    if (queuedJobsSnapshot.empty) {
-      return NextResponse.json({
-        success: true,
-        message: 'No queued jobs to process',
-        processed: 0,
-        timestamp: new Date().toISOString()
-      });
-    }
+    console.log(`📋 Found ${queuedJobsSnapshot.size} queued jobs`);
 
-    console.log(`📊 Found ${queuedJobsSnapshot.size} queued jobs to process`);
-
-    const results = {
-      processed: 0,
-      submitted: 0,
-      failed: 0,
-      errors: [] as string[]
-    };
+    let processed = 0;
+    let stillQueued = 0;
+    let failed = 0;
+    const errors: string[] = [];
 
     for (const jobDoc of queuedJobsSnapshot.docs) {
       const jobData = jobDoc.data();
-      const userId = jobData.userId || jobDoc.ref.parent.parent?.id;
-      const jobId = jobData.jobId || jobDoc.id;
-      
-      if (!userId || !jobId) {
-        console.warn(`⚠️ Skipping job with missing userId or jobId:`, jobDoc.id);
-        continue;
-      }
+      const userId = jobData.user_id;
+      const recordId = jobDoc.id;
+
+      console.log(`\n🔍 Processing queued job ${recordId} for user ${userId}...`);
+      console.log(`   Priority: ${jobData.priority}, Queued at: ${jobData.queuedAt?.toDate?.()?.toISOString() || 'unknown'}`);
 
       try {
-        // Get the full STT record to access audio_file_url
-        const { databaseService } = await import('@/services/databaseService');
-        const sttRecord = await databaseService.getSTTRecordById(jobId, userId);
-        
-        if (!sttRecord) {
-          console.warn(`⚠️ STT record not found for job ${jobId}`);
-          continue;
-        }
+        // Check if user now has capacity
+        const rateLimitCheck = await rateLimitService.canUserSubmitJob(userId, 'stt');
 
-        // Submit to RunPod API
-        // Note: This assumes the job was already submitted by the initial API call
-        // The queue worker is mainly for retry scenarios
-        // In a full implementation, you'd submit to RunPod here
-        
-        // Update status to 'processing' (RunPod starts immediately after submission)
-        const { serverTimestamp } = await import('firebase/firestore');
-        await databaseService.updateSTTRecord(jobId, {
-          status: 'processing',
-          startedAt: serverTimestamp() as Timestamp
-        }, userId);
+        if (rateLimitCheck.allowed) {
+          console.log(`✅ User ${userId} has capacity, processing queued job ${recordId}`);
+          console.log(`   Current usage: ${rateLimitCheck.current.concurrent}/${rateLimitCheck.limits.concurrent} concurrent`);
 
-        // Update activeJobs
-        await updateDoc(jobDoc.ref, {
-          status: 'processing',
-          startedAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-
-        results.submitted++;
-        results.processed++;
-        
-        console.log(`✅ Submitted job ${userId}/${jobId} to RunPod`);
-      } catch (error) {
-        const errorMsg = `Error processing job ${userId}/${jobId}: ${error instanceof Error ? error.message : 'Unknown error'}`;
-        console.error(`❌ ${errorMsg}`);
-        results.errors.push(errorMsg);
-        results.failed++;
-        
-        // Mark job as failed if submission fails
-        try {
-          const { databaseService } = await import('@/services/databaseService');
-          await databaseService.updateSTTRecord(jobId, {
-            status: 'failed',
-            error: errorMsg
-          }, userId);
+          // Get API keys
+          const apiKey = process.env.RUNPOD_API_KEY;
+          const hfToken = process.env.HUGGINGFACE_TOKEN;
           
-          await activeJobsService.removeActiveJob(userId, jobId, 'stt');
-        } catch (updateError) {
-          console.error(`❌ Error updating failed job:`, updateError);
+          if (!apiKey || !hfToken) {
+            throw new Error('Missing API keys (RUNPOD_API_KEY or HUGGINGFACE_TOKEN)');
+          }
+
+          // Import RunPod service
+          const { runpodFallbackService } = await import('@/services/runpodFallbackService');
+          
+          // Build API params
+          const apiParams: any = {
+            audio_url: jobData.audio_file_url,
+            audio_format: 'mp3',
+            include_timestamps: true,
+            use_diarization: jobData.metadata?.use_diarization || false,
+            num_speakers: null,
+            speaker_threshold: 0.35,
+            single_speaker_mode: false,
+            filename: jobData.name
+          };
+
+          if (jobData.metadata?.use_diarization) {
+            apiParams.pyannote_version = '3.1';
+            apiParams.hf_token = hfToken;
+          }
+
+          console.log(`🚀 Submitting to RunPod...`);
+          
+          // Submit to RunPod
+          const webhookUrl = process.env.NEXT_PUBLIC_APP_URL;
+          const result = await runpodFallbackService.transcribeWithFallback(
+            apiParams,
+            `${webhookUrl}/api/webhooks/runpod`
+          );
+
+          if (result.success && result.jobId) {
+            console.log(`✅ RunPod submission successful, jobId: ${result.jobId}`);
+            
+            // Update record to processing
+            const now = Timestamp.now();
+            await databaseService.updateSTTRecord(recordId, {
+              status: 'processing',
+              startedAt: now,
+              metadata: {
+                ...jobData.metadata,
+                runpod_job_id: result.jobId,
+                processing_method: 'queued_then_processed',
+                queue_processed_at: now
+              }
+            }, userId);
+
+            // Add to activeJobs
+            await activeJobsService.addActiveJob(
+              userId,
+              recordId,
+              {
+                status: 'processing',
+                priority: jobData.priority,
+                runpodJobId: result.jobId,
+                filename: jobData.name
+              },
+              'stt'
+            );
+
+            processed++;
+            console.log(`✅ Queued job ${recordId} submitted to RunPod: ${result.jobId}`);
+          } else {
+            throw new Error(`Failed to submit to RunPod: ${result.error || 'Unknown error'}`);
+          }
+        } else {
+          // Still over limit, leave in queue
+          stillQueued++;
+          console.log(`⏳ User ${userId} still over limit, job ${recordId} remains queued`);
+          console.log(`   Reason: ${rateLimitCheck.reason}`);
+          console.log(`   Current: ${rateLimitCheck.current.concurrent}/${rateLimitCheck.limits.concurrent} concurrent`);
         }
+      } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : 'Unknown error';
+        console.error(`❌ Failed to process queued job ${recordId}:`, errorMsg);
+        errors.push(`Job ${recordId}: ${errorMsg}`);
+        failed++;
       }
     }
 
+    console.log('\n📊 ===== QUEUE PROCESSOR SUMMARY =====');
+    console.log(`   Total found: ${queuedJobsSnapshot.size}`);
+    console.log(`   ✅ Processed: ${processed}`);
+    console.log(`   ⏳ Still queued: ${stillQueued}`);
+    console.log(`   ❌ Failed: ${failed}`);
+    console.log('=====================================\n');
+
     return NextResponse.json({
       success: true,
-      message: 'Queue processing completed',
       results: {
-        processed: results.processed,
-        submitted: results.submitted,
-        failed: results.failed,
-        errors: results.errors.length > 0 ? results.errors : undefined
+        found: queuedJobsSnapshot.size,
+        processed,
+        stillQueued,
+        failed,
+        errors: errors.length > 0 ? errors : undefined
       },
       timestamp: new Date().toISOString()
-    }, { status: 200 });
+    });
   } catch (error) {
-    console.error('❌ Error in queue worker:', error);
-    
-    return NextResponse.json({
-      success: false,
-      error: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 });
+    console.error('❌ Queue processor error:', error);
+    return NextResponse.json(
+      { 
+        error: 'Queue processing failed', 
+        details: error instanceof Error ? error.message : 'Unknown error' 
+      },
+      { status: 500 }
+    );
   }
 }
-
-// Also support POST
-export async function POST(request: NextRequest) {
-  return GET(request);
-}
-
