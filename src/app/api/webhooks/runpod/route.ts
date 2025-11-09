@@ -15,6 +15,12 @@ interface RunPodOutput {
   text?: string;
   transcript?: string;
   merged_text?: string;
+  timestamps?: Array<{
+    start: number;
+    end: number;
+    text?: string;
+    word?: string;
+  }>;
   diarized_transcript?: Array<{
     speaker: string;
     start_time: number;
