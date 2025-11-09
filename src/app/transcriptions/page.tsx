@@ -26,6 +26,8 @@ export default function TranscriptionsPage() {
       initiatedRunpodIdsRef.current.add(runpodJobId);
       if (clientId) {
         runpodToClientIdRef.current.set(runpodJobId, clientId);
+      } else if (record?.metadata?.client_pending_id) {
+        runpodToClientIdRef.current.set(runpodJobId, record.metadata.client_pending_id as string);
       }
     }
 
