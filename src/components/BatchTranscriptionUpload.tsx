@@ -313,59 +313,34 @@ export default function BatchTranscriptionUpload() {
     };
   }, [user?.uid]);
 
-    // Process single file - upload only
-  const uploadFile = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string; uploadResult: any }> => {
-    // Update status to uploading
-    setFiles(prev => prev.map(f => 
-      f.id === batchFile.id 
-        ? { ...f, status: 'uploading', progress: 0 }
-        : f
-    ));
+  const extractAudioIfNeeded = async (batchFile: BatchFile): Promise<{ audioFile: File; originalName: string }> => {
+    let audioFile: File = batchFile.file;
+    let originalName: string = batchFile.name;
 
-    let audioFile: File;
-    let originalName: string;
+    const supportedFormats = ['.mp3', '.wav', '.m4a', '.ogg', '.flac', '.webm'];
+    const fileExtension = batchFile.name.toLowerCase().match(/\.[^.]+$/)?.[0] || '';
+    const isVideo = batchFile.isVideo || audioExtractionService.isVideoFile(batchFile.file);
 
-    // Handle video files - extract audio first
-    if (batchFile.isVideo) {
-      setFiles(prev => prev.map(f => 
-        f.id === batchFile.id 
-          ? { ...f, progress: 10 }
-          : f
-      ));
-
+    if (isVideo) {
+      console.log(`🎬 [BatchTranscriptionUpload] Extracting audio from video: ${batchFile.name}`);
       const extractionResult = await audioExtractionService.extractAudioFromVideo(batchFile.file);
+
       if (!extractionResult.success || !extractionResult.audioBlob) {
-        throw new Error(`Audio extraction failed: ${extractionResult.error}`);
+        throw new Error(`Audio extraction failed: ${extractionResult.error || 'Unknown error'}`);
       }
 
-      // Create a new file from the extracted audio
-      audioFile = new File([extractionResult.audioBlob], `${batchFile.name}_audio.wav`, {
-        type: 'audio/wav'
-      });
-      originalName = batchFile.name;
-    } else {
-      audioFile = batchFile.file;
-      originalName = batchFile.name;
+      audioFile = new File(
+        [extractionResult.audioBlob],
+        batchFile.name.replace(/\.[^/.]+$/, '.mp3'),
+        { type: 'audio/mpeg', lastModified: Date.now() }
+      );
+      originalName = audioFile.name;
+      console.log(`✅ [BatchTranscriptionUpload] Audio extracted: ${originalName}`);
+    } else if (!supportedFormats.includes(fileExtension)) {
+      console.log(`⚠️ [BatchTranscriptionUpload] Unsupported audio format for ${batchFile.name}, using original file`);
     }
 
-    // Update progress
-    setFiles(prev => prev.map(f => 
-      f.id === batchFile.id 
-        ? { ...f, progress: 30 }
-        : f
-    ));
-
-    // Upload to Firebase first (same as regular transcription)
-    const uploadResult = await clientTranscriptionService.uploadFileToFirebase(audioFile);
-    
-    // Update progress
-    setFiles(prev => prev.map(f => 
-      f.id === batchFile.id 
-        ? { ...f, progress: 60, status: 'pending' }
-        : f
-    ));
-
-    return { audioFile, originalName, uploadResult };
+    return { audioFile, originalName };
   };
 
   // Submit file to the scalable queue system
