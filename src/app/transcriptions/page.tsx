@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 import Layout from '@/components/Layout';
 import TranscriptionUpload, { TranscriptionEvent } from '@/components/TranscriptionUpload';
@@ -10,6 +11,7 @@ import { STTRecord } from '@/services/databaseService';
 
 export default function TranscriptionsPage() {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const [activeTab, setActiveTab] = useState<'upload' | 'recent'>('upload');
   const [pendingTranscriptions, setPendingTranscriptions] = useState<STTRecord[]>([]);
   const [refreshKey, setRefreshKey] = useState(0);
@@ -39,6 +41,7 @@ export default function TranscriptionsPage() {
       if (clientId || removedPending) {
         setActiveTab('recent');
         setRefreshKey(prev => prev + 1);
+        router.push('/all-transcriptions');
       }
       return;
     }
