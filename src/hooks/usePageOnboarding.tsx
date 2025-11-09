@@ -22,42 +22,57 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
   const { showOnboarding, markPageAsSeen, dismissPage } = useOnboarding();
   const [currentStepIndex, setCurrentStepIndex] = useState<number | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const isDev = process.env.NODE_ENV !== 'production';
 
   useEffect(() => {
     // Check if onboarding should show
     const shouldShow = showOnboarding(pageId);
-    console.log('🎯 [Onboarding] Checking onboarding for page:', pageId, 'shouldShow:', shouldShow, 'autoStart:', autoStart, 'steps:', steps.length);
+    if (isDev) {
+      console.log('🎯 [Onboarding] Checking onboarding for page:', pageId, 'shouldShow:', shouldShow, 'autoStart:', autoStart, 'steps:', steps.length);
+    }
     
     if (autoStart && shouldShow && steps.length > 0) {
-      console.log('✅ [Onboarding] Starting onboarding for page:', pageId);
+      if (isDev) {
+        console.log('✅ [Onboarding] Starting onboarding for page:', pageId);
+      }
       // Wait a bit for page to render and ensure DOM is ready
       const timer = setTimeout(() => {
         // Check if first target element exists before starting
         const firstTarget = document.getElementById(steps[0].targetId);
         if (firstTarget) {
-          console.log('✅ [Onboarding] First target found, starting onboarding');
+          if (isDev) {
+            console.log('✅ [Onboarding] First target found, starting onboarding');
+          }
           setCurrentStepIndex(0);
           setIsActive(true);
         } else {
-          console.warn('⚠️ [Onboarding] First target element not found:', steps[0].targetId, 'Retrying...');
+          if (isDev) {
+            console.warn('⚠️ [Onboarding] First target element not found:', steps[0].targetId, 'Retrying...');
+          }
           // Retry after a longer delay if element not found
           setTimeout(() => {
             const retryTarget = document.getElementById(steps[0].targetId);
             if (retryTarget) {
-              console.log('✅ [Onboarding] Target found on retry, starting onboarding');
+              if (isDev) {
+                console.log('✅ [Onboarding] Target found on retry, starting onboarding');
+              }
               setCurrentStepIndex(0);
               setIsActive(true);
             } else {
-              console.error('❌ [Onboarding] Target element still not found after retry:', steps[0].targetId);
+              if (isDev) {
+                console.error('❌ [Onboarding] Target element still not found after retry:', steps[0].targetId);
+              }
             }
           }, 1000);
         }
       }, 1000);
       return () => clearTimeout(timer);
     } else {
-      console.log('⏭️ [Onboarding] Skipping onboarding:', { shouldShow, autoStart, stepsLength: steps.length });
+      if (isDev) {
+        console.log('⏭️ [Onboarding] Skipping onboarding:', { shouldShow, autoStart, stepsLength: steps.length });
+      }
     }
-  }, [pageId, autoStart, steps.length]);
+  }, [pageId, autoStart, steps.length, isDev]);
 
   const handleComplete = () => {
     // Automatically mark page as seen after first interaction
@@ -99,14 +114,20 @@ export function usePageOnboarding({ pageId, steps, autoStart = true }: UsePageOn
   const currentStep = currentStepIndex !== null ? steps[currentStepIndex] : null;
 
   const OnboardingComponent: React.FC = () => {
-    console.log('🎨 [OnboardingComponent] Rendering check:', { isActive, currentStep, currentStepIndex });
+    if (isDev) {
+      console.log('🎨 [OnboardingComponent] Rendering check:', { isActive, currentStep, currentStepIndex });
+    }
     
     if (!isActive || !currentStep || currentStepIndex === null) {
-      console.log('⏭️ [OnboardingComponent] Not rendering - conditions not met');
+      if (isDev) {
+        console.log('⏭️ [OnboardingComponent] Not rendering - conditions not met');
+      }
       return null;
     }
 
-    console.log('✅ [OnboardingComponent] Rendering tooltip for step:', currentStepIndex + 1, 'targetId:', currentStep.targetId);
+    if (isDev) {
+      console.log('✅ [OnboardingComponent] Rendering tooltip for step:', currentStepIndex + 1, 'targetId:', currentStep.targetId);
+    }
 
     return (
       <OnboardingTooltip

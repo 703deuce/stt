@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { X, ArrowRight, CheckCircle } from 'lucide-react';
+import { X, CheckCircle } from 'lucide-react';
 
 interface OnboardingTooltipProps {
   targetId: string;
@@ -29,8 +29,9 @@ export default function OnboardingTooltip({
     top: '50%',
     left: '50%',
     transform: 'translate(-50%, -50%)',
-    zIndex: 10002
+    zIndex: 10002,
   });
+  const [spotlightStyle, setSpotlightStyle] = useState<React.CSSProperties | null>(null);
   const tooltipRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(true);
 
@@ -49,10 +50,6 @@ export default function OnboardingTooltip({
 
       const targetRect = targetElement.getBoundingClientRect();
       const tooltipRect = tooltipRef.current.getBoundingClientRect();
-      
-      console.log('📍 [OnboardingTooltip] Positioning tooltip for:', targetId, 'position:', position);
-      console.log('📍 [OnboardingTooltip] Target rect:', targetRect);
-      console.log('📍 [OnboardingTooltip] Tooltip rect:', tooltipRect);
 
       let top = 0;
       let left = 0;
@@ -170,14 +167,26 @@ export default function OnboardingTooltip({
         left = targetRect.left + (targetRect.width / 2) - (tooltipRect.width / 2);
       }
 
+      // Spotlight (target highlight)
+      const spotlightPadding = 12;
+      setSpotlightStyle({
+        position: 'fixed',
+        top: targetRect.top - spotlightPadding,
+        left: targetRect.left - spotlightPadding,
+        width: targetRect.width + spotlightPadding * 2,
+        height: targetRect.height + spotlightPadding * 2,
+        borderRadius: '14px',
+        pointerEvents: 'none',
+        transition: 'all 0.2s ease',
+        zIndex: 10001,
+      });
+
       setPositionStyle({
         position: 'fixed',
         top: `${top}px`,
         left: `${left}px`,
-        zIndex: 10002
+        zIndex: 10002,
       });
-
-      console.log('✅ [OnboardingTooltip] Tooltip positioned at:', { top, left });
     };
 
     // Initial render - wait for tooltip to be in DOM
@@ -203,41 +212,39 @@ export default function OnboardingTooltip({
 
   return (
     <>
-      {/* Overlay */}
+      {/* Background click catcher */}
       <div
-        className="fixed inset-0 bg-black/50 z-[9999]"
+        className="fixed inset-0 z-[9998]"
         onClick={() => onDismiss()}
       />
-      
-      {/* Highlight target element */}
-      <style>{`
-        #${targetId} {
-          position: relative;
-          z-index: 10000 !important;
-          box-shadow: 0 0 0 4px rgba(147, 51, 234, 0.5) !important;
-          border-radius: 8px;
-        }
-      `}</style>
+
+      {/* Spotlight highlight */}
+      {spotlightStyle && (
+        <div
+          className="pointer-events-none shadow-[0_0_0_2000px_rgba(15,23,42,0.55)] border border-purple-400/60 backdrop-blur-sm"
+          style={spotlightStyle}
+        />
+      )}
 
       {/* Tooltip */}
       <div
         ref={tooltipRef}
         style={positionStyle}
-        className="bg-white rounded-lg shadow-2xl border-2 border-purple-500 p-6 max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300"
+        className="bg-white rounded-xl shadow-xl border border-slate-200 p-5 max-w-sm animate-in fade-in slide-in-from-bottom-4 duration-300"
       >
         {/* Header */}
-        <div className="flex items-start justify-between mb-3">
+        <div className="flex items-start justify-between pb-3 mb-3 border-b border-slate-100">
           <div className="flex-1">
             {step && totalSteps && (
-              <div className="text-xs font-medium text-purple-600 mb-1">
+              <div className="text-xs font-medium text-purple-500 mb-1 tracking-wide">
                 Step {step} of {totalSteps}
               </div>
             )}
-            <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+            <h3 className="text-base font-semibold text-slate-900">{title}</h3>
           </div>
           <button
             onClick={() => onDismiss()}
-            className="ml-2 text-gray-400 hover:text-gray-600 transition-colors"
+            className="ml-3 text-slate-400 hover:text-slate-600 transition-colors"
             aria-label="Dismiss"
           >
             <X className="w-5 h-5" />
@@ -245,7 +252,7 @@ export default function OnboardingTooltip({
         </div>
 
         {/* Description */}
-        <p className="text-sm text-gray-600 mb-4 leading-relaxed">
+        <p className="text-sm text-slate-600 mb-4 leading-relaxed">
           {description}
         </p>
 
@@ -253,13 +260,13 @@ export default function OnboardingTooltip({
         <div className="flex items-center justify-between gap-3">
           <button
             onClick={() => onDismiss()}
-            className="text-sm text-gray-500 hover:text-gray-700 transition-colors"
+            className="text-sm text-slate-500 hover:text-slate-700 transition-colors"
           >
             Skip this step
           </button>
           <button
             onClick={() => onComplete()}
-            className="flex items-center gap-2 bg-gradient-to-r from-purple-600 to-purple-700 text-white px-4 py-2 rounded-lg hover:from-purple-700 hover:to-purple-800 transition-all font-medium text-sm shadow-lg"
+            className="flex items-center gap-2 bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition-all font-medium text-sm shadow-md"
           >
             {step === totalSteps ? 'Finish' : 'Got it'}
             <CheckCircle className="w-4 h-4" />
