@@ -9,7 +9,7 @@ import { useSpeakerMapping } from '@/context/SpeakerMappingContext';
 import { databaseService } from '@/services/databaseService';
 import { STTRecord } from '@/services/databaseService';
 import AISummaryPanel from '@/components/AISummaryPanel';
-import ContentRepurposingPanel from '@/components/ContentRepurposingPanel';
+import { contentLimitService, WordLimitStatus } from '@/services/contentLimitService';
 import SpeakerMappingModal from '@/components/SpeakerMappingModal';
 import DownloadModal from '@/components/DownloadModal';
 import ShareModal from '@/components/ShareModal';
@@ -26,7 +26,10 @@ import {
   AlertCircle,
   User,
   Calendar,
-  Volume2
+  Volume2,
+  Loader2,
+  Sparkles,
+  ArrowRight
 } from 'lucide-react';
 
 export default function TranscriptionViewPage() {
@@ -46,6 +49,9 @@ export default function TranscriptionViewPage() {
   const [showSpeakerMapping, setShowSpeakerMapping] = useState(false);
   const [showDownloadModal, setShowDownloadModal] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
+  const [contentLimitStatus, setContentLimitStatus] = useState<WordLimitStatus | null>(null);
+  const [contentLimitLoading, setContentLimitLoading] = useState(false);
+  const [contentLimitError, setContentLimitError] = useState<string | null>(null);
 
 
   // Get unique speakers from diarized transcript
@@ -71,6 +77,34 @@ export default function TranscriptionViewPage() {
       loadTranscription();
     }
   }, [user, transcriptionId]);
+
+  useEffect(() => {
+    if (!user) return;
+    let isMounted = true;
+
+    const fetchWordLimitStatus = async () => {
+      try {
+        setContentLimitLoading(true);
+        const status = await contentLimitService.getWordLimitStatus();
+        if (!isMounted) return;
+        setContentLimitStatus(status);
+        setContentLimitError(null);
+      } catch (err) {
+        console.error('❌ Failed to fetch content limit status:', err);
+        if (!isMounted) return;
+        setContentLimitError('Unable to load content repurposing limits right now.');
+      } finally {
+        if (!isMounted) return;
+        setContentLimitLoading(false);
+      }
+    };
+
+    fetchWordLimitStatus();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user]);
 
   const retryLoadFullData = async () => {
     if (!transcription?.transcription_data_url) return;
@@ -216,6 +250,19 @@ export default function TranscriptionViewPage() {
     a.click();
     document.body.removeChild(a);
     URL.revokeObjectURL(url);
+  };
+
+  const handleOpenContentRepurposer = () => {
+    if (!transcriptionId) return;
+    try {
+      if (transcription) {
+        sessionStorage.setItem('repurposing:lastTranscriptionId', transcriptionId);
+        sessionStorage.setItem('repurposing:lastTranscriptionName', transcription.name || '');
+      }
+    } catch (err) {
+      console.warn('⚠️ Unable to stash repurposing selection in sessionStorage:', err);
+    }
+    router.push('/content-repurposing');
   };
 
   const combineConsecutiveSpeakers = (diarizedTranscript: any[], timestamps: any[]) => {
@@ -398,6 +445,12 @@ export default function TranscriptionViewPage() {
       throw error;
     }
   };
+
+  const contentHighlights = [
+    'Blog posts & newsletters',
+    'Social media threads & captions',
+    'Video scripts & show notes'
+  ];
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -781,11 +834,94 @@ export default function TranscriptionViewPage() {
                 transcriptionId={transcriptionId}
                 className="sticky top-6"
               />
-              <ContentRepurposingPanel 
-                transcriptionText={transcription.transcript || ''} 
-                transcriptionId={transcriptionId}
-                className="sticky top-6"
-              />
+              <div className="sticky top-[7.5rem]">
+                <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="text-base font-semibold text-gray-900">Content Repurposing</h3>
+                      <p className="text-sm text-gray-600 mt-1">
+                        Turn this transcript into ready-to-use marketing and social content in one click.
+                      </p>
+                    </div>
+                    <div className="w-10 h-10 rounded-full bg-purple-100 text-purple-600 flex items-center justify-center">
+                      <Sparkles className="w-5 h-5" />
+                    </div>
+                  </div>
+
+                  <ul className="grid gap-2 text-sm text-gray-700">
+                    {contentHighlights.map((highlight) => (
+                      <li key={highlight} className="flex items-center space-x-2">
+                        <span className="w-1.5 h-1.5 rounded-full bg-purple-400" />
+                        <span>{highlight}</span>
+                      </li>
+                    ))}
+                  </ul>
+
+                  {contentLimitLoading ? (
+                    <div className="flex items-center space-x-2 text-sm text-gray-500">
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                      <span>Checking your content access…</span>
+                    </div>
+                  ) : (
+                    <>
+                      {contentLimitStatus && (
+                        <div className="text-xs text-gray-500 space-y-1">
+                          <div>
+                            Words available this month:{' '}
+                            <span className="font-medium text-gray-700">
+                              {contentLimitStatus.totalAvailable.toLocaleString()}
+                            </span>
+                          </div>
+                          {contentLimitStatus.boostWords > 0 && (
+                            <div>
+                              Boost words remaining:{' '}
+                              <span className="font-medium text-gray-700">
+                                {contentLimitStatus.boostWords.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                          {contentLimitStatus.wordsRemaining > 0 && (
+                            <div>
+                              Monthly allocation remaining:{' '}
+                              <span className="font-medium text-gray-700">
+                                {contentLimitStatus.wordsRemaining.toLocaleString()}
+                              </span>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {contentLimitError && (
+                        <div className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-md px-3 py-2">
+                          {contentLimitError}
+                        </div>
+                      )}
+                      {contentLimitStatus && !contentLimitStatus.canGenerate && !contentLimitError && (
+                        <div className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-md px-3 py-2">
+                          {contentLimitStatus.reason ||
+                            'Your current plan does not include content repurposing. Upgrade to unlock this feature.'}
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  <button
+                    onClick={handleOpenContentRepurposer}
+                    disabled={
+                      (!!contentLimitStatus && !contentLimitStatus.canGenerate) ||
+                      contentLimitLoading ||
+                      !!contentLimitError
+                    }
+                    className={`w-full inline-flex items-center justify-center px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                      (!!contentLimitStatus && !contentLimitStatus.canGenerate) || contentLimitLoading || contentLimitError
+                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
+                        : 'bg-purple-600 text-white hover:bg-purple-700'
+                    }`}
+                  >
+                    <span className="mr-2">Open Content Repurposer</span>
+                    <ArrowRight className="w-4 h-4" />
+                  </button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
