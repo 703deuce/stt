@@ -39,6 +39,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
   }>({});
   
   const [loading, setLoading] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'brief' | 'detailed' | 'key_points'>('brief');
   const [audioForTabs, setAudioForTabs] = useState<Record<string, string>>({});
@@ -188,6 +189,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
             // If summaries exist, stop loading
             if (hasSummaries && shouldApplyUpdate) {
               setLoading(false);
+              setIsGenerating(false);
               pendingRequestRef.current = 0;
               loadExistingAIData();
             } else if (!hasSummaries) {
@@ -248,6 +250,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
         if (shouldApply) {
           setSummaries(aiData.summaries);
           setLoading(false);
+          setIsGenerating(false);
           pendingRequestRef.current = 0;
         } else {
           console.log('⏳ Existing summaries are older than current request; keeping loading state.');
@@ -290,6 +293,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       const requestTimestamp = Date.now();
       pendingRequestRef.current = requestTimestamp;
       sessionStorage.setItem('lastSummaryUpdate', requestTimestamp.toString());
+      setIsGenerating(true);
       setSummaries({});
       setLoading(true);
       setError(null);
@@ -334,6 +338,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       console.error('Failed to start summary jobs:', err);
       setError(err instanceof Error ? err.message : 'Failed to start summary generation');
       setLoading(false);
+      setIsGenerating(false);
       pendingRequestRef.current = 0;
     }
   };
@@ -679,7 +684,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       {expanded && (
         <div className="p-4 space-y-4">
           {/* Generate Button */}
-          {!summaries.brief && !loading && (
+          {!summaries.brief && !isGenerating && (
             <button
               onClick={generateSummaries}
               className="w-full bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
@@ -690,7 +695,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
           )}
 
           {/* Loading State */}
-          {loading && (
+          {isGenerating && (
             <div className="text-center py-8">
               <Loader2 className="w-8 h-8 text-purple-600 animate-spin mx-auto mb-4" />
               <p className="text-gray-600">Generating AI summaries...</p>
@@ -716,7 +721,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
           )}
 
           {/* Summary Content */}
-          {summaries.brief && !loading && (
+          {summaries.brief && !isGenerating && (
             <div className="space-y-4">
               {/* Tab Navigation */}
               <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
