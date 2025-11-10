@@ -100,6 +100,23 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
   const [isPlaying, setIsPlaying] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
 
+  const hasSummaryContent = (summaryData?: {
+    brief?: SummaryResponse;
+    detailed?: SummaryResponse;
+    key_points?: SummaryResponse;
+  }) => {
+    if (!summaryData) {
+      return false;
+    }
+
+    return Object.values(summaryData).some((summary) => {
+      if (!summary) return false;
+      const text = typeof summary === 'string' ? summary : summary.summary;
+      if (typeof text !== 'string') return false;
+      return text.trim().length > 0;
+    });
+  };
+
   // Load existing AI data when component mounts
   useEffect(() => {
     if (user && transcriptionId) {
@@ -133,7 +150,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
         if (snapshot.exists()) {
           const data = snapshot.data();
           const updatedAt = data?.updatedAt?.toMillis?.() || 0;
-          const hasSummaries = !!data?.summaries && Object.keys(data.summaries).length > 0;
+          const hasSummaries = hasSummaryContent(data?.summaries);
           
           console.log('📡 AI summary data changed:', {
             hasSummaries,
@@ -194,10 +211,9 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       console.log('📥 Loading existing AI data...');
       const aiData = await aiDataService.getAIData(transcriptionId, user.uid);
       
-      if (aiData && aiData.summaries) {
-        console.log('✅ Found existing summaries:', Object.keys(aiData.summaries));
+      if (aiData && hasSummaryContent(aiData.summaries)) {
+        console.log('✅ Found existing summaries:', Object.keys(aiData.summaries ?? {}));
         setSummaries(aiData.summaries);
-        // Stop loading when summaries are found
         setLoading(false);
       } else {
         console.log('ℹ️ No existing summaries found');
