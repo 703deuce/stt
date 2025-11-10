@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   Brain,
   Sparkles,
@@ -44,6 +44,19 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
   const [audioForTabs, setAudioForTabs] = useState<Record<string, string>>({});
   const [savedAudioRecords, setSavedAudioRecords] = useState<Record<string, SummaryAudioRecord>>({});
   const [expanded, setExpanded] = useState(true);
+  const pendingRequestRef = useRef<number>(0);
+  const getTimestampMillis = (value: any): number | null => {
+    if (!value) return null;
+    if (value instanceof Date) return value.getTime();
+    if (typeof value?.toMillis === 'function') return value.toMillis();
+    if (typeof value === 'number') return value;
+    if (typeof value === 'string') {
+      const parsed = Date.parse(value);
+      return Number.isNaN(parsed) ? null : parsed;
+    }
+    return null;
+  };
+
   
   // TTS state
   const [ttsLoading, setTtsLoading] = useState(false);
@@ -151,6 +164,14 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
           const data = snapshot.data();
           const updatedAt = data?.updatedAt?.toMillis?.() || 0;
           const hasSummaries = hasSummaryContent(data?.summaries);
+          const pendingRequest = pendingRequestRef.current;
+          const shouldApplyUpdate = (() => {
+            if (!hasSummaries) return false;
+            const updatedAtMillis = getTimestampMillis(data?.updatedAt);
+            if (!pendingRequest) return true;
+            if (!updatedAtMillis) return false;
+            return updatedAtMillis >= pendingRequest;
+          })();
           
           console.log('📡 AI summary data changed:', {
             hasSummaries,
@@ -165,11 +186,13 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
             console.log('🔄 Data changed, reloading summaries...');
             
             // If summaries exist, stop loading
-            if (hasSummaries) {
+            if (hasSummaries && shouldApplyUpdate) {
               setLoading(false);
+              pendingRequestRef.current = 0;
+              loadExistingAIData();
+            } else if (!hasSummaries) {
+              loadExistingAIData();
             }
-            
-            loadExistingAIData();
           } else {
             console.log('⏭️ No change detected, skipping reload');
           }
@@ -212,9 +235,23 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       const aiData = await aiDataService.getAIData(transcriptionId, user.uid);
       
       if (aiData && hasSummaryContent(aiData.summaries)) {
-        console.log('✅ Found existing summaries:', Object.keys(aiData.summaries ?? {}));
-        setSummaries(aiData.summaries);
-        setLoading(false);
+        const updatedAtMillis = getTimestampMillis(aiData.updatedAt);
+        const pendingRequest = pendingRequestRef.current;
+        const shouldApply = !pendingRequest || (updatedAtMillis !== null && updatedAtMillis >= pendingRequest);
+
+        console.log('✅ Found existing summaries:', Object.keys(aiData.summaries ?? {}), {
+          updatedAtMillis,
+          pendingRequest,
+          shouldApply
+        });
+
+        if (shouldApply) {
+          setSummaries(aiData.summaries);
+          setLoading(false);
+          pendingRequestRef.current = 0;
+        } else {
+          console.log('⏳ Existing summaries are older than current request; keeping loading state.');
+        }
       } else {
         console.log('ℹ️ No existing summaries found');
         // Keep loading if we're waiting for summaries
@@ -250,6 +287,10 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
     }
 
     try {
+      const requestTimestamp = Date.now();
+      pendingRequestRef.current = requestTimestamp;
+      sessionStorage.setItem('lastSummaryUpdate', requestTimestamp.toString());
+      setSummaries({});
       setLoading(true);
       setError(null);
       
@@ -293,6 +334,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       console.error('Failed to start summary jobs:', err);
       setError(err instanceof Error ? err.message : 'Failed to start summary generation');
       setLoading(false);
+      pendingRequestRef.current = 0;
     }
   };
 
