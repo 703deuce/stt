@@ -832,9 +832,8 @@ export default function TranscriptionViewPage() {
               <AISummaryPanel 
                 transcriptionText={transcription.transcript || ''} 
                 transcriptionId={transcriptionId}
-                className="sticky top-6"
               />
-              <div className="sticky top-[7.5rem]">
+              <div>
                 <div className="bg-white border border-gray-200 rounded-lg shadow-sm p-6 space-y-4">
                   <div className="flex items-start justify-between">
                     <div>
