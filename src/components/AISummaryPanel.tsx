@@ -682,9 +682,12 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
       </div>
 
       {expanded && (
+        (() => {
+          const hasSummariesAvailable = hasSummaryContent(summaries);
+          return (
         <div className="p-4 space-y-4">
           {/* Generate Button */}
-          {!summaries.brief && !isGenerating && (
+          {!hasSummariesAvailable && !isGenerating && (
             <button
               onClick={generateSummaries}
               className="w-full bg-purple-600 text-white px-4 py-3 rounded-lg hover:bg-purple-700 transition-colors flex items-center justify-center space-x-2"
@@ -721,7 +724,7 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
           )}
 
           {/* Summary Content */}
-          {summaries.brief && !isGenerating && (
+          {hasSummariesAvailable && !isGenerating && (
             <div className="space-y-4">
               {/* Tab Navigation */}
               <div className="flex space-x-1 bg-gray-100 rounded-lg p-1">
@@ -757,6 +760,8 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
             </div>
           )}
         </div>
+          );
+        })()
       )}
     </div>
   );
