@@ -748,15 +748,6 @@ export default function AISummaryPanel({ transcriptionText, transcriptionId, cla
 
               {/* Summary Content */}
               {renderSummaryContent()}
-
-              {/* Regenerate Button */}
-              <button
-                onClick={generateSummaries}
-                className="w-full bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
-              >
-                <RefreshCw className="w-4 h-4" />
-                <span>Regenerate Summaries</span>
-              </button>
             </div>
           )}
         </div>
