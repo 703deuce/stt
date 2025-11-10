@@ -624,17 +624,6 @@ export default function TranscriptionViewPage() {
                 </>
               )}
               
-              {transcription.audio_file_url && (
-                <a
-                  href={transcription.audio_file_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors shadow-sm"
-                >
-                  <Play className="w-4 h-4 mr-2" />
-                  Play Audio
-                </a>
-              )}
             </div>
           </div>
 
