@@ -16,6 +16,13 @@ interface DiarizedSegment {
     start: number;
     end: number;
   }>;
+  segment_timestamps?: Array<{
+    start: number;
+    end: number;
+    segment: string;
+    start_offset?: number;
+    end_offset?: number;
+  }>;
 }
 
 interface DownloadModalProps {
@@ -29,6 +36,13 @@ interface DownloadModalProps {
       start: number;
       end: number;
       text: string;
+    }>;
+    segment_timestamps?: Array<{
+      start: number;
+      end: number;
+      segment: string;
+      start_offset?: number;
+      end_offset?: number;
     }>;
     duration?: number;
     metadata?: any;
@@ -79,6 +93,13 @@ export default function DownloadModal({
     return `${hours.toString().padStart(2, '0')}:${mins.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}.${ms.toString().padStart(3, '0')}`;
   };
 
+  // Helper function to get text for a segment - uses same logic as details page
+  const getSegmentText = (segment: DiarizedSegment): string => {
+    // Use segment.text directly (same as details page does on line 790)
+    // The data should already be merged when it reaches this component
+    return segment.text || '';
+  };
+
   const createSubtitleSegments = () => {
     if (!transcription.diarized_transcript || transcription.diarized_transcript.length === 0) {
       return [];
@@ -88,50 +109,13 @@ export default function DownloadModal({
 
     transcription.diarized_transcript.forEach((segment) => {
       const words = segment.words || [];
-      if (words.length === 0) {
-        // Fallback: use segment-level timing
-        segments.push({
-          start: segment.start_time,
-          end: segment.end_time,
-          text: segment.text,
-          speaker: getSpeakerDisplayName(segment.speaker),
-        });
-        return;
-      }
+      
+      // Use word-level timestamps if available (for better subtitle breaks)
+      if (words.length > 0) {
+        let currentSegment: { start: number; end: number; words: string[]; speaker: string } | null = null;
 
-      let currentSegment: { start: number; end: number; words: string[]; speaker: string } | null = null;
-
-      words.forEach((word, index) => {
-        if (!currentSegment) {
-          currentSegment = {
-            start: word.start,
-            end: word.end,
-            words: [word.word],
-            speaker: getSpeakerDisplayName(segment.speaker),
-          };
-        } else {
-          const duration = word.end - currentSegment.start;
-          const wordCount = currentSegment.words.length;
-          const text = [...currentSegment.words, word.word].join(' ');
-          const charCount = text.length;
-
-          // Check if we need to start a new segment
-          const shouldBreak =
-            wordCount >= maxWordsPerSegment ||
-            duration >= maxDurationPerSegment ||
-            charCount >= maxCharsPerSegment ||
-            (sentenceAwareSegmentation && /[.!?]$/.test(word.word));
-
-          if (shouldBreak) {
-            // Save current segment
-            segments.push({
-              start: currentSegment.start,
-              end: currentSegment.end,
-              text: currentSegment.words.join(' '),
-              speaker: currentSegment.speaker,
-            });
-
-            // Start new segment
+        words.forEach((word, index) => {
+          if (!currentSegment) {
             currentSegment = {
               start: word.start,
               end: word.end,
@@ -139,22 +123,63 @@ export default function DownloadModal({
               speaker: getSpeakerDisplayName(segment.speaker),
             };
           } else {
-            // Add word to current segment
-            currentSegment.words.push(word.word);
-            currentSegment.end = word.end;
-          }
-        }
-      });
+            const duration = word.end - currentSegment.start;
+            const wordCount = currentSegment.words.length;
+            const text = [...currentSegment.words, word.word].join(' ');
+            const charCount = text.length;
 
-      // Add remaining segment
-      if (currentSegment) {
+            // Check if we need to start a new segment
+            const shouldBreak =
+              wordCount >= maxWordsPerSegment ||
+              duration >= maxDurationPerSegment ||
+              charCount >= maxCharsPerSegment ||
+              (sentenceAwareSegmentation && /[.!?]$/.test(word.word));
+
+            if (shouldBreak) {
+              // Save current segment
+              segments.push({
+                start: currentSegment.start,
+                end: currentSegment.end,
+                text: currentSegment.words.join(' '),
+                speaker: currentSegment.speaker,
+              });
+
+              // Start new segment
+              currentSegment = {
+                start: word.start,
+                end: word.end,
+                words: [word.word],
+                speaker: getSpeakerDisplayName(segment.speaker),
+              };
+            } else {
+              // Add word to current segment
+              currentSegment.words.push(word.word);
+              currentSegment.end = word.end;
+            }
+          }
+        });
+
+        // Add remaining segment
+        if (currentSegment) {
+          segments.push({
+            start: currentSegment.start,
+            end: currentSegment.end,
+            text: currentSegment.words.join(' '),
+            speaker: currentSegment.speaker,
+          });
+        }
+      } 
+      // Fallback: use segment.text directly (same as details page)
+      // For subtitles, use the full segment text with its time range
+      else if (segment.text && segment.text.trim()) {
         segments.push({
-          start: currentSegment.start,
-          end: currentSegment.end,
-          text: currentSegment.words.join(' '),
-          speaker: currentSegment.speaker,
+          start: segment.start_time,
+          end: segment.end_time,
+          text: segment.text,
+          speaker: getSpeakerDisplayName(segment.speaker),
         });
       }
+      // Skip segments with no text
     });
 
     return segments;
@@ -173,12 +198,16 @@ export default function DownloadModal({
 
     if (transcription.diarized_transcript && transcription.diarized_transcript.length > 0 && includeSpeakers) {
       transcription.diarized_transcript.forEach((segment) => {
+        // Use segment.text directly (same as details page)
+        const segmentText = segment.text || '';
+        if (!segmentText.trim()) return; // Skip segments with no text
+        
         if (includeTimestamps) {
           content += `${getSpeakerDisplayName(segment.speaker)} [${formatTime(segment.start_time)} - ${formatTime(segment.end_time)}]:\n`;
         } else {
           content += `${getSpeakerDisplayName(segment.speaker)}:\n`;
         }
-        content += `${segment.text}\n\n`;
+        content += `${segmentText}\n\n`;
       });
     } else {
       content += transcription.transcript || 'No transcript available';
@@ -259,6 +288,10 @@ export default function DownloadModal({
 
     if (transcription.diarized_transcript && transcription.diarized_transcript.length > 0 && includeSpeakers) {
       transcription.diarized_transcript.forEach((segment) => {
+        // Use segment.text directly (same as details page)
+        const segmentText = segment.text || '';
+        if (!segmentText.trim()) return; // Skip segments with no text
+        
         // Check for page break
         if (yPosition > pageHeight - 30) {
           doc.addPage();
@@ -278,7 +311,7 @@ export default function DownloadModal({
         // Text
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(0, 0, 0);
-        const lines = doc.splitTextToSize(segment.text, maxWidth);
+        const lines = doc.splitTextToSize(segmentText, maxWidth);
         lines.forEach((line: string) => {
           if (yPosition > pageHeight - 20) {
             doc.addPage();
@@ -336,6 +369,10 @@ export default function DownloadModal({
     // Transcript content
     if (transcription.diarized_transcript && transcription.diarized_transcript.length > 0 && includeSpeakers) {
       transcription.diarized_transcript.forEach((segment) => {
+        // Use segment.text directly (same as details page)
+        const segmentText = segment.text || '';
+        if (!segmentText.trim()) return; // Skip segments with no text
+        
         // Speaker header
         let header = getSpeakerDisplayName(segment.speaker);
         if (includeTimestamps) {
@@ -361,7 +398,7 @@ export default function DownloadModal({
           new Paragraph({
             children: [
               new TextRun({
-                text: segment.text,
+                text: segmentText,
                 size: 22,
               }),
             ],
